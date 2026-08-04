@@ -1,0 +1,16 @@
+{
+  "projects": {},
+  "targets": {
+    "collabsy-mobile-applicaation": {
+      "hosting": {
+        "intern": [
+          "collabsy-leads"
+        ],
+        "brand-intern": [
+          "collabsy-brand-leads"
+        ]
+      }
+    }
+  },
+  "etags": {}
+}

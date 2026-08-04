@@ -43,3 +43,20 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+
+# Secrets / local env config
+.env
+*.env
+!*.env.example
+
+# Node (Cloud Functions)
+node_modules/
+
+# Claude Code local tooling config
+.claude/
+
+# Firebase CLI local cache
+.firebase/
+
+# Debug scratch files
+ui_dump*.xml

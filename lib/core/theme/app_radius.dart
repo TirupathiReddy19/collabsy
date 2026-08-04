@@ -28,11 +28,11 @@ class AppRadius {
   /// Splash logo card
   static const double xxl = 24;
 
-  /// Bottom Sheets
-  static const double xxxl = 32;
+  /// Bottom Sheets / large cards (tokens.borderRadius.3xl)
+  static const double xxxl = 28;
 
   /// Circular widgets
-  static const double full = 999;
+  static const double full = 9999;
 }
 
 /// Common BorderRadius values.

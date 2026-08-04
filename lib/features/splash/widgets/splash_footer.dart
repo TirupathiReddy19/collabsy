@@ -1,31 +1,7 @@
 import 'package:flutter/material.dart';
 
-class SplashFooter extends StatefulWidget {
+class SplashFooter extends StatelessWidget {
   const SplashFooter({super.key});
-
-  @override
-  State<SplashFooter> createState() => _SplashFooterState();
-}
-
-class _SplashFooterState extends State<SplashFooter>
-    with SingleTickerProviderStateMixin {
-  late final AnimationController _controller;
-
-  @override
-  void initState() {
-    super.initState();
-
-    _controller = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 1200),
-    )..repeat();
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -38,7 +14,7 @@ class _SplashFooterState extends State<SplashFooter>
           child: CircularProgressIndicator(
             strokeWidth: 2.8,
             valueColor: AlwaysStoppedAnimation<Color>(
-              Colors.white.withOpacity(0.9),
+              Colors.white.withValues(alpha: 0.9),
             ),
           ),
         ),
@@ -48,7 +24,7 @@ class _SplashFooterState extends State<SplashFooter>
         Text(
           "Loading...",
           style: TextStyle(
-            color: Colors.white.withOpacity(0.85),
+            color: Colors.white.withValues(alpha: 0.85),
             fontSize: 15,
             fontWeight: FontWeight.w500,
             letterSpacing: 0.2,
@@ -61,7 +37,7 @@ class _SplashFooterState extends State<SplashFooter>
           "Preparing your experience",
           textAlign: TextAlign.center,
           style: TextStyle(
-            color: Colors.white.withOpacity(0.65),
+            color: Colors.white.withValues(alpha: 0.65),
             fontSize: 13,
             fontWeight: FontWeight.w400,
           ),

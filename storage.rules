@@ -1,0 +1,59 @@
+rules_version = '2';
+
+service firebase.storage {
+  match /b/{bucket}/o {
+    function isAdmin() {
+      return request.auth != null
+        && request.auth.token.email == 'admin@collabsy.online';
+    }
+
+    // Mirrors firestore.rules' `isActiveStaffWithPermission` via Storage
+    // Rules' cross-service Firestore lookup, so a support-staff account can
+    // view an attachment exactly when it can already read the message text
+    // sitting next to it.
+    function isActiveSupportStaff() {
+      return request.auth != null
+        && firestore.exists(/databases/(default)/documents/staffAccounts/$(request.auth.uid))
+        && firestore.get(/databases/(default)/documents/staffAccounts/$(request.auth.uid)).data.active == true
+        && firestore.get(/databases/(default)/documents/staffAccounts/$(request.auth.uid)).data.permissions['/support'] == true;
+    }
+
+    // Images attached to a support message — mirrors the same
+    // owner-or-admin-or-staff visibility as the `supportChats` Firestore
+    // collection itself, so an attachment is never any more exposed than
+    // the message text sitting next to it. Only the ticket's own user ever
+    // uploads one. `ticketId` is the auto-generated support ticket's doc id
+    // (no longer the uid — a user can have many tickets), so ownership is
+    // checked via a cross-service lookup at the ticket's own `userId` field.
+    match /supportChats/{ticketId}/attachments/{fileName} {
+      allow read: if isAdmin()
+        || isActiveSupportStaff()
+        || (request.auth != null
+            && firestore.get(/databases/(default)/documents/supportChats/$(ticketId)).data.userId == request.auth.uid);
+      allow write: if request.auth != null
+        && firestore.get(/databases/(default)/documents/supportChats/$(ticketId)).data.userId == request.auth.uid
+        && request.resource.size < 5 * 1024 * 1024
+        && request.resource.contentType.matches('image/.*');
+    }
+
+    match /avatars/{userId} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null
+        && request.auth.uid == userId
+        && request.resource.size < 5 * 1024 * 1024
+        && request.resource.contentType.matches('image/.*');
+    }
+
+    // Server-mirrored copies of connected Instagram profile pictures
+    // (Instagram's own profile_picture_url is a signed, expiring CDN
+    // link — this is our own stable copy). Written only by the
+    // exchangeInstagramCode/refreshInstagramMedia Cloud Functions via the
+    // Admin SDK, which bypasses these rules; made public at write time
+    // since these are already-public Instagram photos, so read access
+    // doesn't need to be gated here at all.
+    match /instagram-avatars/{userId} {
+      allow read: if true;
+      allow write: if false;
+    }
+  }
+}

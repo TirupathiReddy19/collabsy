@@ -62,9 +62,7 @@ class AppPadding {
     horizontal: AppSpacing.screenHorizontal,
   );
 
-  static const EdgeInsets card = EdgeInsets.all(
-    AppSpacing.card,
-  );
+  static const EdgeInsets card = EdgeInsets.all(AppSpacing.card);
 
   static const EdgeInsets input = EdgeInsets.symmetric(
     horizontal: AppSpacing.inputHorizontal,

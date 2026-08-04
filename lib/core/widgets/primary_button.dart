@@ -1,5 +1,9 @@
 import 'package:flutter/material.dart';
 
+import '../theme/app_colors.dart';
+import '../theme/app_radius.dart';
+import '../theme/app_text_styles.dart';
+
 class PrimaryButton extends StatelessWidget {
   const PrimaryButton({
     super.key,
@@ -10,9 +14,9 @@ class PrimaryButton extends StatelessWidget {
     this.icon,
     this.width = double.infinity,
     this.height = 56,
-    this.backgroundColor = const Color(0xFFF97316),
-    this.foregroundColor = Colors.white,
-    this.borderRadius = 16,
+    this.backgroundColor = AppColors.primary,
+    this.foregroundColor = AppColors.white,
+    this.borderRadius = AppRadius.lg,
     this.elevation = 0,
   });
 
@@ -45,8 +49,8 @@ class PrimaryButton extends StatelessWidget {
         style: ElevatedButton.styleFrom(
           backgroundColor: backgroundColor,
           foregroundColor: foregroundColor,
-          disabledBackgroundColor: backgroundColor.withOpacity(.5),
-          disabledForegroundColor: foregroundColor.withOpacity(.8),
+          disabledBackgroundColor: backgroundColor.withValues(alpha: .5),
+          disabledForegroundColor: foregroundColor.withValues(alpha: .8),
           elevation: elevation,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(borderRadius),
@@ -61,8 +65,7 @@ class PrimaryButton extends StatelessWidget {
                   height: 22,
                   child: CircularProgressIndicator(
                     strokeWidth: 2.2,
-                    valueColor:
-                        AlwaysStoppedAnimation<Color>(foregroundColor),
+                    valueColor: AlwaysStoppedAnimation<Color>(foregroundColor),
                   ),
                 )
               : Row(
@@ -75,9 +78,8 @@ class PrimaryButton extends StatelessWidget {
                     ],
                     Text(
                       text,
-                      style: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w700,
+                      style: AppTextStyles.button.copyWith(
+                        color: foregroundColor,
                       ),
                     ),
                   ],

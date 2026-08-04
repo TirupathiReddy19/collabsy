@@ -1,16 +1,388 @@
+import 'package:firebase_analytics/firebase_analytics.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../core/services/firebase_service.dart';
+import '../core/services/local_storage_service.dart';
+import '../features/announcements/screens/announcements_screen.dart';
+import '../features/auth/complete_profile/complete_profile_screen.dart';
+import '../features/auth/login/login_screen.dart';
+import '../features/auth/mfa/mfa_challenge_screen.dart';
+import '../features/auth/providers/auth_providers.dart';
+import '../features/auth/shared/check_email_screen.dart';
+import '../features/auth/shared/otp_verification_view.dart';
+import '../features/auth/signup/signup_screen.dart';
+import '../features/auth/forgot_password/forgot_password_screen.dart';
+import '../features/blocking/screens/blocked_accounts_screen.dart';
+import '../features/brand/campaigns/brand_campaign_detail_screen.dart';
+import '../features/brand/campaigns/create_campaign_screen.dart';
+import '../features/brand/discover/creator_public_profile_screen.dart';
+import '../shared/models/verification_status.dart';
+import '../features/brand/onboarding/brand_details_screen.dart';
+import '../features/brand/onboarding/brand_verification_pending_screen.dart';
+import '../features/brand/providers/brand_profile_providers.dart';
+import '../features/brand/screens/brand_account_screen.dart';
+import '../features/brand/screens/brand_campaigns_screen.dart';
+import '../features/brand/screens/brand_discover_screen.dart';
+import '../features/brand/screens/brand_home_screen.dart';
+import '../features/brand/screens/brand_messages_screen.dart';
+import '../features/chat/screens/chat_conversation_screen.dart';
+import '../features/creator/campaigns/brand_public_profile_screen.dart';
+import '../features/creator/campaigns/creator_campaign_detail_screen.dart';
+import '../features/creator/onboarding/creator_details_screen.dart';
+import '../features/creator/onboarding/creator_instagram_connect_screen.dart';
+import '../features/creator/onboarding/creator_verification_pending_screen.dart';
+import '../features/creator/providers/creator_profile_providers.dart';
+import '../features/creator/screens/creator_campaigns_screen.dart';
+import '../features/creator/screens/creator_home_screen.dart';
+import '../features/creator/screens/creator_messages_screen.dart';
+import '../features/creator/screens/creator_profile_screen.dart';
+import '../features/notifications/screens/notifications_screen.dart';
+import '../features/onboarding/screens/onboarding_screen.dart';
+import '../features/settings/screens/connected_accounts_screen.dart';
+import '../features/settings/screens/settings_screen.dart';
 import '../features/splash/splash_screen.dart';
+import '../features/support/screens/support_chat_screen.dart';
+import '../features/support/screens/support_help_screen.dart';
+import '../features/support/screens/support_ticket_history_screen.dart';
+import '../shared/models/user_role.dart';
+import 'app_shell.dart';
+import 'router_refresh_stream.dart';
 import 'routes.dart';
 
-class AppRouter {
-  static final router = GoRouter(
+final routerProvider = Provider<GoRouter>((ref) {
+  final authRepository = ref.watch(authRepositoryProvider);
+  final localStorage = ref.watch(localStorageServiceProvider);
+  final analytics = ref.watch(firebaseAnalyticsProvider);
+  final brandProfileRepository = ref.watch(brandProfileRepositoryProvider);
+  final creatorProfileRepository = ref.watch(creatorProfileRepositoryProvider);
+
+  return GoRouter(
     initialLocation: AppRoutes.splash,
+    observers: [FirebaseAnalyticsObserver(analytics: analytics)],
+    refreshListenable: GoRouterRefreshStream(authRepository.authStateChanges),
+    redirect: (context, state) async {
+      final location = state.matchedLocation;
+      final atSplash = location == AppRoutes.splash;
+      final atOnboarding = location == AppRoutes.onboarding;
+      final atOtp = location == AppRoutes.otp;
+      final atCompleteProfile = location == AppRoutes.completeProfile;
+      final atCheckEmail = location == AppRoutes.checkEmail;
+      final atAuth = location.startsWith('/auth');
+      final atCreatorOnboarding = location.startsWith('/creator/onboarding');
+      final atBrandOnboarding = location.startsWith('/brand/onboarding');
+
+      // Splash decides nothing itself — it always lands here first and the
+      // guard below sends it wherever it actually needs to go.
+      if (atSplash) return null;
+
+      if (!localStorage.hasSeenOnboarding) {
+        return atOnboarding ? null : AppRoutes.onboarding;
+      }
+
+      final user = authRepository.currentUser;
+      final loggedIn = user != null;
+      if (!loggedIn) {
+        // completeProfile/checkEmail require a session (they're post-auth
+        // screens that just happen to live under /auth) — everything else
+        // under /auth is a legitimate pre-auth screen and gets left alone.
+        if (atCompleteProfile || atCheckEmail) return AppRoutes.login;
+        return atAuth ? null : AppRoutes.login;
+      }
+
+      // The OTP screen manages its own next step (verify -> set role ->
+      // go to splash) — never interrupt it mid-flow.
+      if (atOtp) return null;
+
+      // Firebase signs a user in immediately on signUpWithPassword, before
+      // their email is verified — unlike Google sign-ins, which have no
+      // password provider and are always considered verified. Hold
+      // unverified email/password users on checkEmail until they confirm.
+      final hasPasswordProvider = user.providerData.any(
+        (p) => p.providerId == 'password',
+      );
+      if (hasPasswordProvider && !user.emailVerified) {
+        return atCheckEmail ? null : AppRoutes.checkEmail;
+      }
+
+      // Logged in but sitting on onboarding/auth/creator-onboarding (e.g. a
+      // relaunch that restored a session, a Google sign-in that just landed
+      // back on the login screen, or finishing/skipping the creator-details
+      // step) — figure out where they actually belong.
+      //
+      // Deliberately fetched fresh here rather than via
+      // ref.read(currentProfileProvider.future): that provider and this
+      // router's own refreshListenable are two independent listeners on
+      // the same auth-state stream, with no guaranteed ordering between
+      // them. Reading the cached provider risked catching a stale
+      // snapshot from a half-processed sign-out (e.g. right after a
+      // sign-out+sign-in, briefly still reflecting "no user") and
+      // wrongly concluding a role-having account had none.
+      if (atOnboarding || atAuth || atCreatorOnboarding || atBrandOnboarding) {
+        final profile = await authRepository.fetchProfile(user.uid);
+        ref.invalidate(currentProfileProvider);
+        if (profile?.role == null) {
+          // No role yet (fresh Google sign-in never asked for one) — send
+          // them to fill in the missing role + phone.
+          return atCompleteProfile ? null : AppRoutes.completeProfile;
+        }
+        if (profile!.role == UserRole.creator && !profile.onboardingCompleted) {
+          // Creator role set but hasn't finished the languages/location +
+          // Instagram-connect steps yet — Instagram connect is required
+          // (not skippable), since verification below needs real data.
+          return atCreatorOnboarding ? null : AppRoutes.creatorDetails;
+        }
+        if (profile.role == UserRole.brand && !profile.onboardingCompleted) {
+          // Brand role set but hasn't filled in company details yet —
+          // also catches every pre-existing Brand account, since nothing
+          // ever set this flag true for them before this step existed.
+          return atBrandOnboarding ? null : AppRoutes.brandDetails;
+        }
+        if (profile.role == UserRole.brand) {
+          // Onboarding is done, but the dashboard is still gated on admin
+          // approval. `verificationStatus` defaults to pending whenever
+          // it's missing from Firestore, so this also catches every
+          // pre-existing Brand account created before verification existed
+          // — not just brand-new signups.
+          final brandProfile = await brandProfileRepository.fetchBrandProfile(
+            user.uid,
+          );
+          final verified =
+              brandProfile?.verificationStatus == VerificationStatus.approved;
+          if (!verified) {
+            return location == AppRoutes.brandVerificationPending
+                ? null
+                : AppRoutes.brandVerificationPending;
+          }
+        }
+        if (profile.role == UserRole.creator) {
+          // Onboarding is done, but the dashboard is still gated on admin
+          // approval — same reasoning as the Brand gate above, and the
+          // same free retroactive catch for every pre-existing Creator
+          // account.
+          final creatorProfile = await creatorProfileRepository
+              .fetchCreatorProfile(user.uid);
+          final verified =
+              creatorProfile?.verificationStatus == VerificationStatus.approved;
+          if (!verified) {
+            return location == AppRoutes.creatorVerificationPending
+                ? null
+                : AppRoutes.creatorVerificationPending;
+          }
+        }
+        return profile.role == UserRole.creator
+            ? AppRoutes.creatorHome
+            : AppRoutes.brandHome;
+      }
+
+      return null;
+    },
     routes: [
       GoRoute(
         path: AppRoutes.splash,
         builder: (context, state) => const SplashScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.onboarding,
+        builder: (context, state) => const OnboardingScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.login,
+        builder: (context, state) => const LoginScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.signup,
+        builder: (context, state) => const SignupScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.otp,
+        builder: (context, state) => const OtpVerificationView(),
+      ),
+      GoRoute(
+        path: AppRoutes.mfaChallenge,
+        builder: (context, state) => const MfaChallengeScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.help,
+        builder: (context, state) => const ForgotPasswordScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.checkEmail,
+        builder: (context, state) => const CheckEmailScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.completeProfile,
+        builder: (context, state) => const CompleteProfileScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.creatorDetails,
+        builder: (context, state) => const CreatorDetailsScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.creatorInstagramConnect,
+        builder: (context, state) => const CreatorInstagramConnectScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.creatorVerificationPending,
+        builder: (context, state) => const CreatorVerificationPendingScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.brandDetails,
+        builder: (context, state) => const BrandDetailsScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.brandVerificationPending,
+        builder: (context, state) => const BrandVerificationPendingScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.createCampaign,
+        builder: (context, state) => const CreateCampaignScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.brandCampaignDetail,
+        builder: (context, state) => BrandCampaignDetailScreen(
+          campaignId: state.pathParameters['campaignId']!,
+        ),
+      ),
+      GoRoute(
+        path: AppRoutes.creatorCampaignDetail,
+        builder: (context, state) => CreatorCampaignDetailScreen(
+          campaignId: state.pathParameters['campaignId']!,
+        ),
+      ),
+      GoRoute(
+        path: AppRoutes.creatorPublicProfile,
+        builder: (context, state) => CreatorPublicProfileScreen(
+          creatorId: state.pathParameters['creatorId']!,
+        ),
+      ),
+      GoRoute(
+        path: AppRoutes.brandPublicProfile,
+        builder: (context, state) =>
+            BrandPublicProfileScreen(brandId: state.pathParameters['brandId']!),
+      ),
+      GoRoute(
+        path: AppRoutes.chatDetail,
+        builder: (context, state) =>
+            ChatConversationScreen(chatId: state.pathParameters['chatId']!),
+      ),
+      GoRoute(
+        path: AppRoutes.announcements,
+        builder: (context, state) => const AnnouncementsScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.notifications,
+        builder: (context, state) => const NotificationsScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.settings,
+        builder: (context, state) => const SettingsScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.connectedAccounts,
+        builder: (context, state) => const ConnectedAccountsScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.blockedAccounts,
+        builder: (context, state) => const BlockedAccountsScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.support,
+        builder: (context, state) => const SupportHelpScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.supportHistory,
+        builder: (context, state) => const SupportTicketHistoryScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.supportChat,
+        builder: (context, state) =>
+            SupportChatScreen(ticketId: state.pathParameters['ticketId']!),
+      ),
+      StatefulShellRoute.indexedStack(
+        builder: (context, state, navigationShell) =>
+            CreatorShell(navigationShell: navigationShell),
+        branches: [
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: AppRoutes.creatorHome,
+                builder: (context, state) => const CreatorHomeScreen(),
+              ),
+            ],
+          ),
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: AppRoutes.creatorCampaigns,
+                builder: (context, state) => const CreatorCampaignsScreen(),
+              ),
+            ],
+          ),
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: AppRoutes.creatorMessages,
+                builder: (context, state) => const CreatorMessagesScreen(),
+              ),
+            ],
+          ),
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: AppRoutes.creatorProfile,
+                builder: (context, state) => const CreatorProfileScreen(),
+              ),
+            ],
+          ),
+        ],
+      ),
+      StatefulShellRoute.indexedStack(
+        builder: (context, state, navigationShell) =>
+            BrandShell(navigationShell: navigationShell),
+        branches: [
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: AppRoutes.brandHome,
+                builder: (context, state) => const BrandHomeScreen(),
+              ),
+            ],
+          ),
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: AppRoutes.brandCampaigns,
+                builder: (context, state) => const BrandCampaignsScreen(),
+              ),
+            ],
+          ),
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: AppRoutes.brandDiscover,
+                builder: (context, state) => const BrandDiscoverScreen(),
+              ),
+            ],
+          ),
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: AppRoutes.brandMessages,
+                builder: (context, state) => const BrandMessagesScreen(),
+              ),
+            ],
+          ),
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: AppRoutes.brandAccount,
+                builder: (context, state) => const BrandAccountScreen(),
+              ),
+            ],
+          ),
+        ],
       ),
     ],
     errorBuilder: (context, state) => Scaffold(
@@ -22,4 +394,4 @@ class AppRouter {
       ),
     ),
   );
-}
+});

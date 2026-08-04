@@ -2,7 +2,8 @@ import 'package:flutter/material.dart';
 
 /// Centralized color palette for the Collabsy application.
 ///
-/// All colors used throughout the app should be defined here.
+/// Values mirror `Figma/Collabsy UI_UX Design System (1)/public/tokens.json`,
+/// the authoritative design-token source for this app.
 /// Avoid hardcoding Color(...) values inside widgets.
 class AppColors {
   AppColors._();
@@ -12,8 +13,9 @@ class AppColors {
   // ==========================================================
 
   static const Color primary = Color(0xFFF97316);
-  static const Color primaryDark = Color(0xFFEA580C);
-  static const Color primaryLight = Color(0xFFFB923C);
+  static const Color primaryDark = Color(0xFFC2410C);
+  static const Color primaryLight = Color(0xFFFFF1E8);
+  static const Color primaryHover = Color(0xFFEA580C);
 
   static const Color secondary = Color(0xFF2563EB);
 
@@ -21,8 +23,8 @@ class AppColors {
   // Background
   // ==========================================================
 
-  static const Color background = Color(0xFFFFFFFF);
-  static const Color surface = Color(0xFFF8FAFC);
+  static const Color background = Color(0xFFFFFDFB);
+  static const Color surface = Color(0xFFFFFFFF);
   static const Color card = Color(0xFFFFFFFF);
 
   // ==========================================================
@@ -40,17 +42,29 @@ class AppColors {
   // Status Colors
   // ==========================================================
 
-  static const Color success = Color(0xFF22C55E);
-  static const Color warning = Color(0xFFF59E0B);
-  static const Color error = Color(0xFFEF4444);
-  static const Color info = Color(0xFF3B82F6);
+  static const Color success = Color(0xFF16A34A);
+  static const Color successLight = Color(0xFFDCFCE7);
+
+  static const Color warning = Color(0xFFD97706);
+  static const Color warningLight = Color(0xFFFEF3C7);
+
+  static const Color error = Color(0xFFDC2626);
+  static const Color errorLight = Color(0xFFFEE2E2);
+
+  static const Color info = Color(0xFF2563EB);
+  static const Color infoLight = Color(0xFFDBEAFE);
+
+  static const Color purple = Color(0xFF7C3AED);
+  static const Color purpleLight = Color(0xFFF3E8FF);
 
   // ==========================================================
   // Border & Divider
   // ==========================================================
 
-  static const Color border = Color(0xFFE5E7EB);
-  static const Color divider = Color(0xFFF1F5F9);
+  static const Color border = Color(0xFFF1E6DD);
+  static const Color borderInput = Color(0xFFF1E6DD);
+  static const Color borderFocus = Color(0xFFF97316);
+  static const Color divider = Color(0xFFF1E6DD);
 
   // ==========================================================
   // Disabled

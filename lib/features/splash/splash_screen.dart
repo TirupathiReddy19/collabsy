@@ -3,10 +3,15 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../app/routes.dart';
 import 'widgets/splash_background.dart';
 import 'widgets/splash_footer.dart';
 import 'widgets/splash_logo.dart';
 
+/// Shows for a minimum of 3 seconds, then always moves to the same fixed
+/// next step (onboarding). The router's central `redirect()` guard is what
+/// actually decides where the user ends up — this screen never checks auth
+/// state itself.
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
 
@@ -20,44 +25,9 @@ class _SplashScreenState extends State<SplashScreen> {
   @override
   void initState() {
     super.initState();
-    _startInitialization();
-  }
-
-  Future<void> _startInitialization() async {
-    // Keep the splash visible for at least 3 seconds
-    _timer = Timer(const Duration(seconds: 3), () async {
-      if (!mounted) return;
-
-      await _checkAuthentication();
+    _timer = Timer(const Duration(seconds: 3), () {
+      if (mounted) context.go(AppRoutes.onboarding);
     });
-  }
-
-  Future<void> _checkAuthentication() async {
-    // -----------------------------------------------------
-    // TODO:
-    // Replace this with your authentication check.
-    //
-    // Example (Supabase):
-    //
-    // final session = Supabase.instance.client.auth.currentSession;
-    //
-    // if (session != null) {
-    //   context.go('/home');
-    // } else {
-    //   context.go('/login');
-    // }
-    //
-    // -----------------------------------------------------
-
-    final bool isLoggedIn = false;
-
-    if (!mounted) return;
-
-    if (isLoggedIn) {
-      context.go('/home');
-    } else {
-      context.go('/login');
-    }
   }
 
   @override
@@ -70,19 +40,22 @@ class _SplashScreenState extends State<SplashScreen> {
   Widget build(BuildContext context) {
     return SplashBackground(
       child: Padding(
-        padding: const EdgeInsets.symmetric(
-          horizontal: 32,
-          vertical: 24,
-        ),
+        padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 24),
         child: Column(
           children: [
-            const Spacer(),
-
-            const SplashLogo(),
-
-            const Spacer(),
-
-            const SplashFooter(),
+            // Weighted 3:2 rather than two equal Spacers — an even split
+            // left a large empty gap between the tagline and the loading
+            // indicator on taller screens. This keeps the logo roughly
+            // centered in the upper portion and the footer anchored near
+            // the bottom, scaling proportionally on any screen size.
+            const Expanded(flex: 3, child: Center(child: SplashLogo())),
+            const Expanded(
+              flex: 2,
+              child: Align(
+                alignment: Alignment.bottomCenter,
+                child: SplashFooter(),
+              ),
+            ),
           ],
         ),
       ),

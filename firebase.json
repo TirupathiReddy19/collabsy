@@ -1,0 +1,42 @@
+{
+  "firestore": { "rules": "firestore.rules", "indexes": "firestore.indexes.json" },
+  "storage": { "rules": "storage.rules" },
+  "functions": [{ "source": "functions", "codebase": "default", "runtime": "nodejs20" }],
+  "hosting": [
+    {
+      "target": "intern",
+      "public": "build/web-intern",
+      "ignore": ["firebase.json", "**/.*"],
+      "rewrites": [
+        { "source": "/l/**", "function": "redirectLead" },
+        { "source": "**", "destination": "/index.html" }
+      ]
+    },
+    {
+      "target": "brand-intern",
+      "public": "build/web-brand-intern",
+      "ignore": ["firebase.json", "**/.*"],
+      "rewrites": [
+        { "source": "/bl/**", "function": "redirectBrandLead" },
+        { "source": "**", "destination": "/index.html" }
+      ]
+    }
+  ],
+  "flutter": {
+    "platforms": {
+      "android": {
+        "default": {
+          "projectId": "collabsy-mobile-applicaation",
+          "appId": "1:132008349319:android:b9eaacff5a5f93b3857222",
+          "fileOutput": "android/app/google-services.json"
+        }
+      },
+      "dart": {
+        "lib/firebase_options.dart": {
+          "projectId": "collabsy-mobile-applicaation",
+          "configurations": { "web": "1:132008349319:web:66b3cf4586b601e2857222" }
+        }
+      }
+    }
+  }
+}

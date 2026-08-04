@@ -1,0 +1,59 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.redirectLead = void 0;
+const firestore_1 = require("firebase-admin/firestore");
+const https_1 = require("firebase-functions/v2/https");
+const firebase_functions_1 = require("firebase-functions");
+const leadsHelpers_1 = require("./leadsHelpers");
+const redirectPages_1 = require("../shared/redirectPages");
+/**
+ * The public link every generated outreach message points to
+ * (`/l/{handle}`, via a Firebase Hosting rewrite). Records the click
+ * against the matching `leads/{handle}` doc, then either redirects to
+ * the right app store for the visitor's platform or — before the app is
+ * published, or on desktop — serves a simple landing page. Mirrors
+ * `instagram/oauthRedirect.ts`'s plain `onRequest` shape.
+ */
+exports.redirectLead = (0, https_1.onRequest)(async (req, res) => {
+    const segments = req.path.split("/").filter(Boolean);
+    const rawHandle = segments[segments.length - 1] ?? "";
+    const handle = (0, leadsHelpers_1.normalizeInstagramHandle)(rawHandle);
+    const firestore = (0, firestore_1.getFirestore)();
+    if (handle) {
+        try {
+            const leadRef = firestore.collection("leads").doc(handle);
+            const leadDoc = await leadRef.get();
+            if (leadDoc.exists) {
+                const data = leadDoc.data();
+                await leadRef.set({
+                    clickCount: firestore_1.FieldValue.increment(1),
+                    clickedAt: data?.clickedAt ?? firestore_1.Timestamp.now(),
+                    status: data?.status === "linkGenerated" ? "clicked" : data?.status,
+                }, { merge: true });
+            }
+        }
+        catch (error) {
+            firebase_functions_1.logger.error("Failed to record lead click", error);
+        }
+    }
+    const configDoc = await firestore
+        .collection("config")
+        .doc("outreachLinks")
+        .get();
+    const config = configDoc.data() ?? {};
+    if (config.comingSoonEnabled !== false) {
+        res.status(200).send((0, redirectPages_1.comingSoonPage)());
+        return;
+    }
+    const platform = (0, redirectPages_1.detectPlatform)(req.headers["user-agent"] ?? "");
+    const storeUrl = platform === "android"
+        ? config.androidStoreUrl
+        : platform === "ios"
+            ? config.iosStoreUrl
+            : undefined;
+    if (storeUrl) {
+        res.redirect(302, storeUrl);
+        return;
+    }
+    res.status(200).send((0, redirectPages_1.desktopLandingPage)());
+});

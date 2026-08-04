@@ -7,10 +7,6 @@ class SplashLogo extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const AppLogo(
-      size: 96,
-      showText: true,
-      showTagline: true,
-    );
+    return const AppLogo(size: 96, showText: true, showTagline: true);
   }
 }

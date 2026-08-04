@@ -30,18 +30,15 @@ class AppLogo extends StatelessWidget {
         ClipRRect(
           borderRadius: BorderRadius.circular(borderRadius),
           child: BackdropFilter(
-            filter: ImageFilter.blur(
-              sigmaX: 12,
-              sigmaY: 12,
-            ),
+            filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
             child: Container(
               width: size,
               height: size,
               decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.20),
+                color: Colors.white.withValues(alpha: 0.20),
                 borderRadius: BorderRadius.circular(borderRadius),
                 border: Border.all(
-                  color: Colors.white.withOpacity(0.30),
+                  color: Colors.white.withValues(alpha: 0.30),
                   width: 1,
                 ),
               ),
@@ -79,7 +76,7 @@ class AppLogo extends StatelessWidget {
             "India's Premier AI-Powered\nInfluencer Marketing Platform",
             textAlign: TextAlign.center,
             style: TextStyle(
-              color: Colors.white.withOpacity(0.85),
+              color: Colors.white.withValues(alpha: 0.85),
               fontSize: 15,
               height: 1.5,
               fontWeight: FontWeight.w500,

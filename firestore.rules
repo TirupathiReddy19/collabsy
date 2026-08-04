@@ -1,0 +1,406 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // The one and only admin account — gated on Firebase Auth's own
+    // (verified) email claim, not a client-writable field, so it can't be
+    // self-granted. There's deliberately no signup path for this; the
+    // account itself is created once, by hand, in the Firebase Console.
+    function isAdmin() {
+      return request.auth != null
+        && request.auth.token.email == 'admin@collabsy.online';
+    }
+
+    // A staff account (see staffAccounts/{uid} below) that's active and has
+    // been granted the given sidebar section, e.g. '/support'. Mirrors
+    // isAdmin()'s role as the real server-side boundary — the admin portal's
+    // sidebar filtering is just UX, this is what actually stops a staff
+    // account from touching data outside their assigned features.
+    function isActiveStaffWithPermission(navPath) {
+      return request.auth != null
+        && exists(/databases/$(database)/documents/staffAccounts/$(request.auth.uid))
+        && get(/databases/$(database)/documents/staffAccounts/$(request.auth.uid)).data.active == true
+        && get(/databases/$(database)/documents/staffAccounts/$(request.auth.uid)).data.permissions[navPath] == true;
+    }
+
+    // Whether either of the two given uids has blocked the other — a
+    // block doc is keyed `{blockerId}_{blockedId}`, a one-directional
+    // relationship, but either direction should stop the pair from
+    // starting a chat or exchanging messages.
+    function isBlocked(a, b) {
+      return exists(/databases/$(database)/documents/blocks/$(a + '_' + b))
+        || exists(/databases/$(database)/documents/blocks/$(b + '_' + a));
+    }
+
+    // Any active staff account, regardless of which specific features
+    // they've been granted — used only for auditLogs' create rule, so
+    // whatever action a staff account takes (in whichever section they're
+    // allowed into) always gets logged, even if they can't read the Audit
+    // Logs section itself.
+    function isActiveStaff() {
+      return request.auth != null
+        && exists(/databases/$(database)/documents/staffAccounts/$(request.auth.uid))
+        && get(/databases/$(database)/documents/staffAccounts/$(request.auth.uid)).data.active == true;
+    }
+
+    // Matches the Supabase RLS boundary this replaces: any authenticated
+    // user can read any profile (needed for discovery/chat/etc. later),
+    // but only the owner can write their own. `role` is restricted to the
+    // two real account types — without this, a signed-in user could set
+    // their own role field to anything, including 'admin'.
+    match /users/{userId} {
+      allow read: if request.auth != null;
+      allow write: if isAdmin()
+        || (request.auth != null && request.auth.uid == userId
+            && (!('role' in request.resource.data)
+                || request.resource.data.role in ['creator', 'brand']));
+    }
+
+    // Creator-only post-signup details (languages/location) — same
+    // ownership pattern as brandProfiles/users, except `verificationStatus`
+    // (an admin's approve/reject decision after checking the creator's
+    // connected Instagram) which only the admin may ever write.
+    match /creatorProfiles/{userId} {
+      allow read: if request.auth != null;
+      allow write: if isAdmin()
+        || isActiveStaffWithPermission('/verification/creators')
+        || (request.auth != null && request.auth.uid == userId
+            && !('verificationStatus' in request.resource.data));
+    }
+
+    // Brand-only profile extension (bio/industries/website) — same
+    // ownership pattern as creatorProfiles/users, except `verificationStatus`
+    // (an admin's approve/reject decision after checking the brand's
+    // website + LinkedIn) which only the admin may ever write.
+    match /brandProfiles/{userId} {
+      allow read: if request.auth != null;
+      allow write: if isAdmin()
+        || isActiveStaffWithPermission('/verification/brands')
+        || (request.auth != null && request.auth.uid == userId
+            && !('verificationStatus' in request.resource.data));
+    }
+
+    // Readable by any authenticated user (creators browse open campaigns),
+    // but only the owning brand can create/modify their own.
+    match /campaigns/{campaignId} {
+      allow read: if request.auth != null;
+      // Every new campaign must start under review — the client always
+      // sends this, but this rule stops a tampered client from creating an
+      // already-active campaign directly, bypassing admin approval.
+      allow create: if request.auth != null
+        && request.resource.data.brandId == request.auth.uid
+        && request.resource.data.status == 'underReview';
+      // The owning brand can change anything about their own campaign
+      // EXCEPT self-approving/un-rejecting it — moving status to 'active'
+      // out of 'underReview'/'rejected' is the admin's decision alone.
+      // Any other authenticated user (a creator viewing it) may only touch
+      // the view-tracking fields, so opening a campaign's details can't be
+      // used to tamper with it.
+      allow update: if isAdmin()
+        || isActiveStaffWithPermission('/campaigns/review')
+        || (request.auth != null
+            && resource.data.brandId == request.auth.uid
+            && !(request.resource.data.status == 'active'
+                 && (resource.data.status == 'underReview'
+                     || resource.data.status == 'rejected')))
+        || request.resource.data.diff(resource.data).affectedKeys()
+            .hasOnly(['viewCount', 'viewedByCreatorIds']);
+      allow delete: if request.auth != null
+        && resource.data.brandId == request.auth.uid;
+    }
+
+    // Visible only to the creator who applied and the owning brand — never
+    // globally readable, unlike campaigns. The admin can read every
+    // application for platform-wide oversight (dashboard counts, etc.).
+    match /applications/{applicationId} {
+      allow read: if isAdmin()
+        || (request.auth != null
+            && (resource.data.creatorId == request.auth.uid
+                || resource.data.brandId == request.auth.uid));
+      allow create: if request.auth != null
+        && request.resource.data.creatorId == request.auth.uid;
+      // Creator can update their own (e.g. withdraw); the owning brand can
+      // update it too (accept/reject).
+      allow update: if request.auth != null
+        && (resource.data.creatorId == request.auth.uid
+            || resource.data.brandId == request.auth.uid);
+    }
+
+    // One per accepted application — the creator submits proof of posted
+    // content, the owning brand reviews it. Same visibility pattern as
+    // applications: never globally readable, both parties can update
+    // (creator submits, brand approves).
+    match /deliverables/{deliverableId} {
+      allow read: if request.auth != null
+        && (resource.data.creatorId == request.auth.uid
+            || resource.data.brandId == request.auth.uid);
+      allow create: if request.auth != null
+        && request.resource.data.brandId == request.auth.uid;
+      allow update: if request.auth != null
+        && (resource.data.creatorId == request.auth.uid
+            || resource.data.brandId == request.auth.uid);
+    }
+
+    // The writer usually isn't the recipient (a creator applying writes a
+    // notification FOR the brand, and vice versa) — same pattern as
+    // deliverables' create rule, so creation itself is only gated on being
+    // signed in, while read/update stay locked to the true owner.
+    match /notifications/{notificationId} {
+      allow read: if request.auth != null
+        && resource.data.userId == request.auth.uid;
+      allow create: if request.auth != null;
+      allow update: if request.auth != null
+        && resource.data.userId == request.auth.uid;
+    }
+
+    // Chat threads and their messages — visible only to the two
+    // participants (never globally readable, same pattern as
+    // applications). Messages check the parent chat's participants via
+    // get() rather than their own fields, since every message in a thread
+    // shares the same two participants.
+    match /chats/{chatId} {
+      allow read: if request.auth != null
+        && (resource.data.creatorId == request.auth.uid
+            || resource.data.brandId == request.auth.uid);
+      allow create: if request.auth != null
+        && (request.resource.data.creatorId == request.auth.uid
+            || request.resource.data.brandId == request.auth.uid)
+        && !isBlocked(request.resource.data.creatorId, request.resource.data.brandId);
+      allow update: if request.auth != null
+        && (resource.data.creatorId == request.auth.uid
+            || resource.data.brandId == request.auth.uid);
+
+      match /messages/{messageId} {
+        allow read: if request.auth != null
+          && (get(/databases/$(database)/documents/chats/$(chatId)).data.creatorId == request.auth.uid
+              || get(/databases/$(database)/documents/chats/$(chatId)).data.brandId == request.auth.uid);
+        allow create: if request.auth != null
+          && request.resource.data.senderId == request.auth.uid
+          && (get(/databases/$(database)/documents/chats/$(chatId)).data.creatorId == request.auth.uid
+              || get(/databases/$(database)/documents/chats/$(chatId)).data.brandId == request.auth.uid)
+          && !isBlocked(
+            get(/databases/$(database)/documents/chats/$(chatId)).data.creatorId,
+            get(/databases/$(database)/documents/chats/$(chatId)).data.brandId
+          );
+      }
+    }
+
+    // One doc per block relationship, keyed `{blockerId}_{blockedId}` —
+    // a user can only create a block naming themself as the blocker (and
+    // only delete their own, i.e. unblock), both parties (and admin) can
+    // read it. `isBlocked()` above is what actually enforces this against
+    // `chats`/`messages`, not this rule.
+    //
+    // The ownership check below is deliberately based on `blockId` (the
+    // path itself), NOT `resource.data` — a client checking "did we block
+    // each other" has to `.get()` both `{a}_{b}` and `{b}_{a}`, and one of
+    // those two doc ids won't exist. Reading `resource.data.blockerId` on
+    // a nonexistent doc evaluates against a null `resource`, which denies
+    // the read with PERMISSION_DENIED instead of a clean "not found" —
+    // that denial then fails the whole `Future.wait` client-side, so the
+    // "am I blocked" check silently errors out and defaults to false.
+    // Matching on the id itself needs no `resource` at all, so a `.get()`
+    // on a doc that doesn't exist is allowed and returns exists:false.
+    match /blocks/{blockId} {
+      allow read: if isAdmin()
+        || isActiveStaffWithPermission('/trust-safety')
+        || (request.auth != null
+            && (blockId.split('_')[0] == request.auth.uid
+                || blockId.split('_')[1] == request.auth.uid));
+      allow create: if request.auth != null
+        && request.resource.data.blockerId == request.auth.uid
+        && blockId == request.resource.data.blockerId + '_' + request.resource.data.blockedId;
+      allow delete: if request.auth != null
+        && resource.data.blockerId == request.auth.uid;
+      allow update: if false;
+    }
+
+    // One doc per user report — deliberately not readable by the reporter
+    // after creation (this is a moderation queue, not a "my reports"
+    // feature); only admin/trust-safety staff can read or mark reviewed.
+    match /reports/{reportId} {
+      allow read: if isAdmin() || isActiveStaffWithPermission('/trust-safety');
+      allow create: if request.auth != null
+        && request.resource.data.reporterId == request.auth.uid;
+      allow update: if isAdmin() || isActiveStaffWithPermission('/trust-safety');
+      allow delete: if false;
+    }
+
+    // Instagram Business Login connection — profile snapshot + status
+    // only. Readable by any authenticated user (same pattern as
+    // users/creatorProfiles) so Brands can see a Creator's follower count
+    // on their public profile; every write (connect/disconnect/refresh)
+    // goes through a Cloud Function using the Admin SDK, which bypasses
+    // these rules entirely, so clients never write here directly.
+    match /instagram_accounts/{userId} {
+      allow read: if request.auth != null;
+      allow write: if false;
+
+      // The actual access/refresh token. Never client-readable, not even
+      // by the account's owner — only Cloud Functions touch this.
+      match /private/{document} {
+        allow read, write: if false;
+      }
+    }
+
+    // Synced IG media items, one doc per media ID. Server-written only
+    // (same reasoning as instagram_accounts); readable by the owning user.
+    match /instagram_media/{mediaId} {
+      allow read: if request.auth != null
+        && resource.data.userId == request.auth.uid;
+      allow write: if false;
+    }
+
+    // One doc per user per calendar day (id: `{uid}_{yyyyMMdd}`), written
+    // by the client whenever a sign-in is confirmed — the only signal this
+    // app has for "was this user active today", since there's no separate
+    // analytics SDK. Never globally readable by regular users, only by the
+    // owner (who never needs to) and the admin (Platform Analytics).
+    match /dailyActivity/{docId} {
+      allow read: if isAdmin() || isActiveStaffWithPermission('/analytics');
+      allow create: if request.auth != null
+        && request.resource.data.userId == request.auth.uid;
+      allow update: if request.auth != null
+        && resource.data.userId == request.auth.uid;
+    }
+
+    // A record of every admin decision (campaign/brand approve or reject)
+    // — write-once, no edits or deletes, so it stays a trustworthy history
+    // of what actually happened rather than something that can be
+    // rewritten after the fact.
+    match /auditLogs/{logId} {
+      allow read: if isAdmin() || isActiveStaffWithPermission('/audit');
+      allow create: if isAdmin() || isActiveStaff();
+      allow update, delete: if false;
+    }
+
+    // A staff account's own login/logout session history — write-once,
+    // same shape as auditLogs. Read is admin-only (not permission-scoped)
+    // since this is only ever viewed from Role Management, which is
+    // always super-admin-only regardless of a staff account's own
+    // permission map.
+    match /staffLoginEvents/{eventId} {
+      allow read: if isAdmin();
+      allow create: if isAdmin() || isActiveStaff();
+      allow update, delete: if false;
+    }
+
+    // One doc per prospective influencer, keyed by their normalized
+    // Instagram handle (dedup is just a doc-existence check on the id).
+    // An intern (a staff account with the `/outreach-leads` permission)
+    // creates the initial doc when they generate an outreach link — every
+    // status transition after that (clicked/signedUp/onboardingComplete)
+    // is written only by Cloud Functions (Admin SDK), so an intern can
+    // never fake their own conversion numbers.
+    match /leads/{handle} {
+      allow read: if isAdmin() || isActiveStaffWithPermission('/outreach-leads');
+      allow create: if (isAdmin() || isActiveStaffWithPermission('/outreach-leads'))
+        && request.resource.data.internId == request.auth.uid
+        && request.resource.data.status == 'linkGenerated';
+      allow update, delete: if false;
+    }
+
+    // Small admin-editable settings for the outreach tool — the DM message
+    // template and (once the app is published) the real store URLs.
+    match /config/outreachLinks {
+      allow read: if isAdmin() || isActiveStaffWithPermission('/outreach-leads');
+      allow write: if isAdmin();
+    }
+
+    // One doc per prospective brand contact, keyed by their normalized
+    // LinkedIn profile URL — mirrors `leads/{handle}` exactly, gated by its
+    // own permission since it's a separate intern team/tool.
+    match /brandLeads/{slug} {
+      allow read: if isAdmin() || isActiveStaffWithPermission('/brand-outreach-leads');
+      allow create: if (isAdmin() || isActiveStaffWithPermission('/brand-outreach-leads'))
+        && request.resource.data.internId == request.auth.uid
+        && request.resource.data.status == 'linkGenerated';
+      allow update, delete: if false;
+    }
+
+    // Settings for the brand outreach tool — kept separate from
+    // config/outreachLinks since the DM copy differs.
+    match /config/brandOutreachLinks {
+      allow read: if isAdmin() || isActiveStaffWithPermission('/brand-outreach-leads');
+      allow write: if isAdmin();
+    }
+
+    // One doc per support *ticket* (auto-generated id, `userId` field says
+    // who it belongs to) — a user can have many over time, so resolved
+    // tickets stay as history instead of being overwritten. The admin is
+    // the other side of every thread. Deliberately its own collection,
+    // never mixed with `chats` (Creator<->Brand messaging).
+    match /supportChats/{ticketId} {
+      allow read: if isAdmin()
+        || isActiveStaffWithPermission('/support')
+        || (request.auth != null && resource.data.userId == request.auth.uid);
+      // First-ever creation of a new ticket — never with the admin/staff
+      // -only triage fields set.
+      allow create: if request.auth != null
+        && request.resource.data.userId == request.auth.uid
+        && !('category' in request.resource.data)
+        && !('internalNotes' in request.resource.data)
+        && !('internalNotesUpdatedAt' in request.resource.data)
+        && !('internalNotesUpdatedBy' in request.resource.data);
+      // Admin/staff can update anything (status, category, internal notes).
+      // The ticket's own user can only ever touch status (self-reopening)
+      // and the last-message fields (sending their own message) — never
+      // category or internal notes, even if an admin already set them.
+      allow update: if isAdmin()
+        || isActiveStaffWithPermission('/support')
+        || (request.auth != null && resource.data.userId == request.auth.uid
+            && request.resource.data.diff(resource.data).affectedKeys()
+                .hasOnly([
+                  'status',
+                  'lastMessage',
+                  'lastMessageAt',
+                  'lastMessageSenderRole',
+                ]));
+
+      match /messages/{messageId} {
+        allow read: if isAdmin()
+          || isActiveStaffWithPermission('/support')
+          || (request.auth != null
+              && get(/databases/$(database)/documents/supportChats/$(ticketId)).data.userId == request.auth.uid);
+        allow create: if isAdmin()
+          || isActiveStaffWithPermission('/support')
+          || (request.auth != null
+              && get(/databases/$(database)/documents/supportChats/$(ticketId)).data.userId == request.auth.uid);
+      }
+    }
+
+    // One doc per broadcast — a single shared message read by everyone in
+    // `audience`, not fanned out into a per-recipient copy (unlike
+    // `notifications`). Write-once, admin/staff-created, same shape as
+    // `auditLogs`. Read isn't audience-gated here — broadcast content isn't
+    // sensitive, and the app's own query already filters by role.
+    match /announcements/{announcementId} {
+      allow read: if request.auth != null;
+      allow create: if isAdmin() || isActiveStaffWithPermission('/broadcast');
+      allow update, delete: if false;
+    }
+
+    // One doc per user — just their own "last opened the Announcements
+    // screen" timestamp, same pattern as `userLastReadAt` on chats/tickets.
+    // Admin/staff can also read across every doc (not just their own) —
+    // needed for the "seen by N creators" count on the Broadcast screen.
+    match /announcementReads/{uid} {
+      allow read: if request.auth != null
+        && (request.auth.uid == uid
+            || isAdmin()
+            || isActiveStaffWithPermission('/broadcast'));
+      allow write: if request.auth != null && request.auth.uid == uid;
+    }
+
+    // Staff accounts created via Role Management (functions/createStaffAccount)
+    // — never writable by clients directly, not even the staff member's own
+    // doc, so a staff account can never edit its own permissions or
+    // reactivate itself after being disabled. A staff account can read its
+    // own doc (needed so the app itself can determine what it's allowed to
+    // see) but nothing else about it.
+    match /staffAccounts/{uid} {
+      allow read: if isAdmin() || (request.auth != null && request.auth.uid == uid);
+      allow write: if isAdmin();
+    }
+  }
+}

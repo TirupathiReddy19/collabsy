@@ -1,0 +1,39 @@
+{
+  "project_info": {
+    "project_number": "132008349319",
+    "project_id": "collabsy-mobile-applicaation",
+    "storage_bucket": "collabsy-mobile-applicaation.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:132008349319:android:b9eaacff5a5f93b3857222",
+        "android_client_info": {
+          "package_name": "com.example.collabsy"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "132008349319-m9l1ort97f6035sfla6j1b64e7t06s4e.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDNwFpAS1ZH7ve9UXdSZlx-UuIkqwe0g_U"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "132008349319-m9l1ort97f6035sfla6j1b64e7t06s4e.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
