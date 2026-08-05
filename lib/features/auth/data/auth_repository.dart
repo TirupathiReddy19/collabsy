@@ -1,12 +1,16 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:io';
+import 'dart:math';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:cloud_functions/cloud_functions.dart';
+import 'package:crypto/crypto.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/foundation.dart';
 import 'package:google_sign_in/google_sign_in.dart';
+import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 
 import '../../../core/utils/validators.dart';
 import '../../../shared/models/user_role.dart';
@@ -168,6 +172,54 @@ class AuthRepository {
     await _auth.signInWithCredential(credential);
   }
 
+  /// Firebase recommends a nonce round-trip for Sign in with Apple: the
+  /// raw value goes to Apple (hashed), the raw value again goes to
+  /// Firebase, and Firebase checks it against the hash embedded in the
+  /// identity token Apple returned — proves the token wasn't intercepted
+  /// and replayed from a different sign-in attempt.
+  String _generateNonce([int length = 32]) {
+    const charset =
+        '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz-._';
+    final random = Random.secure();
+    return List.generate(
+      length,
+      (_) => charset[random.nextInt(charset.length)],
+    ).join();
+  }
+
+  String _sha256ofString(String input) =>
+      sha256.convert(utf8.encode(input)).toString();
+
+  Future<void> signInWithApple() async {
+    final rawNonce = _generateNonce();
+    final appleCredential = await SignInWithApple.getAppleIDCredential(
+      scopes: [
+        AppleIDAuthorizationScopes.email,
+        AppleIDAuthorizationScopes.fullName,
+      ],
+      nonce: _sha256ofString(rawNonce),
+    );
+    final oauthCredential = OAuthProvider(
+      'apple.com',
+    ).credential(idToken: appleCredential.identityToken, rawNonce: rawNonce);
+    await _auth.signInWithCredential(oauthCredential);
+
+    // Apple only ever sends the user's name on the very first authorization
+    // for this app — unlike Google, Firebase doesn't auto-populate
+    // `user.displayName` from it, so `ensureProfileDocument` (called right
+    // after this by the controller) would otherwise snapshot a null name
+    // forever. Only set it if nothing's there yet, matching how Google's
+    // own federated displayName is treated as already-final.
+    final fullName = [
+      appleCredential.givenName,
+      appleCredential.familyName,
+    ].whereType<String>().join(' ').trim();
+    if (fullName.isNotEmpty && _auth.currentUser?.displayName == null) {
+      await _auth.currentUser?.updateDisplayName(fullName);
+      await _auth.currentUser?.reload();
+    }
+  }
+
   Future<void> signOut() async {
     // Only touch the Google Sign-In plugin for accounts that actually used
     // it — on Web it requires a configured client ID just to construct,
@@ -202,6 +254,17 @@ class AuthRepository {
     final doc = await _firestore.collection('users').doc(userId).get();
     if (!doc.exists) return null;
     return AppUserProfile.fromJson({...doc.data()!, 'id': doc.id});
+  }
+
+  /// Live version of [fetchProfile] — a real Firestore listener rather than
+  /// a one-shot read, so a change made from outside the app (an admin
+  /// suspending this account) reaches the router within moments instead of
+  /// waiting for the next relaunch. See `currentProfileWatchProvider`.
+  Stream<AppUserProfile?> watchProfile(String userId) {
+    return _firestore.collection('users').doc(userId).snapshots().map((doc) {
+      if (!doc.exists) return null;
+      return AppUserProfile.fromJson({...doc.data()!, 'id': doc.id});
+    });
   }
 
   /// Ensures a `users/{uid}` document exists — Firestore has no
@@ -275,6 +338,15 @@ class AuthRepository {
     await _firestore.collection('users').doc(userId).set({
       'onboardingCompleted': true,
       'updatedAt': FieldValue.serverTimestamp(),
+    }, SetOptions(merge: true));
+  }
+
+  /// Records that this account has accepted the Terms of Service and
+  /// Privacy Policy — checked once, on every account, by the router's
+  /// redirect guard (see [TermsGateScreen]).
+  Future<void> acceptTerms(String userId) async {
+    await _firestore.collection('users').doc(userId).set({
+      'termsAcceptedAt': FieldValue.serverTimestamp(),
     }, SetOptions(merge: true));
   }
 

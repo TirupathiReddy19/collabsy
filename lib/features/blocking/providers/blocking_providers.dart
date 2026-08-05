@@ -18,7 +18,7 @@ BlockingRepository blockingRepository(Ref ref) {
 /// Settings "Blocked accounts" screen.
 @Riverpod(keepAlive: true)
 Stream<List<Block>> myBlockedUsers(Ref ref) {
-  final uid = ref.watch(authRepositoryProvider).currentUser?.uid;
+  final uid = ref.watch(authStateChangesProvider).value?.uid;
   if (uid == null) return Stream.value(const []);
   return ref.watch(blockingRepositoryProvider).watchBlockedByMe(uid);
 }

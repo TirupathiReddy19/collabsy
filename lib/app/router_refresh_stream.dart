@@ -13,6 +13,11 @@ class GoRouterRefreshStream extends ChangeNotifier {
 
   late final StreamSubscription<dynamic> _subscription;
 
+  /// Manually triggers a `redirect()` re-evaluation — used to bridge in
+  /// signals that aren't a [Stream] this class already owns a subscription
+  /// to (e.g. a Riverpod `ref.listen` callback on another provider).
+  void refresh() => notifyListeners();
+
   @override
   void dispose() {
     _subscription.cancel();

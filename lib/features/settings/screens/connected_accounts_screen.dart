@@ -7,6 +7,7 @@ import '../../../core/theme/app_text_styles.dart';
 import '../../../core/widgets/app_snackbar.dart';
 import '../../../core/widgets/instagram_icon.dart';
 import '../../../core/widgets/loading_indicator.dart';
+import '../../../shared/utils/relative_time.dart';
 import '../data/instagram_repository.dart';
 import '../models/instagram_account.dart';
 import '../providers/instagram_providers.dart';
@@ -111,6 +112,15 @@ class ConnectedAccountsScreen extends ConsumerWidget {
                                   : AppColors.textSecondary,
                             ),
                           ),
+                          if (isConnected && account?.lastSyncedAt != null) ...[
+                            const SizedBox(height: 2),
+                            Text(
+                              'Last synced ${relativeTimeLabel(account!.lastSyncedAt!)}',
+                              style: AppTextStyles.bodySmall.copyWith(
+                                color: AppColors.textHint,
+                              ),
+                            ),
+                          ],
                         ],
                       ),
                     ),

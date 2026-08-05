@@ -29,9 +29,14 @@ DeliverablesRepository deliverablesRepository(Ref ref) {
   return DeliverablesRepository(ref.watch(firestoreProvider));
 }
 
+// Reads the user from authStateChangesProvider rather than
+// authRepositoryProvider.currentUser — the latter is a plain getter, so
+// watching it doesn't rebuild this provider when auth state actually
+// changes, locking in whatever currentUser was the first time something
+// read this provider for the rest of the app session.
 @Riverpod(keepAlive: true)
 Stream<List<Campaign>> brandCampaigns(Ref ref) {
-  final user = ref.watch(authRepositoryProvider).currentUser;
+  final user = ref.watch(authStateChangesProvider).value;
   if (user == null) return Stream.value(const []);
   return ref.watch(campaignsRepositoryProvider).watchBrandCampaigns(user.uid);
 }
@@ -76,7 +81,7 @@ Stream<List<Campaign>> openCampaigns(Ref ref) {
 
 @Riverpod(keepAlive: true)
 Stream<List<CampaignApplication>> creatorApplications(Ref ref) {
-  final user = ref.watch(authRepositoryProvider).currentUser;
+  final user = ref.watch(authStateChangesProvider).value;
   if (user == null) return Stream.value(const []);
   return ref
       .watch(campaignsRepositoryProvider)

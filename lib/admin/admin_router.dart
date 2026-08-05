@@ -21,6 +21,7 @@ import 'screens/admin_coming_soon_screen.dart';
 import 'screens/admin_creator_detail_screen.dart';
 import 'screens/admin_creators_screen.dart';
 import 'screens/admin_dashboard_screen.dart';
+import 'screens/admin_deletion_requests_screen.dart';
 import 'screens/admin_login_screen.dart';
 import 'screens/admin_no_access_screen.dart';
 import 'screens/admin_outreach_leads_screen.dart';
@@ -80,6 +81,7 @@ final Map<String, GoRouterWidgetBuilder> _builtScreens = {
   '/campaigns/review': (context, state) =>
       const AdminCampaignsScreen.locked(status: CampaignStatus.underReview),
   '/audit': (context, state) => const AdminAuditLogsScreen(),
+  '/deletion-requests': (context, state) => const AdminDeletionRequestsScreen(),
   '/support': (context, state) => const AdminSupportScreen(),
   '/broadcast': (context, state) => const AdminBroadcastScreen(),
   '/roles': (context, state) => const AdminRoleManagementScreen(),

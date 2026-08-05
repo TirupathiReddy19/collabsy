@@ -49,6 +49,19 @@ class CurrentProfile extends _$CurrentProfile {
   }
 }
 
+/// A genuine live listener on the signed-in user's own profile doc (unlike
+/// [currentProfileProvider], which is a one-shot fetch re-run only on auth
+/// changes or an explicit invalidate) — this is what lets the router notice
+/// an admin suspending the account within moments, mid-session, instead of
+/// only on the next relaunch. See the router's `redirect` +
+/// `refreshListenable`.
+@Riverpod(keepAlive: true)
+Stream<AppUserProfile?> currentProfileWatch(Ref ref) {
+  final user = ref.watch(authStateChangesProvider).value;
+  if (user == null) return Stream.value(null);
+  return ref.watch(authRepositoryProvider).watchProfile(user.uid);
+}
+
 /// A specific user's `users` document by ID — for showing another user's
 /// avatar/display name (e.g. a Creator's manually-uploaded photo on the
 /// Brand-facing public profile), as opposed to [currentProfileProvider]
@@ -215,6 +228,18 @@ class AuthController extends _$AuthController {
     });
   }
 
+  Future<void> signInWithApple() async {
+    state = const AsyncLoading();
+    state = await AsyncValue.guard(() async {
+      final repository = ref.read(authRepositoryProvider);
+      await repository.signInWithApple();
+      final user = repository.currentUser;
+      if (user != null) {
+        await repository.ensureProfileDocument(user);
+      }
+    });
+  }
+
   Future<void> ensureProfileDocument() async {
     state = const AsyncLoading();
     state = await AsyncValue.guard(() async {
@@ -325,6 +350,18 @@ class AuthController extends _$AuthController {
         throw StateError('No active session to complete onboarding for.');
       }
       await ref.read(authRepositoryProvider).completeOnboarding(user.uid);
+      ref.invalidate(currentProfileProvider);
+    });
+  }
+
+  Future<void> acceptTerms() async {
+    state = const AsyncLoading();
+    state = await AsyncValue.guard(() async {
+      final user = ref.read(authRepositoryProvider).currentUser;
+      if (user == null) {
+        throw StateError('No active session to accept terms for.');
+      }
+      await ref.read(authRepositoryProvider).acceptTerms(user.uid);
       ref.invalidate(currentProfileProvider);
     });
   }

@@ -27,8 +27,6 @@ exports.refreshExpiringInstagramTokens = (0, scheduler_1.onSchedule)("every 24 h
             await (0, firestoreHelpers_1.saveTokens)(userId, refreshed);
             const profile = await (0, instagramApiService_1.fetchProfile)(refreshed.access_token);
             await (0, firestoreHelpers_1.saveProfile)(userId, profile);
-            const media = await (0, instagramApiService_1.fetchMedia)(refreshed.access_token);
-            await (0, firestoreHelpers_1.saveMedia)(userId, media);
         }
         catch (error) {
             await (0, firestoreHelpers_1.markStatus)(userId, "expired");

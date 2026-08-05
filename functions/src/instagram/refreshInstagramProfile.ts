@@ -3,14 +3,12 @@ import { HttpsError, onCall } from "firebase-functions/v2/https";
 
 import {
   markStatus,
-  saveMedia,
   saveProfile,
   saveTokens,
   tokensDoc,
 } from "./firestoreHelpers";
 import {
   InstagramApiError,
-  fetchMedia,
   fetchProfile,
   refreshLongLivedToken,
 } from "./instagramApiService";
@@ -18,11 +16,12 @@ import {
 const SEVEN_DAYS_MS = 7 * 24 * 60 * 60 * 1000;
 
 /** Manual "Refresh" tap in Connected Accounts — refreshes the long-lived
- * token first if it's within 7 days of expiring, then re-syncs profile +
- * media. Proactive refresh here (rather than only in the scheduled job)
- * means a creator who opens the app right before expiry still gets a
- * fresh 60-day window instead of hitting a stale one. */
-export const refreshInstagramMedia = onCall(async (request) => {
+ * token first if it's within 7 days of expiring, then re-syncs the profile
+ * (name, bio, follower/media counts). Proactive refresh here (rather than
+ * only in the scheduled job) means a creator who opens the app right
+ * before expiry still gets a fresh 60-day window instead of hitting a
+ * stale one. */
+export const refreshInstagramProfile = onCall(async (request) => {
   const uid = request.auth?.uid;
   if (!uid) {
     throw new HttpsError("unauthenticated", "Sign in required.");
@@ -58,8 +57,6 @@ export const refreshInstagramMedia = onCall(async (request) => {
   try {
     const profile = await fetchProfile(accessToken);
     await saveProfile(uid, profile);
-    const media = await fetchMedia(accessToken);
-    await saveMedia(uid, media);
     return { success: true };
   } catch (error) {
     if (error instanceof InstagramApiError) {

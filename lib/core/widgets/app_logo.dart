@@ -1,3 +1,4 @@
+import 'dart:math' as math;
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
@@ -22,7 +23,7 @@ class AppLogo extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final double borderRadius = size * 0.25;
-    final double logoFontSize = size * 0.44;
+    final double markSize = size * 0.5;
 
     return Column(
       mainAxisSize: MainAxisSize.min,
@@ -43,14 +44,10 @@ class AppLogo extends StatelessWidget {
                 ),
               ),
               child: Center(
-                child: Text(
-                  "C",
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: logoFontSize,
-                    fontWeight: FontWeight.w900,
-                    letterSpacing: -1,
-                  ),
+                child: SizedBox(
+                  width: markSize,
+                  height: markSize,
+                  child: const _CollabsyMark(),
                 ),
               ),
             ),
@@ -73,7 +70,7 @@ class AppLogo extends StatelessWidget {
         if (showTagline) ...[
           const SizedBox(height: 14),
           Text(
-            "India's Premier AI-Powered\nInfluencer Marketing Platform",
+            "India's Premier\nInfluencer Marketing Platform",
             textAlign: TextAlign.center,
             style: TextStyle(
               color: Colors.white.withValues(alpha: 0.85),
@@ -86,4 +83,73 @@ class AppLogo extends StatelessWidget {
       ],
     );
   }
+}
+
+/// The Collabsy mark: two rounded squares — one solid, one an outline —
+/// overlapping at opposing angles. Reads as two parties (creator + brand)
+/// meeting in the middle, which is the whole product in one shape, rather
+/// than a plain letterform. Vector-drawn so it stays crisp at every size
+/// this widget is used at (the 56px auth header through the 96px splash
+/// badge) without shipping raster assets.
+class _CollabsyMark extends StatelessWidget {
+  const _CollabsyMark();
+
+  @override
+  Widget build(BuildContext context) {
+    return CustomPaint(painter: _CollabsyMarkPainter());
+  }
+}
+
+class _CollabsyMarkPainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    final center = Offset(size.width / 2, size.height / 2);
+    // Sized + separated so the two squares read as distinctly overlapping
+    // shapes rather than merging into a blob — the corner radius stays
+    // modest and the center-to-center offset is large relative to the
+    // side length specifically to keep each square's own silhouette
+    // legible at a glance.
+    final squareSide = size.shortestSide * 0.56;
+    final cornerRadius = squareSide * 0.18;
+    final rect = Rect.fromCenter(
+      center: Offset.zero,
+      width: squareSide,
+      height: squareSide,
+    );
+    final rrect = RRect.fromRectAndRadius(
+      rect,
+      Radius.circular(cornerRadius),
+    );
+    final offset = squareSide * 0.4;
+
+    final outlinePaint = Paint()
+      ..color = Colors.white
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = squareSide * 0.1;
+
+    canvas.save();
+    canvas.translate(
+      center.dx - offset * math.cos(math.pi / 4),
+      center.dy - offset * math.sin(math.pi / 4),
+    );
+    canvas.rotate(-0.28);
+    canvas.drawRRect(rrect, outlinePaint);
+    canvas.restore();
+
+    final fillPaint = Paint()
+      ..color = Colors.white
+      ..style = PaintingStyle.fill;
+
+    canvas.save();
+    canvas.translate(
+      center.dx + offset * math.cos(math.pi / 4),
+      center.dy + offset * math.sin(math.pi / 4),
+    );
+    canvas.rotate(0.28);
+    canvas.drawRRect(rrect, fillPaint);
+    canvas.restore();
+  }
+
+  @override
+  bool shouldRepaint(covariant _CollabsyMarkPainter oldPainter) => false;
 }

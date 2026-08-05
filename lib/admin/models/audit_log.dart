@@ -18,7 +18,11 @@ enum AuditLogAction {
   supportTicketResolved,
   supportTicketReopened,
   broadcastSent,
-  outreachSettingsUpdated;
+  outreachSettingsUpdated,
+  creatorSuspended,
+  creatorReinstated,
+  brandSuspended,
+  brandReinstated;
 
   static AuditLogAction fromDbValue(String? value) => switch (value) {
     'campaignRejected' => AuditLogAction.campaignRejected,
@@ -34,6 +38,10 @@ enum AuditLogAction {
     'supportTicketReopened' => AuditLogAction.supportTicketReopened,
     'broadcastSent' => AuditLogAction.broadcastSent,
     'outreachSettingsUpdated' => AuditLogAction.outreachSettingsUpdated,
+    'creatorSuspended' => AuditLogAction.creatorSuspended,
+    'creatorReinstated' => AuditLogAction.creatorReinstated,
+    'brandSuspended' => AuditLogAction.brandSuspended,
+    'brandReinstated' => AuditLogAction.brandReinstated,
     _ => AuditLogAction.campaignApproved,
   };
 
@@ -57,6 +65,10 @@ enum AuditLogAction {
     AuditLogAction.supportTicketReopened => 'Reopened $targetName\'s ticket',
     AuditLogAction.broadcastSent => 'Sent broadcast "$targetName"',
     AuditLogAction.outreachSettingsUpdated => 'Updated $targetName settings',
+    AuditLogAction.creatorSuspended => 'Suspended creator "$targetName"',
+    AuditLogAction.creatorReinstated => 'Reinstated creator "$targetName"',
+    AuditLogAction.brandSuspended => 'Suspended brand "$targetName"',
+    AuditLogAction.brandReinstated => 'Reinstated brand "$targetName"',
   };
 
   IconData get icon => switch (this) {
@@ -74,6 +86,10 @@ enum AuditLogAction {
     AuditLogAction.supportTicketReopened => Icons.replay,
     AuditLogAction.broadcastSent => Icons.campaign_outlined,
     AuditLogAction.outreachSettingsUpdated => Icons.settings_outlined,
+    AuditLogAction.creatorSuspended ||
+    AuditLogAction.brandSuspended => Icons.block,
+    AuditLogAction.creatorReinstated ||
+    AuditLogAction.brandReinstated => Icons.restart_alt,
   };
 
   bool get isApproval => switch (this) {
@@ -85,12 +101,16 @@ enum AuditLogAction {
     AuditLogAction.supportReplySent ||
     AuditLogAction.supportTicketResolved ||
     AuditLogAction.broadcastSent ||
-    AuditLogAction.outreachSettingsUpdated => true,
+    AuditLogAction.outreachSettingsUpdated ||
+    AuditLogAction.creatorReinstated ||
+    AuditLogAction.brandReinstated => true,
     AuditLogAction.campaignRejected ||
     AuditLogAction.brandRejected ||
     AuditLogAction.creatorRejected ||
     AuditLogAction.staffAccountForcedLogout ||
-    AuditLogAction.supportTicketReopened => false,
+    AuditLogAction.supportTicketReopened ||
+    AuditLogAction.creatorSuspended ||
+    AuditLogAction.brandSuspended => false,
   };
 
   /// Where tapping this entry should navigate — `null` targetId means
@@ -110,6 +130,10 @@ enum AuditLogAction {
     AuditLogAction.supportTicketReopened => '/support/$targetId',
     AuditLogAction.broadcastSent => null,
     AuditLogAction.outreachSettingsUpdated => '/settings',
+    AuditLogAction.creatorSuspended ||
+    AuditLogAction.creatorReinstated => '/creators/$targetId',
+    AuditLogAction.brandSuspended ||
+    AuditLogAction.brandReinstated => '/brands/$targetId',
   };
 }
 

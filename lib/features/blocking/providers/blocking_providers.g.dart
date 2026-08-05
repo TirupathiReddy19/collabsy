@@ -102,7 +102,7 @@ final class MyBlockedUsersProvider
   }
 }
 
-String _$myBlockedUsersHash() => r'04184b4a7757a2c48aefac1449f95c5333ce3105';
+String _$myBlockedUsersHash() => r'8035b91d842893be09a96d0525247c7c8ee772b0';
 
 /// Whether the signed-in user and [otherId] have a block between them in
 /// either direction — feeds the chat-input/menu gating.

@@ -82,7 +82,7 @@ Stream<List<Announcement>> myAnnouncements(Ref ref) {
 
 @Riverpod(keepAlive: true)
 Stream<DateTime?> myAnnouncementsLastRead(Ref ref) {
-  final user = ref.watch(authRepositoryProvider).currentUser;
+  final user = ref.watch(authStateChangesProvider).value;
   if (user == null) return Stream.value(null);
   return ref.watch(announcementsRepositoryProvider).watchLastRead(user.uid);
 }

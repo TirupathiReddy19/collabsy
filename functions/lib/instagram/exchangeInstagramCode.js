@@ -34,8 +34,6 @@ exports.exchangeInstagramCode = (0, https_1.onCall)({ secrets: [config_1.instagr
         await (0, firestoreHelpers_1.saveTokens)(uid, longLived);
         const profile = await (0, instagramApiService_1.fetchProfile)(longLived.access_token);
         await (0, firestoreHelpers_1.saveProfile)(uid, profile, { connectedAt: firestore_1.Timestamp.now() });
-        const media = await (0, instagramApiService_1.fetchMedia)(longLived.access_token);
-        await (0, firestoreHelpers_1.saveMedia)(uid, media);
         return { success: true };
     }
     catch (error) {

@@ -20,6 +20,11 @@
         { "source": "/bl/**", "function": "redirectBrandLead" },
         { "source": "**", "destination": "/index.html" }
       ]
+    },
+    {
+      "target": "legal",
+      "public": "web-legal",
+      "ignore": ["firebase.json", "**/.*"]
     }
   ],
   "flutter": {
@@ -27,14 +32,17 @@
       "android": {
         "default": {
           "projectId": "collabsy-mobile-applicaation",
-          "appId": "1:132008349319:android:b9eaacff5a5f93b3857222",
+          "appId": "1:132008349319:android:cdddb66dd4ab8557857222",
           "fileOutput": "android/app/google-services.json"
         }
       },
       "dart": {
         "lib/firebase_options.dart": {
           "projectId": "collabsy-mobile-applicaation",
-          "configurations": { "web": "1:132008349319:web:66b3cf4586b601e2857222" }
+          "configurations": {
+            "android": "1:132008349319:android:cdddb66dd4ab8557857222",
+            "ios": "1:132008349319:ios:34674f735ec48ce6857222"
+          }
         }
       }
     }

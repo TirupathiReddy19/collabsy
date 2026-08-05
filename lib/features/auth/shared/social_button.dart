@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_radius.dart';
@@ -66,6 +67,69 @@ class _GoogleMark extends StatelessWidget {
           fontSize: 12,
           fontWeight: FontWeight.w800,
         ),
+      ),
+    );
+  }
+}
+
+/// Outlined "Continue with Apple" button — same shape as [SocialButton] so
+/// the two sit consistently in a row, iOS-only per Apple's Guideline 4.8
+/// (an equivalent option wherever a third-party social login is offered).
+class AppleSignInButton extends StatelessWidget {
+  const AppleSignInButton({
+    super.key,
+    required this.onPressed,
+    this.isLoading = false,
+  });
+
+  final VoidCallback? onPressed;
+  final bool isLoading;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: double.infinity,
+      height: 56,
+      child: OutlinedButton(
+        onPressed: isLoading ? null : onPressed,
+        style: OutlinedButton.styleFrom(
+          side: const BorderSide(color: AppColors.border),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(AppRadius.lg),
+          ),
+        ),
+        child: isLoading
+            ? const LoadingIndicator(size: 20)
+            : Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const _AppleMark(),
+                  const SizedBox(width: 12),
+                  Text('Continue with Apple', style: AppTextStyles.titleSmall),
+                ],
+              ),
+      ),
+    );
+  }
+}
+
+class _AppleMark extends StatelessWidget {
+  const _AppleMark();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 20,
+      height: 20,
+      alignment: Alignment.center,
+      decoration: const BoxDecoration(
+        color: AppColors.textPrimary,
+        shape: BoxShape.circle,
+      ),
+      child: const FaIcon(
+        FontAwesomeIcons.apple,
+        color: AppColors.white,
+        size: 12,
       ),
     );
   }

@@ -96,7 +96,7 @@ final class MyNotificationsProvider
   }
 }
 
-String _$myNotificationsHash() => r'b36ac8d38bfc49557ee17d0b3485e07d34640f88';
+String _$myNotificationsHash() => r'5a1b4dd4ed571e9eac1d79cc063d2c896a3a3d76';
 
 @ProviderFor(unreadNotificationsCount)
 final unreadNotificationsCountProvider = UnreadNotificationsCountProvider._();

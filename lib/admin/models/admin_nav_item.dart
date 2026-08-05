@@ -180,6 +180,11 @@ const adminNavGroups = [
         icon: Icons.history_outlined,
       ),
       AdminNavItem(
+        path: '/deletion-requests',
+        label: 'Account Deletion Requests',
+        icon: Icons.mark_email_read_outlined,
+      ),
+      AdminNavItem(
         path: '/settings',
         label: 'System Settings',
         icon: Icons.settings_outlined,

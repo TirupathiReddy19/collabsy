@@ -4,7 +4,6 @@ exports.accountDoc = accountDoc;
 exports.tokensDoc = tokensDoc;
 exports.saveTokens = saveTokens;
 exports.saveProfile = saveProfile;
-exports.saveMedia = saveMedia;
 exports.markStatus = markStatus;
 const firestore_1 = require("firebase-admin/firestore");
 const storage_1 = require("firebase-admin/storage");
@@ -84,28 +83,6 @@ async function saveProfile(userId, profile, opts = {}) {
     // handle matches an outreach lead an intern generated.
     if (opts.connectedAt && profile.username) {
         await (0, leadsHelpers_1.matchLeadToCreator)(profile.username, userId);
-    }
-}
-async function saveMedia(userId, items) {
-    const firestore = (0, firestore_1.getFirestore)();
-    const batchSize = 400; // Firestore batch write limit is 500
-    for (let i = 0; i < items.length; i += batchSize) {
-        const batch = firestore.batch();
-        for (const item of items.slice(i, i + batchSize)) {
-            const ref = firestore.collection("instagram_media").doc(item.id);
-            batch.set(ref, {
-                userId,
-                mediaUrl: item.media_url ?? null,
-                mediaType: item.media_type ?? null,
-                thumbnailUrl: item.thumbnail_url ?? null,
-                permalink: item.permalink ?? null,
-                caption: item.caption ?? null,
-                timestamp: item.timestamp
-                    ? firestore_1.Timestamp.fromDate(new Date(item.timestamp))
-                    : null,
-            }, { merge: true });
-        }
-        await batch.commit();
     }
 }
 async function markStatus(userId, status) {

@@ -48,23 +48,21 @@ class DefaultFirebaseOptions {
 
   static const FirebaseOptions android = FirebaseOptions(
     apiKey: 'AIzaSyDNwFpAS1ZH7ve9UXdSZlx-UuIkqwe0g_U',
-    appId: '1:132008349319:android:b9eaacff5a5f93b3857222',
+    appId: '1:132008349319:android:cdddb66dd4ab8557857222',
     messagingSenderId: '132008349319',
     projectId: 'collabsy-mobile-applicaation',
     storageBucket: 'collabsy-mobile-applicaation.firebasestorage.app',
   );
-
   static const FirebaseOptions ios = FirebaseOptions(
     apiKey: 'AIzaSyCakc6pwrTv7daRjCiuFb6R0FYq9AcWzqU',
-    appId: '1:132008349319:ios:deb351e036580fbb857222',
+    appId: '1:132008349319:ios:34674f735ec48ce6857222',
     messagingSenderId: '132008349319',
     projectId: 'collabsy-mobile-applicaation',
     storageBucket: 'collabsy-mobile-applicaation.firebasestorage.app',
-    iosClientId:
-        '132008349319-bi5sujvul6hfaa2b6g53ct42qrsuo335.apps.googleusercontent.com',
-    iosBundleId: 'com.example.collabsy',
+    androidClientId: '132008349319-kfibc24205j91uttt8b216olq2jcr92s.apps.googleusercontent.com',
+    iosClientId: '132008349319-kk9pu32l6aboj3pc9eaco1cd2hn1r8i6.apps.googleusercontent.com',
+    iosBundleId: 'online.collabsy.app',
   );
-
   static const FirebaseOptions web = FirebaseOptions(
     apiKey: 'AIzaSyCV74-c6R-QMmTj-NRBSpOg7pI2wsCW510',
     appId: '1:132008349319:web:66b3cf4586b601e2857222',

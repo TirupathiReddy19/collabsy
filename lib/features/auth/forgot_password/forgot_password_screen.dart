@@ -108,7 +108,7 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
                 Text('Still stuck?', style: AppTextStyles.titleSmall),
                 const SizedBox(height: 8),
                 Text(
-                  'Reach us at support@collabsy.app and we\'ll help you '
+                  'Reach us at support@collabsy.online and we\'ll help you '
                   'get back into your account.',
                   style: AppTextStyles.bodyMedium.copyWith(
                     color: AppColors.textSecondary,

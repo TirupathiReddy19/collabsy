@@ -2,12 +2,11 @@ import { Timestamp } from "firebase-admin/firestore";
 import { HttpsError, onCall } from "firebase-functions/v2/https";
 
 import { instagramAppId, instagramAppSecret, instagramRedirectUri } from "./config";
-import { saveMedia, saveProfile, saveTokens } from "./firestoreHelpers";
+import { saveProfile, saveTokens } from "./firestoreHelpers";
 import {
   InstagramApiError,
   exchangeCodeForShortLivedToken,
   exchangeForLongLivedToken,
-  fetchMedia,
   fetchProfile,
 } from "./instagramApiService";
 
@@ -45,9 +44,6 @@ export const exchangeInstagramCode = onCall(
 
       const profile = await fetchProfile(longLived.access_token);
       await saveProfile(uid, profile, { connectedAt: Timestamp.now() });
-
-      const media = await fetchMedia(longLived.access_token);
-      await saveMedia(uid, media);
 
       return { success: true };
     } catch (error) {

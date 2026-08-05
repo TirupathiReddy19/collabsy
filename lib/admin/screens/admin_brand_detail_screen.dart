@@ -19,10 +19,12 @@ import '../../features/brand/providers/brand_profile_providers.dart';
 import '../../features/notifications/models/notification_type.dart';
 import '../../features/notifications/providers/notifications_providers.dart';
 import '../models/audit_log.dart';
+import '../providers/admin_account_moderation_providers.dart';
 import '../providers/admin_audit_log_providers.dart';
 import '../providers/admin_auth_providers.dart';
 import '../widgets/admin_detail_row.dart';
 import '../widgets/admin_top_bar.dart';
+import '../widgets/suspend_account_dialog.dart';
 import '../theme/admin_colors.dart';
 
 class AdminBrandDetailScreen extends ConsumerStatefulWidget {
@@ -99,10 +101,68 @@ class _AdminBrandDetailScreenState
     }
   }
 
+  Future<void> _suspend(String brandName) async {
+    final reason = await showDialog<String>(
+      context: context,
+      builder: (context) => const SuspendAccountDialog(),
+    );
+    if (reason == null) return;
+    if (!mounted) return;
+
+    await ref
+        .read(adminAccountModerationControllerProvider.notifier)
+        .suspendAccount(
+          uid: widget.brandId,
+          reason: reason.isEmpty ? null : reason,
+        );
+    if (!mounted) return;
+    if (ref.read(adminAccountModerationControllerProvider).hasError) {
+      AppSnackbar.showError(context, "Couldn't suspend this account.");
+      return;
+    }
+    await ref
+        .read(adminAuditLogRepositoryProvider)
+        .log(
+          actorEmail: ref.read(currentAdminEmailProvider) ?? adminEmail,
+          action: AuditLogAction.brandSuspended,
+          targetId: widget.brandId,
+          targetName: brandName,
+        );
+    ref.invalidate(appUserProfileByIdProvider(widget.brandId));
+    if (!mounted) return;
+    AppSnackbar.showSuccess(context, '$brandName suspended.');
+  }
+
+  Future<void> _reinstate(String brandName) async {
+    await ref
+        .read(adminAccountModerationControllerProvider.notifier)
+        .reinstateAccount(widget.brandId);
+    if (!mounted) return;
+    if (ref.read(adminAccountModerationControllerProvider).hasError) {
+      AppSnackbar.showError(context, "Couldn't reinstate this account.");
+      return;
+    }
+    await ref
+        .read(adminAuditLogRepositoryProvider)
+        .log(
+          actorEmail: ref.read(currentAdminEmailProvider) ?? adminEmail,
+          action: AuditLogAction.brandReinstated,
+          targetId: widget.brandId,
+          targetName: brandName,
+        );
+    ref.invalidate(appUserProfileByIdProvider(widget.brandId));
+    if (!mounted) return;
+    AppSnackbar.showSuccess(context, '$brandName reinstated.');
+  }
+
   @override
   Widget build(BuildContext context) {
     final userAsync = ref.watch(appUserProfileByIdProvider(widget.brandId));
     final profileAsync = ref.watch(brandProfileByIdProvider(widget.brandId));
+    final isSuperAdmin = ref.watch(isAdminProvider);
+    final isModerating = ref
+        .watch(adminAccountModerationControllerProvider)
+        .isLoading;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -323,6 +383,72 @@ class _AdminBrandDetailScreenState
                                   icon: const LinkedInIcon(
                                     size: 28,
                                     fontSize: 14,
+                                  ),
+                                ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                  if (isSuperAdmin) ...[
+                    const SizedBox(height: 20),
+                    StaggeredFadeIn(
+                      delay: const Duration(milliseconds: 360),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Danger Zone',
+                            style: AppTextStyles.titleSmall.copyWith(
+                              color: AppColors.error,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          _Card(
+                            children: [
+                              if (user.suspended)
+                                ListTile(
+                                  contentPadding: EdgeInsets.zero,
+                                  title: const Text(
+                                    'Account suspended',
+                                    style: TextStyle(color: AppColors.error),
+                                  ),
+                                  subtitle: Text(
+                                    (user.suspendedReason ?? '').isNotEmpty
+                                        ? user.suspendedReason!
+                                        : 'This account can no longer sign in.',
+                                  ),
+                                  trailing: OutlinedButton(
+                                    onPressed: isModerating
+                                        ? null
+                                        : () => _reinstate(name),
+                                    style: OutlinedButton.styleFrom(
+                                      minimumSize: Size.zero,
+                                    ),
+                                    child: const Text('Reinstate'),
+                                  ),
+                                )
+                              else
+                                ListTile(
+                                  contentPadding: EdgeInsets.zero,
+                                  title: const Text('Suspend account'),
+                                  subtitle: const Text(
+                                    'Immediately blocks sign-in. Use for '
+                                    'Terms of Service violations.',
+                                  ),
+                                  trailing: OutlinedButton(
+                                    onPressed: isModerating
+                                        ? null
+                                        : () => _suspend(name),
+                                    style: OutlinedButton.styleFrom(
+                                      minimumSize: Size.zero,
+                                      foregroundColor: AppColors.error,
+                                      side: const BorderSide(
+                                        color: AppColors.error,
+                                      ),
+                                    ),
+                                    child: const Text('Suspend'),
                                   ),
                                 ),
                             ],

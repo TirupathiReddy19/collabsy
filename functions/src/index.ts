@@ -8,13 +8,16 @@ initializeApp();
 
 export { exchangeInstagramCode } from "./instagram/exchangeInstagramCode";
 export { disconnectInstagram } from "./instagram/disconnectInstagram";
-export { refreshInstagramMedia } from "./instagram/refreshInstagramMedia";
+export { refreshInstagramProfile } from "./instagram/refreshInstagramProfile";
 export { refreshExpiringInstagramTokens } from "./instagram/refreshExpiringTokens";
+export { refreshConnectedInstagramProfiles } from "./instagram/refreshConnectedProfiles";
 export { instagramOAuthRedirect } from "./instagram/oauthRedirect";
 export { backfillCreatedAtFromAuth } from "./backfillCreatedAt";
 export { createStaffAccount } from "./createStaffAccount";
 export { getStaffLastSignIn, forceLogoutStaffAccount } from "./staffAccountActions";
 export { deleteAccount } from "./deleteAccount";
+export { onAuthUserDeleted } from "./onAuthUserDeleted";
+export { suspendUserAccount, reinstateUserAccount } from "./suspendUserAccount";
 export { redirectLead } from "./leads/redirectLead";
 export { onOnboardingComplete } from "./leads/onOnboardingComplete";
 export { redirectBrandLead } from "./brandLeads/redirectBrandLead";

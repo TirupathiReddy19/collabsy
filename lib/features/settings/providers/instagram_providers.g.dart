@@ -145,48 +145,7 @@ final class OwnInstagramAccountProvider
 }
 
 String _$ownInstagramAccountHash() =>
-    r'169780f848ac75f19858c71ec57afffdef65e12c';
-
-@ProviderFor(ownInstagramMedia)
-final ownInstagramMediaProvider = OwnInstagramMediaProvider._();
-
-final class OwnInstagramMediaProvider
-    extends
-        $FunctionalProvider<
-          AsyncValue<List<InstagramMediaItem>>,
-          List<InstagramMediaItem>,
-          Stream<List<InstagramMediaItem>>
-        >
-    with
-        $FutureModifier<List<InstagramMediaItem>>,
-        $StreamProvider<List<InstagramMediaItem>> {
-  OwnInstagramMediaProvider._()
-    : super(
-        from: null,
-        argument: null,
-        retry: null,
-        name: r'ownInstagramMediaProvider',
-        isAutoDispose: false,
-        dependencies: null,
-        $allTransitiveDependencies: null,
-      );
-
-  @override
-  String debugGetCreateSourceHash() => _$ownInstagramMediaHash();
-
-  @$internal
-  @override
-  $StreamProviderElement<List<InstagramMediaItem>> $createElement(
-    $ProviderPointer pointer,
-  ) => $StreamProviderElement(pointer);
-
-  @override
-  Stream<List<InstagramMediaItem>> create(Ref ref) {
-    return ownInstagramMedia(ref);
-  }
-}
-
-String _$ownInstagramMediaHash() => r'08575fd07b38feed292b3edc01e003e82a69d03d';
+    r'd93225069625488e154d25ca51e75ae405b07f60';
 
 /// A specific creator's connected Instagram account, for the Brand-facing
 /// public profile view — same data as [ownInstagramAccountProvider], just

@@ -30,6 +30,8 @@
 	<string>Collabsy needs camera access to take a profile photo.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>Collabsy needs photo library access to choose a profile photo.</string>
+	<key>ITSAppUsesNonExemptEncryption</key>
+	<false/>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>

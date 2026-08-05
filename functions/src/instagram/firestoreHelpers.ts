@@ -3,11 +3,7 @@ import { getStorage } from "firebase-admin/storage";
 import { logger } from "firebase-functions";
 
 import { matchLeadToCreator } from "../leads/leadsHelpers";
-import {
-  InstagramMediaItem,
-  InstagramProfile,
-  LongLivedTokenResponse,
-} from "./instagramApiService";
+import { InstagramProfile, LongLivedTokenResponse } from "./instagramApiService";
 
 /** Instagram's `profile_picture_url` is a signed, time-limited CDN link —
  * it expires (documented Meta behavior, not a bug), so displaying it
@@ -101,36 +97,6 @@ export async function saveProfile(
   // handle matches an outreach lead an intern generated.
   if (opts.connectedAt && profile.username) {
     await matchLeadToCreator(profile.username, userId);
-  }
-}
-
-export async function saveMedia(
-  userId: string,
-  items: InstagramMediaItem[]
-): Promise<void> {
-  const firestore = getFirestore();
-  const batchSize = 400; // Firestore batch write limit is 500
-  for (let i = 0; i < items.length; i += batchSize) {
-    const batch = firestore.batch();
-    for (const item of items.slice(i, i + batchSize)) {
-      const ref = firestore.collection("instagram_media").doc(item.id);
-      batch.set(
-        ref,
-        {
-          userId,
-          mediaUrl: item.media_url ?? null,
-          mediaType: item.media_type ?? null,
-          thumbnailUrl: item.thumbnail_url ?? null,
-          permalink: item.permalink ?? null,
-          caption: item.caption ?? null,
-          timestamp: item.timestamp
-            ? Timestamp.fromDate(new Date(item.timestamp))
-            : null,
-        },
-        { merge: true }
-      );
-    }
-    await batch.commit();
   }
 }
 

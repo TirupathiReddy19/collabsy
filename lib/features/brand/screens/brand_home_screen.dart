@@ -15,6 +15,7 @@ import '../../../core/widgets/profile_completeness_card.dart';
 import '../../../core/widgets/skeleton.dart';
 import '../../../core/widgets/staggered_fade_in.dart';
 import '../../../core/utils/campaign_categories.dart';
+import '../../../shared/models/verification_status.dart';
 import '../../../shared/utils/creator_display_name.dart';
 import '../../auth/providers/auth_providers.dart';
 import '../../campaigns/models/application_status.dart';
@@ -709,6 +710,18 @@ class _MiniCreatorCard extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    // Same reasoning as Discover's _CreatorCard — creatorDirectoryProvider
+    // is unfiltered, so this is what keeps a deleted/suspended account off
+    // the "Recommended for you" rail.
+    final profileAsync = ref.watch(appUserProfileByIdProvider(creator.id));
+    final owningProfile = profileAsync.value;
+    if (profileAsync.isLoading ||
+        owningProfile == null ||
+        owningProfile.suspended ||
+        creator.verificationStatus != VerificationStatus.approved) {
+      return const SizedBox.shrink();
+    }
+
     final instagram = ref
         .watch(instagramAccountForUserProvider(creator.id))
         .value;

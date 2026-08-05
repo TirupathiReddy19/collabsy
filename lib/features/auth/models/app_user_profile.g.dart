@@ -19,6 +19,11 @@ _AppUserProfile _$AppUserProfileFromJson(Map<String, dynamic> json) =>
       pushNotificationsEnabled:
           json['pushNotificationsEnabled'] as bool? ?? true,
       fcmToken: json['fcmToken'] as String?,
+      termsAcceptedAt: const NullableTimestampConverter().fromJson(
+        json['termsAcceptedAt'],
+      ),
+      suspended: json['suspended'] as bool? ?? false,
+      suspendedReason: json['suspendedReason'] as String?,
     );
 
 Map<String, dynamic> _$AppUserProfileToJson(_AppUserProfile instance) =>
@@ -33,6 +38,11 @@ Map<String, dynamic> _$AppUserProfileToJson(_AppUserProfile instance) =>
       'onboardingCompleted': instance.onboardingCompleted,
       'pushNotificationsEnabled': instance.pushNotificationsEnabled,
       'fcmToken': instance.fcmToken,
+      'termsAcceptedAt': const NullableTimestampConverter().toJson(
+        instance.termsAcceptedAt,
+      ),
+      'suspended': instance.suspended,
+      'suspendedReason': instance.suspendedReason,
     };
 
 const _$UserRoleEnumMap = {

@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- On API 31+ the OS's SplashScreen API takes over the cold-start
+         screen automatically — without this, it defaults to a plain
+         background behind the launcher icon. Setting these explicitly
+         keeps the whole window brand-orange with just the mark on it, so
+         it hands off into the app's own SplashScreen (same background
+         color) with no visible seam. -->
+    <style name="LaunchTheme" parent="@android:style/Theme.Light.NoTitleBar">
+        <item name="android:windowBackground">@drawable/launch_background</item>
+        <item name="android:windowSplashScreenBackground">#F97316</item>
+        <item name="android:windowSplashScreenAnimatedIcon">@drawable/ic_launcher_foreground</item>
+    </style>
+</resources>

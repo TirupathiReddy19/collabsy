@@ -12,6 +12,8 @@ import '../features/auth/mfa/mfa_challenge_screen.dart';
 import '../features/auth/providers/auth_providers.dart';
 import '../features/auth/shared/check_email_screen.dart';
 import '../features/auth/shared/otp_verification_view.dart';
+import '../features/auth/shared/suspended_screen.dart';
+import '../features/auth/shared/terms_gate_screen.dart';
 import '../features/auth/signup/signup_screen.dart';
 import '../features/auth/forgot_password/forgot_password_screen.dart';
 import '../features/blocking/screens/blocked_accounts_screen.dart';
@@ -58,10 +60,32 @@ final routerProvider = Provider<GoRouter>((ref) {
   final brandProfileRepository = ref.watch(brandProfileRepositoryProvider);
   final creatorProfileRepository = ref.watch(creatorProfileRepositoryProvider);
 
+  final refreshStream = GoRouterRefreshStream(authRepository.authStateChanges);
+  // `currentProfileWatchProvider` is a genuine Firestore listener (unlike
+  // the one-shot `currentProfileProvider`) — `ref.listen` (not `watch`)
+  // bridges its every emission into a `redirect()` re-evaluation without
+  // making this whole provider — and the GoRouter it builds — rebuild
+  // every time the doc changes. This is what lets an admin suspending the
+  // account interrupt an already-open session within moments, rather than
+  // only being caught the next time this user hits splash/onboarding/auth.
+  ref.listen(currentProfileWatchProvider, (previous, next) {
+    refreshStream.refresh();
+  });
+  // Same bridge for the verification-approval gate below — lets an admin's
+  // approve/reject decision move an already-open session off the pending
+  // screen (or, just as importantly, re-lock a not-yet-approved session out
+  // of the dashboard) within moments, not just on the next app open.
+  ref.listen(ownCreatorProfileStreamProvider, (previous, next) {
+    refreshStream.refresh();
+  });
+  ref.listen(ownBrandProfileStreamProvider, (previous, next) {
+    refreshStream.refresh();
+  });
+
   return GoRouter(
     initialLocation: AppRoutes.splash,
     observers: [FirebaseAnalyticsObserver(analytics: analytics)],
-    refreshListenable: GoRouterRefreshStream(authRepository.authStateChanges),
+    refreshListenable: refreshStream,
     redirect: (context, state) async {
       final location = state.matchedLocation;
       final atSplash = location == AppRoutes.splash;
@@ -69,9 +93,15 @@ final routerProvider = Provider<GoRouter>((ref) {
       final atOtp = location == AppRoutes.otp;
       final atCompleteProfile = location == AppRoutes.completeProfile;
       final atCheckEmail = location == AppRoutes.checkEmail;
+      final atTermsGate = location == AppRoutes.termsGate;
+      final atSuspended = location == AppRoutes.suspended;
       final atAuth = location.startsWith('/auth');
       final atCreatorOnboarding = location.startsWith('/creator/onboarding');
       final atBrandOnboarding = location.startsWith('/brand/onboarding');
+      final atCreatorVerificationPending =
+          location == AppRoutes.creatorVerificationPending;
+      final atBrandVerificationPending =
+          location == AppRoutes.brandVerificationPending;
 
       // Splash decides nothing itself — it always lands here first and the
       // guard below sends it wherever it actually needs to go.
@@ -83,6 +113,65 @@ final routerProvider = Provider<GoRouter>((ref) {
 
       final user = authRepository.currentUser;
       final loggedIn = user != null;
+
+      // Live check, ahead of everything else — catches an admin suspending
+      // this account while it's already mid-session somewhere deep in the
+      // app (a shell tab, a chat, settings), not just at sign-in. Backed by
+      // currentProfileWatchProvider's Firestore listener via the
+      // ref.listen bridge above, so this is a cheap synchronous read, not
+      // a fresh fetch on every navigation.
+      if (loggedIn) {
+        final liveSuspended =
+            ref.read(currentProfileWatchProvider).value?.suspended ?? false;
+        if (liveSuspended && !atSuspended) {
+          return AppRoutes.suspended;
+        }
+
+        // Live approval gate — unlike the one-time check further below
+        // (which only runs right as someone finishes onboarding), this
+        // re-applies on every navigation so a creator/brand who already
+        // finished onboarding once can't just reopen the app and land on
+        // their dashboard while still pending admin review. Reads the
+        // live stream's cached value rather than awaiting it, so an
+        // unresolved first load (`hasValue == false`) is treated as "don't
+        // know yet" and left to the checks below rather than bounced to
+        // the pending screen.
+        final liveProfile = ref.read(currentProfileWatchProvider).value;
+        final exemptFromVerificationGate =
+            atOnboarding ||
+            atAuth ||
+            atCompleteProfile ||
+            atCheckEmail ||
+            atTermsGate ||
+            atOtp ||
+            atCreatorOnboarding ||
+            atBrandOnboarding ||
+            atCreatorVerificationPending ||
+            atBrandVerificationPending;
+        if (!exemptFromVerificationGate &&
+            liveProfile != null &&
+            liveProfile.onboardingCompleted) {
+          if (liveProfile.role == UserRole.brand) {
+            final brandStream = ref.read(ownBrandProfileStreamProvider);
+            if (brandStream.hasValue) {
+              final approved =
+                  brandStream.value?.verificationStatus ==
+                  VerificationStatus.approved;
+              if (!approved) return AppRoutes.brandVerificationPending;
+            }
+          }
+          if (liveProfile.role == UserRole.creator) {
+            final creatorStream = ref.read(ownCreatorProfileStreamProvider);
+            if (creatorStream.hasValue) {
+              final approved =
+                  creatorStream.value?.verificationStatus ==
+                  VerificationStatus.approved;
+              if (!approved) return AppRoutes.creatorVerificationPending;
+            }
+          }
+        }
+      }
+
       if (!loggedIn) {
         // completeProfile/checkEmail require a session (they're post-auth
         // screens that just happen to live under /auth) — everything else
@@ -127,7 +216,21 @@ final routerProvider = Provider<GoRouter>((ref) {
           // them to fill in the missing role + phone.
           return atCompleteProfile ? null : AppRoutes.completeProfile;
         }
-        if (profile!.role == UserRole.creator && !profile.onboardingCompleted) {
+        if (profile!.suspended) {
+          // Sign-in itself is still allowed for a suspended account (see
+          // suspendUserAccount) — this is what actually locks them out,
+          // ahead of every other gate below, so a suspended account never
+          // gets as far as re-accepting terms or finishing onboarding.
+          return atSuspended ? null : AppRoutes.suspended;
+        }
+        if (profile.termsAcceptedAt == null) {
+          // Every brand-new signup lands here right after their role is
+          // known, before any onboarding step — and since nothing ever set
+          // this field before the gate existed, every pre-existing account
+          // lands here too, exactly once, the next time they open the app.
+          return atTermsGate ? null : AppRoutes.termsGate;
+        }
+        if (profile.role == UserRole.creator && !profile.onboardingCompleted) {
           // Creator role set but hasn't finished the languages/location +
           // Instagram-connect steps yet — Instagram connect is required
           // (not skippable), since verification below needs real data.
@@ -214,6 +317,14 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: AppRoutes.completeProfile,
         builder: (context, state) => const CompleteProfileScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.termsGate,
+        builder: (context, state) => const TermsGateScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.suspended,
+        builder: (context, state) => const SuspendedScreen(),
       ),
       GoRoute(
         path: AppRoutes.creatorDetails,

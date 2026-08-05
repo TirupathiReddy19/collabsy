@@ -141,6 +141,66 @@ abstract class _$CurrentProfile extends $AsyncNotifier<AppUserProfile?> {
   }
 }
 
+/// A genuine live listener on the signed-in user's own profile doc (unlike
+/// [currentProfileProvider], which is a one-shot fetch re-run only on auth
+/// changes or an explicit invalidate) — this is what lets the router notice
+/// an admin suspending the account within moments, mid-session, instead of
+/// only on the next relaunch. See the router's `redirect` +
+/// `refreshListenable`.
+
+@ProviderFor(currentProfileWatch)
+final currentProfileWatchProvider = CurrentProfileWatchProvider._();
+
+/// A genuine live listener on the signed-in user's own profile doc (unlike
+/// [currentProfileProvider], which is a one-shot fetch re-run only on auth
+/// changes or an explicit invalidate) — this is what lets the router notice
+/// an admin suspending the account within moments, mid-session, instead of
+/// only on the next relaunch. See the router's `redirect` +
+/// `refreshListenable`.
+
+final class CurrentProfileWatchProvider
+    extends
+        $FunctionalProvider<
+          AsyncValue<AppUserProfile?>,
+          AppUserProfile?,
+          Stream<AppUserProfile?>
+        >
+    with $FutureModifier<AppUserProfile?>, $StreamProvider<AppUserProfile?> {
+  /// A genuine live listener on the signed-in user's own profile doc (unlike
+  /// [currentProfileProvider], which is a one-shot fetch re-run only on auth
+  /// changes or an explicit invalidate) — this is what lets the router notice
+  /// an admin suspending the account within moments, mid-session, instead of
+  /// only on the next relaunch. See the router's `redirect` +
+  /// `refreshListenable`.
+  CurrentProfileWatchProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'currentProfileWatchProvider',
+        isAutoDispose: false,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$currentProfileWatchHash();
+
+  @$internal
+  @override
+  $StreamProviderElement<AppUserProfile?> $createElement(
+    $ProviderPointer pointer,
+  ) => $StreamProviderElement(pointer);
+
+  @override
+  Stream<AppUserProfile?> create(Ref ref) {
+    return currentProfileWatch(ref);
+  }
+}
+
+String _$currentProfileWatchHash() =>
+    r'bed978b2617e4e5f9dc24362629183cf5fc3edf0';
+
 /// A specific user's `users` document by ID — for showing another user's
 /// avatar/display name (e.g. a Creator's manually-uploaded photo on the
 /// Brand-facing public profile), as opposed to [currentProfileProvider]
@@ -421,7 +481,7 @@ final class AuthControllerProvider
   AuthController create() => AuthController();
 }
 
-String _$authControllerHash() => r'ab1f0823d7666e4b63d11f54acb52115a85c40ee';
+String _$authControllerHash() => r'e82dee857ef01ad9de9421c0b8470ed5f2485698';
 
 /// Drives the auth screens' sign-up/sign-in/verify/Google/sign-out actions
 /// and exposes their loading/error state.

@@ -1,13 +1,8 @@
 import { Timestamp, getFirestore } from "firebase-admin/firestore";
 import { onSchedule } from "firebase-functions/v2/scheduler";
 
-import {
-  markStatus,
-  saveMedia,
-  saveProfile,
-  saveTokens,
-} from "./firestoreHelpers";
-import { fetchMedia, fetchProfile, refreshLongLivedToken } from "./instagramApiService";
+import { markStatus, saveProfile, saveTokens } from "./firestoreHelpers";
+import { fetchProfile, refreshLongLivedToken } from "./instagramApiService";
 
 /** Runs daily. A long-lived Instagram token is only refreshable *before*
  * it expires — once it lapses, the only fix is a full reconnect — so this
@@ -37,8 +32,6 @@ export const refreshExpiringInstagramTokens = onSchedule(
         await saveTokens(userId, refreshed);
         const profile = await fetchProfile(refreshed.access_token);
         await saveProfile(userId, profile);
-        const media = await fetchMedia(refreshed.access_token);
-        await saveMedia(userId, media);
       } catch (error) {
         await markStatus(userId, "expired");
       }

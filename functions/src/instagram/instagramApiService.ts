@@ -33,16 +33,6 @@ export interface InstagramProfile {
   media_count?: number;
 }
 
-export interface InstagramMediaItem {
-  id: string;
-  media_type?: string;
-  media_url?: string;
-  thumbnail_url?: string;
-  permalink?: string;
-  caption?: string;
-  timestamp?: string;
-}
-
 /** `code` is one of the [InstagramApiErrorCode] values below — callers
  * branch on it rather than parsing `message`. */
 export type InstagramApiErrorCode = "token-invalid" | "request-failed";
@@ -148,34 +138,4 @@ export async function fetchProfile(
   url.searchParams.set("access_token", accessToken);
   const response = await fetch(url);
   return parseJsonOrThrow(response, "fetch profile");
-}
-
-/** Fetches up to [limit] most recent media items, following pagination. */
-export async function fetchMedia(
-  accessToken: string,
-  limit = 50
-): Promise<InstagramMediaItem[]> {
-  const fields = [
-    "id",
-    "media_type",
-    "media_url",
-    "thumbnail_url",
-    "permalink",
-    "caption",
-    "timestamp",
-  ].join(",");
-  const url = new URL(`${GRAPH_HOST}/${API_VERSION}/me/media`);
-  url.searchParams.set("fields", fields);
-  url.searchParams.set("limit", String(Math.min(limit, 100)));
-  url.searchParams.set("access_token", accessToken);
-
-  const items: InstagramMediaItem[] = [];
-  let nextUrl: string | URL | null = url;
-  while (nextUrl && items.length < limit) {
-    const response = await fetch(nextUrl);
-    const body = await parseJsonOrThrow(response, "fetch media");
-    items.push(...(body.data ?? []));
-    nextUrl = body.paging?.next ?? null;
-  }
-  return items.slice(0, limit);
 }

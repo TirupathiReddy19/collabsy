@@ -1,4 +1,4 @@
-package com.example.collabsy
+package online.collabsy.app
 
 import io.flutter.embedding.android.FlutterActivity
 

@@ -1,3 +1,5 @@
+import 'dart:io' show Platform;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -11,16 +13,18 @@ import '../../../core/widgets/app_text_field.dart';
 import '../../../shared/models/user_role.dart';
 import '../providers/auth_providers.dart';
 import '../shared/auth_button.dart';
+import '../shared/auth_error_message.dart';
 import '../shared/auth_header.dart';
 import '../shared/otp_verification_view.dart';
 import '../shared/role_tab_selector.dart';
 import '../shared/social_button.dart';
 
-/// Note: the Creator/Brand tab here only gates the Google-sign-in button's
-/// visibility — the account you actually log into (and which dashboard you
-/// land on) is always determined by your account's real stored role, not
-/// by whichever tab is selected. A given email/phone/Google identity
-/// belongs to exactly one existing account with a fixed role.
+/// Note: the Creator/Brand tab here only gates the Google/Apple sign-in
+/// buttons' visibility — the account you actually log into (and which
+/// dashboard you land on) is always determined by your account's real
+/// stored role, not by whichever tab is selected. A given
+/// email/phone/Google/Apple identity belongs to exactly one existing
+/// account with a fixed role.
 class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
 
@@ -68,7 +72,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     if (ref.read(authControllerProvider).hasError) {
       AppSnackbar.showError(
         context,
-        'Incorrect email or password. Please try again.',
+        authErrorMessage(
+          ref.read(authControllerProvider).error,
+          'Incorrect email or password. Please try again.',
+        ),
       );
       return;
     }
@@ -113,7 +120,27 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     if (ref.read(authControllerProvider).hasError) {
       AppSnackbar.showError(
         context,
-        'Google sign-in failed. Please try again.',
+        authErrorMessage(
+          ref.read(authControllerProvider).error,
+          'Google sign-in failed. Please try again.',
+        ),
+      );
+      return;
+    }
+
+    await _enforceSelectedRole();
+  }
+
+  Future<void> _continueWithApple() async {
+    await ref.read(authControllerProvider.notifier).signInWithApple();
+    if (!mounted) return;
+    if (ref.read(authControllerProvider).hasError) {
+      AppSnackbar.showError(
+        context,
+        authErrorMessage(
+          ref.read(authControllerProvider).error,
+          'Apple sign-in failed. Please try again.',
+        ),
       );
       return;
     }
@@ -225,6 +252,13 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     onPressed: isLoading ? null : _continueWithGoogle,
                     isLoading: isLoading,
                   ),
+                  if (Platform.isIOS) ...[
+                    const SizedBox(height: 12),
+                    AppleSignInButton(
+                      onPressed: isLoading ? null : _continueWithApple,
+                      isLoading: isLoading,
+                    ),
+                  ],
                 ],
                 const SizedBox(height: 24),
                 Center(

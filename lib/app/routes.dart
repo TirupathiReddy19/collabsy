@@ -11,6 +11,8 @@ class AppRoutes {
   static const checkEmail = '/auth/check-email';
   static const help = '/auth/help';
   static const completeProfile = '/auth/complete-profile';
+  static const termsGate = '/auth/terms';
+  static const suspended = '/auth/suspended';
 
   static const creatorDetails = '/creator/onboarding/details';
   static const creatorInstagramConnect = '/creator/onboarding/instagram';

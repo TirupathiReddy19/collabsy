@@ -5,7 +5,6 @@ exports.exchangeCodeForShortLivedToken = exchangeCodeForShortLivedToken;
 exports.exchangeForLongLivedToken = exchangeForLongLivedToken;
 exports.refreshLongLivedToken = refreshLongLivedToken;
 exports.fetchProfile = fetchProfile;
-exports.fetchMedia = fetchMedia;
 const firebase_functions_1 = require("firebase-functions");
 // Instagram Business Login (the current "Instagram API with Instagram
 // Login" product) — deliberately NOT the deprecated Instagram Basic
@@ -94,29 +93,4 @@ async function fetchProfile(accessToken) {
     url.searchParams.set("access_token", accessToken);
     const response = await fetch(url);
     return parseJsonOrThrow(response, "fetch profile");
-}
-/** Fetches up to [limit] most recent media items, following pagination. */
-async function fetchMedia(accessToken, limit = 50) {
-    const fields = [
-        "id",
-        "media_type",
-        "media_url",
-        "thumbnail_url",
-        "permalink",
-        "caption",
-        "timestamp",
-    ].join(",");
-    const url = new URL(`${GRAPH_HOST}/${API_VERSION}/me/media`);
-    url.searchParams.set("fields", fields);
-    url.searchParams.set("limit", String(Math.min(limit, 100)));
-    url.searchParams.set("access_token", accessToken);
-    const items = [];
-    let nextUrl = url;
-    while (nextUrl && items.length < limit) {
-        const response = await fetch(nextUrl);
-        const body = await parseJsonOrThrow(response, "fetch media");
-        items.push(...(body.data ?? []));
-        nextUrl = body.paging?.next ?? null;
-    }
-    return items.slice(0, limit);
 }

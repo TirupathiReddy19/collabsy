@@ -15,6 +15,7 @@ import '../../../core/widgets/verified_badge.dart';
 import '../../../shared/models/verification_status.dart';
 import '../../../shared/utils/creator_display_name.dart';
 import '../../../shared/widgets/multi_select_picker_screen.dart';
+import '../../auth/providers/auth_providers.dart';
 import '../../creator/models/creator_profile.dart';
 import '../../creator/providers/creator_profile_providers.dart';
 import '../../settings/providers/instagram_providers.dart';
@@ -230,6 +231,19 @@ class _CreatorCard extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    // `creatorProfiles` is watched unfiltered (see watchDirectory) — this
+    // is what keeps a deleted or suspended account from ever showing up
+    // here, since `users/{uid}` is the one doc that's actually guaranteed
+    // to be gone (or flagged) the moment an account stops being active.
+    final profileAsync = ref.watch(appUserProfileByIdProvider(creator.id));
+    final owningProfile = profileAsync.value;
+    if (profileAsync.isLoading ||
+        owningProfile == null ||
+        owningProfile.suspended ||
+        creator.verificationStatus != VerificationStatus.approved) {
+      return const SizedBox.shrink();
+    }
+
     final instagram = ref
         .watch(instagramAccountForUserProvider(creator.id))
         .value;

@@ -1,0 +1,147 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Request Account Deletion — Collabsy</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap"
+    rel="stylesheet"
+  />
+  <link rel="stylesheet" href="/style.css" />
+</head>
+<body>
+  <div class="wrap">
+    <header class="top">
+      <a href="/">
+        <div class="mark">C</div>
+        <div class="word">Collabsy</div>
+      </a>
+    </header>
+
+    <h1>Request account deletion</h1>
+    <p class="lede">
+      You don't need the Collabsy app installed to use this page. Tell us
+      the email address or phone number on your account, and we'll delete
+      your account and personal data within 30 days.
+    </p>
+
+    <div class="card">
+      <p style="margin-bottom: 20px">
+        <strong>Already have the app?</strong> It's faster to delete your
+        account directly from
+        <strong>Settings → Danger Zone → Delete Account</strong> — that
+        happens immediately, no waiting required. Use this form only if you
+        no longer have the app installed, or can't sign in.
+      </p>
+
+      <form class="request-form" id="deletion-form">
+        <div class="field">
+          <label for="identifier">Email or phone number on your account</label>
+          <input
+            type="text"
+            id="identifier"
+            name="identifier"
+            placeholder="you@example.com or +91 98765 43210"
+            required
+            maxlength="199"
+          />
+        </div>
+        <div class="field">
+          <label for="reason">Anything else we should know? (optional)</label>
+          <textarea
+            id="reason"
+            name="reason"
+            maxlength="999"
+            placeholder="Optional — helps us find your account faster"
+          ></textarea>
+        </div>
+        <button type="submit" class="submit" id="submit-btn">
+          Submit deletion request
+        </button>
+        <div class="status-msg" id="status-msg"></div>
+      </form>
+    </div>
+
+    <p style="color: var(--text-secondary); font-size: 14px">
+      What happens next: this creates a request our team reviews manually —
+      we verify it's really your account before anything is deleted, the
+      same care the in-app flow takes. Once processed, your profile and
+      personal data are removed the same way they would be through the
+      in-app deletion. Questions?
+      <a href="mailto:support@collabsy.online">support@collabsy.online</a>.
+    </p>
+
+    <footer class="bottom">
+      <a href="/">← Back to Legal</a>
+    </footer>
+  </div>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-app.js";
+    import {
+      getFirestore,
+      collection,
+      addDoc,
+      serverTimestamp,
+    } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-firestore.js";
+
+    const app = initializeApp({
+      apiKey: "AIzaSyCV74-c6R-QMmTj-NRBSpOg7pI2wsCW510",
+      appId: "1:132008349319:web:66b3cf4586b601e2857222",
+      messagingSenderId: "132008349319",
+      projectId: "collabsy-mobile-applicaation",
+      authDomain: "collabsy-mobile-applicaation.firebaseapp.com",
+      storageBucket: "collabsy-mobile-applicaation.firebasestorage.app",
+    });
+    const db = getFirestore(app);
+
+    const form = document.getElementById("deletion-form");
+    const statusMsg = document.getElementById("status-msg");
+    const submitBtn = document.getElementById("submit-btn");
+
+    function showStatus(kind, text) {
+      statusMsg.className = "status-msg " + kind;
+      statusMsg.textContent = text;
+    }
+
+    form.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      const identifier = document.getElementById("identifier").value.trim();
+      const reason = document.getElementById("reason").value.trim();
+      if (!identifier) return;
+
+      submitBtn.disabled = true;
+      showStatus("", "");
+      statusMsg.style.display = "none";
+
+      try {
+        const payload = {
+          identifier,
+          status: "pending",
+          createdAt: serverTimestamp(),
+        };
+        if (reason) payload.reason = reason;
+        await addDoc(collection(db, "accountDeletionRequests"), payload);
+        form.reset();
+        form.style.display = "none";
+        showStatus(
+          "success",
+          "Request received. We'll process this within 30 days — you'll " +
+            "no longer be able to sign in once it's done."
+        );
+      } catch (err) {
+        console.error(err);
+        submitBtn.disabled = false;
+        showStatus(
+          "error",
+          "Something went wrong submitting this. Please try again, or " +
+            "email support@collabsy.online directly."
+        );
+      }
+    });
+  </script>
+</body>
+</html>

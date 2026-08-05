@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../../app/routes.dart';
 import '../../../core/theme/app_colors.dart';
@@ -13,6 +14,8 @@ import '../../../shared/models/user_role.dart';
 
 class SettingsScreen extends ConsumerWidget {
   const SettingsScreen({super.key});
+
+  static const _legalBaseUrl = 'https://collabsy-mobile-applicaation.web.app';
 
   Future<void> _togglePush(
     BuildContext context,
@@ -46,6 +49,10 @@ class SettingsScreen extends ConsumerWidget {
     }
     // On success there's nothing else to do here — the router's own
     // auth-state-change redirect takes it from here, same as sign-out.
+  }
+
+  Future<void> _openUrl(String url) async {
+    await launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication);
   }
 
   @override
@@ -100,6 +107,27 @@ class SettingsScreen extends ConsumerWidget {
                 color: AppColors.textSecondary,
               ),
               onTap: () => context.push(AppRoutes.blockedAccounts),
+            ),
+            const SizedBox(height: 24),
+            Text('Legal', style: AppTextStyles.titleMedium),
+            const SizedBox(height: 8),
+            ListTile(
+              contentPadding: EdgeInsets.zero,
+              title: const Text('Privacy Policy'),
+              trailing: const Icon(
+                Icons.chevron_right,
+                color: AppColors.textSecondary,
+              ),
+              onTap: () => _openUrl('$_legalBaseUrl/privacy/'),
+            ),
+            ListTile(
+              contentPadding: EdgeInsets.zero,
+              title: const Text('Terms of Service'),
+              trailing: const Icon(
+                Icons.chevron_right,
+                color: AppColors.textSecondary,
+              ),
+              onTap: () => _openUrl('$_legalBaseUrl/terms/'),
             ),
             const SizedBox(height: 24),
             Text(

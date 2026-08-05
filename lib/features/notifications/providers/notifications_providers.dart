@@ -14,7 +14,7 @@ NotificationsRepository notificationsRepository(Ref ref) {
 
 @Riverpod(keepAlive: true)
 Stream<List<AppNotification>> myNotifications(Ref ref) {
-  final user = ref.watch(authRepositoryProvider).currentUser;
+  final user = ref.watch(authStateChangesProvider).value;
   if (user == null) return Stream.value(const []);
   return ref.watch(notificationsRepositoryProvider).watchForUser(user.uid);
 }

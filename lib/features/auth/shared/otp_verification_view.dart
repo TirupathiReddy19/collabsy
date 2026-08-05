@@ -14,6 +14,7 @@ import '../../../core/widgets/loading_indicator.dart';
 import '../../../core/widgets/otp_input.dart';
 import '../models/otp_verification_args.dart';
 import '../providers/auth_providers.dart';
+import 'auth_error_message.dart';
 import 'auth_header.dart';
 
 export '../models/otp_verification_args.dart';
@@ -102,7 +103,10 @@ class _OtpVerificationViewState extends ConsumerState<OtpVerificationView> {
           error is FirebaseAuthException &&
               error.code == 'credential-already-in-use'
           ? 'This phone number is already linked to another account.'
-          : 'Invalid or expired code. Please try again.';
+          : authErrorMessage(
+              error,
+              'Invalid or expired code. Please try again.',
+            );
       AppSnackbar.showError(context, message);
       return;
     }

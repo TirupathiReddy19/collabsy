@@ -159,7 +159,8 @@ class CreatorPublicProfileScreen extends ConsumerWidget {
       body: SafeArea(
         child: profileAsync.when(
           data: (profile) {
-            if (profile == null) {
+            if (profile == null ||
+                profile.verificationStatus != VerificationStatus.approved) {
               return const Center(child: Text('Creator not found.'));
             }
             final creatorName = creatorDisplayName(

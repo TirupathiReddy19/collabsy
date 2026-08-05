@@ -157,7 +157,7 @@ final class MyAnnouncementsLastReadProvider
 }
 
 String _$myAnnouncementsLastReadHash() =>
-    r'eeaa02a3ea89d6d5dcf5e218b82aafefe45a7887';
+    r'83d706d1b0450a7dd73c12087e695faeed405cad';
 
 /// True when the newest broadcast is newer than the last time this user
 /// opened the Announcements screen (or they've never opened it at all).

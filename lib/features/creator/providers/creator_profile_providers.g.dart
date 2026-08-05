@@ -104,6 +104,15 @@ String _$ownCreatorProfileHash() => r'6f0cd6665e2cda0a6d23d175daa6d48b8e6c70a5';
 /// Live version of [ownCreatorProfileProvider] — the verification-pending
 /// screen watches this so it can move on the instant an admin decides,
 /// rather than requiring an app relaunch to notice.
+///
+/// Reads the user from [authStateChangesProvider] rather than
+/// `authRepositoryProvider.currentUser` — the latter is a plain getter, so
+/// watching it doesn't rebuild this provider when auth state actually
+/// changes. It would lock in whatever `currentUser` was the first time
+/// something read this provider (often null, before login even resolves)
+/// and never update again for the rest of the app session, which is
+/// exactly the kind of stale read the router's live verification gate
+/// depends on this provider NOT being.
 
 @ProviderFor(ownCreatorProfileStream)
 final ownCreatorProfileStreamProvider = OwnCreatorProfileStreamProvider._();
@@ -111,6 +120,15 @@ final ownCreatorProfileStreamProvider = OwnCreatorProfileStreamProvider._();
 /// Live version of [ownCreatorProfileProvider] — the verification-pending
 /// screen watches this so it can move on the instant an admin decides,
 /// rather than requiring an app relaunch to notice.
+///
+/// Reads the user from [authStateChangesProvider] rather than
+/// `authRepositoryProvider.currentUser` — the latter is a plain getter, so
+/// watching it doesn't rebuild this provider when auth state actually
+/// changes. It would lock in whatever `currentUser` was the first time
+/// something read this provider (often null, before login even resolves)
+/// and never update again for the rest of the app session, which is
+/// exactly the kind of stale read the router's live verification gate
+/// depends on this provider NOT being.
 
 final class OwnCreatorProfileStreamProvider
     extends
@@ -123,6 +141,15 @@ final class OwnCreatorProfileStreamProvider
   /// Live version of [ownCreatorProfileProvider] — the verification-pending
   /// screen watches this so it can move on the instant an admin decides,
   /// rather than requiring an app relaunch to notice.
+  ///
+  /// Reads the user from [authStateChangesProvider] rather than
+  /// `authRepositoryProvider.currentUser` — the latter is a plain getter, so
+  /// watching it doesn't rebuild this provider when auth state actually
+  /// changes. It would lock in whatever `currentUser` was the first time
+  /// something read this provider (often null, before login even resolves)
+  /// and never update again for the rest of the app session, which is
+  /// exactly the kind of stale read the router's live verification gate
+  /// depends on this provider NOT being.
   OwnCreatorProfileStreamProvider._()
     : super(
         from: null,
@@ -150,7 +177,7 @@ final class OwnCreatorProfileStreamProvider
 }
 
 String _$ownCreatorProfileStreamHash() =>
-    r'33b55a060b0c48fb16ecd03a9a08890d40f7f6cb';
+    r'dfb69c9acbebf803e8502a51f4ddd4907c6b5445';
 
 /// Every creator profile, for the Brand's Discover directory.
 

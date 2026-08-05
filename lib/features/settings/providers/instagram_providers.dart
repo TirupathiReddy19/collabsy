@@ -6,7 +6,6 @@ import '../../auth/providers/auth_providers.dart';
 import '../data/instagram_auth_service.dart';
 import '../data/instagram_repository.dart';
 import '../models/instagram_account.dart';
-import '../models/instagram_media_item.dart';
 
 part 'instagram_providers.g.dart';
 
@@ -23,18 +22,16 @@ InstagramAuthService instagramAuthService(Ref ref) {
   return const InstagramAuthService();
 }
 
+// Both read the user from authStateChangesProvider rather than
+// authRepositoryProvider.currentUser — the latter is a plain getter, so
+// watching it doesn't rebuild this provider when auth state actually
+// changes, and it would lock in whatever currentUser was the first time
+// something read this provider for the rest of the app session.
 @Riverpod(keepAlive: true)
 Stream<InstagramAccount?> ownInstagramAccount(Ref ref) {
-  final user = ref.watch(authRepositoryProvider).currentUser;
+  final user = ref.watch(authStateChangesProvider).value;
   if (user == null) return Stream.value(null);
   return ref.watch(instagramRepositoryProvider).watchAccount(user.uid);
-}
-
-@Riverpod(keepAlive: true)
-Stream<List<InstagramMediaItem>> ownInstagramMedia(Ref ref) {
-  final user = ref.watch(authRepositoryProvider).currentUser;
-  if (user == null) return Stream.value(const []);
-  return ref.watch(instagramRepositoryProvider).watchMedia(user.uid);
 }
 
 /// A specific creator's connected Instagram account, for the Brand-facing

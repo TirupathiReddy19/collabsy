@@ -53,7 +53,14 @@ service cloud.firestore {
       allow write: if isAdmin()
         || (request.auth != null && request.auth.uid == userId
             && (!('role' in request.resource.data)
-                || request.resource.data.role in ['creator', 'brand']));
+                || request.resource.data.role in ['creator', 'brand'])
+            // `suspended`/`suspendedReason` only ever come from the
+            // suspendUserAccount/reinstateUserAccount Cloud Functions —
+            // an account can't un-suspend (or suspend) itself by writing
+            // its own doc.
+            && (!('suspended' in request.resource.data)
+                || request.resource.data.suspended == (resource.data.suspended == true))
+            && !('suspendedReason' in request.resource.data));
     }
 
     // Creator-only post-signup details (languages/location) — same
@@ -223,6 +230,29 @@ service cloud.firestore {
       allow create: if request.auth != null
         && request.resource.data.reporterId == request.auth.uid;
       allow update: if isAdmin() || isActiveStaffWithPermission('/trust-safety');
+      allow delete: if false;
+    }
+
+    // Submitted from the public, unauthenticated web page linked from the
+    // Play Console Data Safety form — Google Play requires a way to
+    // request account deletion that doesn't depend on having the app
+    // installed (or even ever having had an account signed in on this
+    // device). Deliberately not readable by whoever submitted it — same
+    // moderation-queue shape as `reports` — only admin/staff process these;
+    // the actual deletion still goes through the same `deleteAccount`
+    // Cloud Function as the in-app flow, triggered manually once staff
+    // verify the request.
+    match /accountDeletionRequests/{requestId} {
+      allow read: if isAdmin() || isActiveStaffWithPermission('/deletion-requests');
+      allow create: if request.resource.data.keys().hasOnly(['identifier', 'reason', 'status', 'createdAt'])
+        && request.resource.data.status == 'pending'
+        && request.resource.data.identifier is string
+        && request.resource.data.identifier.size() > 0
+        && request.resource.data.identifier.size() < 200
+        && (!('reason' in request.resource.data) || request.resource.data.reason is string)
+        && (!('reason' in request.resource.data) || request.resource.data.reason.size() < 1000)
+        && request.resource.data.createdAt == request.time;
+      allow update: if isAdmin() || isActiveStaffWithPermission('/deletion-requests');
       allow delete: if false;
     }
 

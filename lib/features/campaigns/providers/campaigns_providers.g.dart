@@ -142,7 +142,7 @@ final class BrandCampaignsProvider
   }
 }
 
-String _$brandCampaignsHash() => r'add1badcc66e9a4fe3d7244b3a3ee06dd22deea5';
+String _$brandCampaignsHash() => r'd9630a03758c0784fcdc176da7f4fe51a94c0ab1';
 
 /// Category/deliverable-type filters for the creator's campaign browse tab.
 
@@ -337,7 +337,7 @@ final class CreatorApplicationsProvider
 }
 
 String _$creatorApplicationsHash() =>
-    r'c535d630acaa06f33996902faf1a6bee6f240e4e';
+    r'61235bf8af687e25b02f187d78cf579c0e47b230';
 
 /// Every campaign across every brand, sorted newest-first — for the
 /// Admin's platform-wide campaigns view.

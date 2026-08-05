@@ -2,7 +2,6 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:cloud_functions/cloud_functions.dart';
 
 import '../models/instagram_account.dart';
-import '../models/instagram_media_item.dart';
 
 /// Thrown for the specific, user-actionable failure modes the UI needs to
 /// tell apart (as opposed to a generic "something went wrong").
@@ -63,27 +62,6 @@ class InstagramRepository {
         );
   }
 
-  Stream<List<InstagramMediaItem>> watchMedia(String userId) {
-    return _firestore
-        .collection('instagram_media')
-        .where('userId', isEqualTo: userId)
-        .snapshots()
-        .map((snapshot) {
-          final items = snapshot.docs
-              .map(
-                (doc) =>
-                    InstagramMediaItem.fromJson({...doc.data(), 'id': doc.id}),
-              )
-              .toList();
-          items.sort((a, b) {
-            final aTime = a.timestamp ?? DateTime.fromMillisecondsSinceEpoch(0);
-            final bTime = b.timestamp ?? DateTime.fromMillisecondsSinceEpoch(0);
-            return bTime.compareTo(aTime);
-          });
-          return items;
-        });
-  }
-
   /// Sends the OAuth [code] to the `exchangeInstagramCode` Cloud Function,
   /// which does the actual token exchange (short-lived -> long-lived) and
   /// the initial profile/media sync server-side.
@@ -105,11 +83,13 @@ class InstagramRepository {
     }
   }
 
-  /// Re-fetches profile + media for the already-connected account (e.g. a
-  /// manual "Refresh" tap), refreshing the stored token first if needed.
+  /// Re-fetches profile stats (name, bio, follower/media counts) for the
+  /// already-connected account (e.g. a manual "Refresh" tap), refreshing
+  /// the stored token first if needed. The same sync also runs on its own
+  /// every 2 hours server-side, so this is just for "I want it now."
   Future<void> refresh() async {
     try {
-      await _functions.httpsCallable('refreshInstagramMedia').call();
+      await _functions.httpsCallable('refreshInstagramProfile').call();
     } on FirebaseFunctionsException catch (e) {
       throw _mapException(e);
     }

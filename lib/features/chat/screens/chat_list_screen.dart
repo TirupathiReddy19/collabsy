@@ -241,6 +241,22 @@ class _ChatListTile extends ConsumerWidget {
             creatorInstagram,
             fallback: chat.creatorName,
           );
+    // On the Creator's side, `chat.brandName` is the company name (see
+    // startGeneralChat/startChatAsCreator — it's `companyName ??
+    // displayName`), which reads oddly as a contact's row title. Recomputed
+    // live (not the stored snapshot) so a later profile edit shows up
+    // immediately: the signed-up person's own name leads, company name goes
+    // under it alongside the last-message preview.
+    final brandPersonName = isCreator
+        ? (ref.watch(appUserProfileByIdProvider(chat.brandId)).value?.displayName ??
+              otherName)
+        : null;
+    final brandCompanyName = isCreator
+        ? (ref.watch(brandProfileByIdProvider(chat.brandId)).value?.companyName ??
+              otherName)
+        : null;
+    final showCompanyLine =
+        isCreator && brandCompanyName != null && brandCompanyName != brandPersonName;
     // The other party is a Creator when I'm the Brand (Instagram-synced
     // photo), or a Brand when I'm the Creator (their manual upload, since
     // Brands have no Instagram connection).
@@ -278,7 +294,7 @@ class _ChatListTile extends ConsumerWidget {
           children: [
             Flexible(
               child: Text(
-                otherName,
+                isCreator ? (brandPersonName ?? otherName) : otherName,
                 overflow: TextOverflow.ellipsis,
                 style: unread
                     ? AppTextStyles.titleSmall
@@ -296,7 +312,29 @@ class _ChatListTile extends ConsumerWidget {
             ],
           ],
         ),
-        subtitle: chat.lastMessage == null
+        isThreeLine: showCompanyLine && chat.lastMessage != null,
+        subtitle: showCompanyLine
+            ? Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    brandCompanyName,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: AppTextStyles.bodySmall.copyWith(
+                      color: AppColors.textSecondary,
+                    ),
+                  ),
+                  if (chat.lastMessage != null)
+                    Text(
+                      chat.lastMessage!,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                ],
+              )
+            : chat.lastMessage == null
             ? null
             : Text(
                 chat.lastMessage!,

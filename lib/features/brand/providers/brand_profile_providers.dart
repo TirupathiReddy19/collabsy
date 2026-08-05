@@ -23,9 +23,18 @@ Future<BrandProfile?> ownBrandProfile(Ref ref) {
 /// Live version of [ownBrandProfileProvider] — the verification-pending
 /// screen watches this so it can move on the instant an admin decides,
 /// rather than requiring an app relaunch to notice.
+///
+/// Reads the user from [authStateChangesProvider] rather than
+/// `authRepositoryProvider.currentUser` — the latter is a plain getter, so
+/// watching it doesn't rebuild this provider when auth state actually
+/// changes. It would lock in whatever `currentUser` was the first time
+/// something read this provider (often null, before login even resolves)
+/// and never update again for the rest of the app session, which is
+/// exactly the kind of stale read the router's live verification gate
+/// depends on this provider NOT being.
 @Riverpod(keepAlive: true)
 Stream<BrandProfile?> ownBrandProfileStream(Ref ref) {
-  final user = ref.watch(authRepositoryProvider).currentUser;
+  final user = ref.watch(authStateChangesProvider).value;
   if (user == null) return Stream.value(null);
   return ref.watch(brandProfileRepositoryProvider).watchProfile(user.uid);
 }

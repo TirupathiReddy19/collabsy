@@ -15,7 +15,7 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$AppUserProfile {
 
- String get id; UserRole? get role; String? get displayName; String? get email; String? get phone; String? get avatarUrl; String? get bio; bool get onboardingCompleted; bool get pushNotificationsEnabled; String? get fcmToken;
+ String get id; UserRole? get role; String? get displayName; String? get email; String? get phone; String? get avatarUrl; String? get bio; bool get onboardingCompleted; bool get pushNotificationsEnabled; String? get fcmToken;@NullableTimestampConverter() DateTime? get termsAcceptedAt; bool get suspended; String? get suspendedReason;
 /// Create a copy of AppUserProfile
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -28,16 +28,16 @@ $AppUserProfileCopyWith<AppUserProfile> get copyWith => _$AppUserProfileCopyWith
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is AppUserProfile&&(identical(other.id, id) || other.id == id)&&(identical(other.role, role) || other.role == role)&&(identical(other.displayName, displayName) || other.displayName == displayName)&&(identical(other.email, email) || other.email == email)&&(identical(other.phone, phone) || other.phone == phone)&&(identical(other.avatarUrl, avatarUrl) || other.avatarUrl == avatarUrl)&&(identical(other.bio, bio) || other.bio == bio)&&(identical(other.onboardingCompleted, onboardingCompleted) || other.onboardingCompleted == onboardingCompleted)&&(identical(other.pushNotificationsEnabled, pushNotificationsEnabled) || other.pushNotificationsEnabled == pushNotificationsEnabled)&&(identical(other.fcmToken, fcmToken) || other.fcmToken == fcmToken));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is AppUserProfile&&(identical(other.id, id) || other.id == id)&&(identical(other.role, role) || other.role == role)&&(identical(other.displayName, displayName) || other.displayName == displayName)&&(identical(other.email, email) || other.email == email)&&(identical(other.phone, phone) || other.phone == phone)&&(identical(other.avatarUrl, avatarUrl) || other.avatarUrl == avatarUrl)&&(identical(other.bio, bio) || other.bio == bio)&&(identical(other.onboardingCompleted, onboardingCompleted) || other.onboardingCompleted == onboardingCompleted)&&(identical(other.pushNotificationsEnabled, pushNotificationsEnabled) || other.pushNotificationsEnabled == pushNotificationsEnabled)&&(identical(other.fcmToken, fcmToken) || other.fcmToken == fcmToken)&&(identical(other.termsAcceptedAt, termsAcceptedAt) || other.termsAcceptedAt == termsAcceptedAt)&&(identical(other.suspended, suspended) || other.suspended == suspended)&&(identical(other.suspendedReason, suspendedReason) || other.suspendedReason == suspendedReason));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,role,displayName,email,phone,avatarUrl,bio,onboardingCompleted,pushNotificationsEnabled,fcmToken);
+int get hashCode => Object.hash(runtimeType,id,role,displayName,email,phone,avatarUrl,bio,onboardingCompleted,pushNotificationsEnabled,fcmToken,termsAcceptedAt,suspended,suspendedReason);
 
 @override
 String toString() {
-  return 'AppUserProfile(id: $id, role: $role, displayName: $displayName, email: $email, phone: $phone, avatarUrl: $avatarUrl, bio: $bio, onboardingCompleted: $onboardingCompleted, pushNotificationsEnabled: $pushNotificationsEnabled, fcmToken: $fcmToken)';
+  return 'AppUserProfile(id: $id, role: $role, displayName: $displayName, email: $email, phone: $phone, avatarUrl: $avatarUrl, bio: $bio, onboardingCompleted: $onboardingCompleted, pushNotificationsEnabled: $pushNotificationsEnabled, fcmToken: $fcmToken, termsAcceptedAt: $termsAcceptedAt, suspended: $suspended, suspendedReason: $suspendedReason)';
 }
 
 
@@ -48,7 +48,7 @@ abstract mixin class $AppUserProfileCopyWith<$Res>  {
   factory $AppUserProfileCopyWith(AppUserProfile value, $Res Function(AppUserProfile) _then) = _$AppUserProfileCopyWithImpl;
 @useResult
 $Res call({
- String id, UserRole? role, String? displayName, String? email, String? phone, String? avatarUrl, String? bio, bool onboardingCompleted, bool pushNotificationsEnabled, String? fcmToken
+ String id, UserRole? role, String? displayName, String? email, String? phone, String? avatarUrl, String? bio, bool onboardingCompleted, bool pushNotificationsEnabled, String? fcmToken,@NullableTimestampConverter() DateTime? termsAcceptedAt, bool suspended, String? suspendedReason
 });
 
 
@@ -65,7 +65,7 @@ class _$AppUserProfileCopyWithImpl<$Res>
 
 /// Create a copy of AppUserProfile
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? role = freezed,Object? displayName = freezed,Object? email = freezed,Object? phone = freezed,Object? avatarUrl = freezed,Object? bio = freezed,Object? onboardingCompleted = null,Object? pushNotificationsEnabled = null,Object? fcmToken = freezed,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? role = freezed,Object? displayName = freezed,Object? email = freezed,Object? phone = freezed,Object? avatarUrl = freezed,Object? bio = freezed,Object? onboardingCompleted = null,Object? pushNotificationsEnabled = null,Object? fcmToken = freezed,Object? termsAcceptedAt = freezed,Object? suspended = null,Object? suspendedReason = freezed,}) {
   return _then(_self.copyWith(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,role: freezed == role ? _self.role : role // ignore: cast_nullable_to_non_nullable
@@ -77,6 +77,9 @@ as String?,bio: freezed == bio ? _self.bio : bio // ignore: cast_nullable_to_non
 as String?,onboardingCompleted: null == onboardingCompleted ? _self.onboardingCompleted : onboardingCompleted // ignore: cast_nullable_to_non_nullable
 as bool,pushNotificationsEnabled: null == pushNotificationsEnabled ? _self.pushNotificationsEnabled : pushNotificationsEnabled // ignore: cast_nullable_to_non_nullable
 as bool,fcmToken: freezed == fcmToken ? _self.fcmToken : fcmToken // ignore: cast_nullable_to_non_nullable
+as String?,termsAcceptedAt: freezed == termsAcceptedAt ? _self.termsAcceptedAt : termsAcceptedAt // ignore: cast_nullable_to_non_nullable
+as DateTime?,suspended: null == suspended ? _self.suspended : suspended // ignore: cast_nullable_to_non_nullable
+as bool,suspendedReason: freezed == suspendedReason ? _self.suspendedReason : suspendedReason // ignore: cast_nullable_to_non_nullable
 as String?,
   ));
 }
@@ -162,10 +165,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  UserRole? role,  String? displayName,  String? email,  String? phone,  String? avatarUrl,  String? bio,  bool onboardingCompleted,  bool pushNotificationsEnabled,  String? fcmToken)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  UserRole? role,  String? displayName,  String? email,  String? phone,  String? avatarUrl,  String? bio,  bool onboardingCompleted,  bool pushNotificationsEnabled,  String? fcmToken, @NullableTimestampConverter()  DateTime? termsAcceptedAt,  bool suspended,  String? suspendedReason)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _AppUserProfile() when $default != null:
-return $default(_that.id,_that.role,_that.displayName,_that.email,_that.phone,_that.avatarUrl,_that.bio,_that.onboardingCompleted,_that.pushNotificationsEnabled,_that.fcmToken);case _:
+return $default(_that.id,_that.role,_that.displayName,_that.email,_that.phone,_that.avatarUrl,_that.bio,_that.onboardingCompleted,_that.pushNotificationsEnabled,_that.fcmToken,_that.termsAcceptedAt,_that.suspended,_that.suspendedReason);case _:
   return orElse();
 
 }
@@ -183,10 +186,10 @@ return $default(_that.id,_that.role,_that.displayName,_that.email,_that.phone,_t
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  UserRole? role,  String? displayName,  String? email,  String? phone,  String? avatarUrl,  String? bio,  bool onboardingCompleted,  bool pushNotificationsEnabled,  String? fcmToken)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  UserRole? role,  String? displayName,  String? email,  String? phone,  String? avatarUrl,  String? bio,  bool onboardingCompleted,  bool pushNotificationsEnabled,  String? fcmToken, @NullableTimestampConverter()  DateTime? termsAcceptedAt,  bool suspended,  String? suspendedReason)  $default,) {final _that = this;
 switch (_that) {
 case _AppUserProfile():
-return $default(_that.id,_that.role,_that.displayName,_that.email,_that.phone,_that.avatarUrl,_that.bio,_that.onboardingCompleted,_that.pushNotificationsEnabled,_that.fcmToken);case _:
+return $default(_that.id,_that.role,_that.displayName,_that.email,_that.phone,_that.avatarUrl,_that.bio,_that.onboardingCompleted,_that.pushNotificationsEnabled,_that.fcmToken,_that.termsAcceptedAt,_that.suspended,_that.suspendedReason);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -203,10 +206,10 @@ return $default(_that.id,_that.role,_that.displayName,_that.email,_that.phone,_t
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  UserRole? role,  String? displayName,  String? email,  String? phone,  String? avatarUrl,  String? bio,  bool onboardingCompleted,  bool pushNotificationsEnabled,  String? fcmToken)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  UserRole? role,  String? displayName,  String? email,  String? phone,  String? avatarUrl,  String? bio,  bool onboardingCompleted,  bool pushNotificationsEnabled,  String? fcmToken, @NullableTimestampConverter()  DateTime? termsAcceptedAt,  bool suspended,  String? suspendedReason)?  $default,) {final _that = this;
 switch (_that) {
 case _AppUserProfile() when $default != null:
-return $default(_that.id,_that.role,_that.displayName,_that.email,_that.phone,_that.avatarUrl,_that.bio,_that.onboardingCompleted,_that.pushNotificationsEnabled,_that.fcmToken);case _:
+return $default(_that.id,_that.role,_that.displayName,_that.email,_that.phone,_that.avatarUrl,_that.bio,_that.onboardingCompleted,_that.pushNotificationsEnabled,_that.fcmToken,_that.termsAcceptedAt,_that.suspended,_that.suspendedReason);case _:
   return null;
 
 }
@@ -218,7 +221,7 @@ return $default(_that.id,_that.role,_that.displayName,_that.email,_that.phone,_t
 @JsonSerializable()
 
 class _AppUserProfile implements AppUserProfile {
-  const _AppUserProfile({required this.id, this.role, this.displayName, this.email, this.phone, this.avatarUrl, this.bio, this.onboardingCompleted = false, this.pushNotificationsEnabled = true, this.fcmToken});
+  const _AppUserProfile({required this.id, this.role, this.displayName, this.email, this.phone, this.avatarUrl, this.bio, this.onboardingCompleted = false, this.pushNotificationsEnabled = true, this.fcmToken, @NullableTimestampConverter() this.termsAcceptedAt, this.suspended = false, this.suspendedReason});
   factory _AppUserProfile.fromJson(Map<String, dynamic> json) => _$AppUserProfileFromJson(json);
 
 @override final  String id;
@@ -231,6 +234,9 @@ class _AppUserProfile implements AppUserProfile {
 @override@JsonKey() final  bool onboardingCompleted;
 @override@JsonKey() final  bool pushNotificationsEnabled;
 @override final  String? fcmToken;
+@override@NullableTimestampConverter() final  DateTime? termsAcceptedAt;
+@override@JsonKey() final  bool suspended;
+@override final  String? suspendedReason;
 
 /// Create a copy of AppUserProfile
 /// with the given fields replaced by the non-null parameter values.
@@ -245,16 +251,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _AppUserProfile&&(identical(other.id, id) || other.id == id)&&(identical(other.role, role) || other.role == role)&&(identical(other.displayName, displayName) || other.displayName == displayName)&&(identical(other.email, email) || other.email == email)&&(identical(other.phone, phone) || other.phone == phone)&&(identical(other.avatarUrl, avatarUrl) || other.avatarUrl == avatarUrl)&&(identical(other.bio, bio) || other.bio == bio)&&(identical(other.onboardingCompleted, onboardingCompleted) || other.onboardingCompleted == onboardingCompleted)&&(identical(other.pushNotificationsEnabled, pushNotificationsEnabled) || other.pushNotificationsEnabled == pushNotificationsEnabled)&&(identical(other.fcmToken, fcmToken) || other.fcmToken == fcmToken));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _AppUserProfile&&(identical(other.id, id) || other.id == id)&&(identical(other.role, role) || other.role == role)&&(identical(other.displayName, displayName) || other.displayName == displayName)&&(identical(other.email, email) || other.email == email)&&(identical(other.phone, phone) || other.phone == phone)&&(identical(other.avatarUrl, avatarUrl) || other.avatarUrl == avatarUrl)&&(identical(other.bio, bio) || other.bio == bio)&&(identical(other.onboardingCompleted, onboardingCompleted) || other.onboardingCompleted == onboardingCompleted)&&(identical(other.pushNotificationsEnabled, pushNotificationsEnabled) || other.pushNotificationsEnabled == pushNotificationsEnabled)&&(identical(other.fcmToken, fcmToken) || other.fcmToken == fcmToken)&&(identical(other.termsAcceptedAt, termsAcceptedAt) || other.termsAcceptedAt == termsAcceptedAt)&&(identical(other.suspended, suspended) || other.suspended == suspended)&&(identical(other.suspendedReason, suspendedReason) || other.suspendedReason == suspendedReason));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,role,displayName,email,phone,avatarUrl,bio,onboardingCompleted,pushNotificationsEnabled,fcmToken);
+int get hashCode => Object.hash(runtimeType,id,role,displayName,email,phone,avatarUrl,bio,onboardingCompleted,pushNotificationsEnabled,fcmToken,termsAcceptedAt,suspended,suspendedReason);
 
 @override
 String toString() {
-  return 'AppUserProfile(id: $id, role: $role, displayName: $displayName, email: $email, phone: $phone, avatarUrl: $avatarUrl, bio: $bio, onboardingCompleted: $onboardingCompleted, pushNotificationsEnabled: $pushNotificationsEnabled, fcmToken: $fcmToken)';
+  return 'AppUserProfile(id: $id, role: $role, displayName: $displayName, email: $email, phone: $phone, avatarUrl: $avatarUrl, bio: $bio, onboardingCompleted: $onboardingCompleted, pushNotificationsEnabled: $pushNotificationsEnabled, fcmToken: $fcmToken, termsAcceptedAt: $termsAcceptedAt, suspended: $suspended, suspendedReason: $suspendedReason)';
 }
 
 
@@ -265,7 +271,7 @@ abstract mixin class _$AppUserProfileCopyWith<$Res> implements $AppUserProfileCo
   factory _$AppUserProfileCopyWith(_AppUserProfile value, $Res Function(_AppUserProfile) _then) = __$AppUserProfileCopyWithImpl;
 @override @useResult
 $Res call({
- String id, UserRole? role, String? displayName, String? email, String? phone, String? avatarUrl, String? bio, bool onboardingCompleted, bool pushNotificationsEnabled, String? fcmToken
+ String id, UserRole? role, String? displayName, String? email, String? phone, String? avatarUrl, String? bio, bool onboardingCompleted, bool pushNotificationsEnabled, String? fcmToken,@NullableTimestampConverter() DateTime? termsAcceptedAt, bool suspended, String? suspendedReason
 });
 
 
@@ -282,7 +288,7 @@ class __$AppUserProfileCopyWithImpl<$Res>
 
 /// Create a copy of AppUserProfile
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? role = freezed,Object? displayName = freezed,Object? email = freezed,Object? phone = freezed,Object? avatarUrl = freezed,Object? bio = freezed,Object? onboardingCompleted = null,Object? pushNotificationsEnabled = null,Object? fcmToken = freezed,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? role = freezed,Object? displayName = freezed,Object? email = freezed,Object? phone = freezed,Object? avatarUrl = freezed,Object? bio = freezed,Object? onboardingCompleted = null,Object? pushNotificationsEnabled = null,Object? fcmToken = freezed,Object? termsAcceptedAt = freezed,Object? suspended = null,Object? suspendedReason = freezed,}) {
   return _then(_AppUserProfile(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,role: freezed == role ? _self.role : role // ignore: cast_nullable_to_non_nullable
@@ -294,6 +300,9 @@ as String?,bio: freezed == bio ? _self.bio : bio // ignore: cast_nullable_to_non
 as String?,onboardingCompleted: null == onboardingCompleted ? _self.onboardingCompleted : onboardingCompleted // ignore: cast_nullable_to_non_nullable
 as bool,pushNotificationsEnabled: null == pushNotificationsEnabled ? _self.pushNotificationsEnabled : pushNotificationsEnabled // ignore: cast_nullable_to_non_nullable
 as bool,fcmToken: freezed == fcmToken ? _self.fcmToken : fcmToken // ignore: cast_nullable_to_non_nullable
+as String?,termsAcceptedAt: freezed == termsAcceptedAt ? _self.termsAcceptedAt : termsAcceptedAt // ignore: cast_nullable_to_non_nullable
+as DateTime?,suspended: null == suspended ? _self.suspended : suspended // ignore: cast_nullable_to_non_nullable
+as bool,suspendedReason: freezed == suspendedReason ? _self.suspendedReason : suspendedReason // ignore: cast_nullable_to_non_nullable
 as String?,
   ));
 }

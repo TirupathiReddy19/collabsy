@@ -219,6 +219,21 @@ class _ChatConversationScreenState
                           .value
                           ?.verificationStatus ==
                       VerificationStatus.approved;
+            // On the Creator's side, `chat.brandName` is the company name
+            // (see startGeneralChat/startChatAsCreator — it's
+            // `companyName ?? displayName`), which reads oddly as the sole
+            // title of a conversation with a real person. Recomputed live
+            // (not the stored snapshot) so a later profile edit shows up
+            // immediately: the signed-up person's own name leads, with the
+            // company name underneath for context.
+            final brandPersonName = isCreator
+                ? (ref.watch(appUserProfileByIdProvider(chat.brandId)).value?.displayName ??
+                      otherName)
+                : null;
+            final brandCompanyName = isCreator
+                ? (ref.watch(brandProfileByIdProvider(chat.brandId)).value?.companyName ??
+                      otherName)
+                : null;
             return InkWell(
               onTap: () => context.push(
                 isCreator
@@ -235,10 +250,30 @@ class _ChatConversationScreenState
                   ),
                   const SizedBox(width: 8),
                   Flexible(
-                    child: Text(
-                      otherName ?? 'Chat',
-                      overflow: TextOverflow.ellipsis,
-                    ),
+                    child: isCreator
+                        ? Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(
+                                brandPersonName ?? 'Chat',
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                              if (brandCompanyName != null &&
+                                  brandCompanyName != brandPersonName)
+                                Text(
+                                  brandCompanyName,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: AppTextStyles.bodySmall.copyWith(
+                                    color: AppColors.textSecondary,
+                                  ),
+                                ),
+                            ],
+                          )
+                        : Text(
+                            otherName ?? 'Chat',
+                            overflow: TextOverflow.ellipsis,
+                          ),
                   ),
                   if (isVerified) ...[
                     const SizedBox(width: 4),
