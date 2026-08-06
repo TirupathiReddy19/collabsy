@@ -18,6 +18,7 @@ import '../../../core/widgets/app_text_field.dart';
 import '../../../core/widgets/linkedin_icon.dart';
 import '../../../core/widgets/primary_button.dart';
 import '../../../core/widgets/profile_avatar.dart';
+import '../../../core/widgets/staggered_fade_in.dart';
 import '../../../shared/widgets/multi_select_picker_screen.dart';
 import '../../auth/providers/auth_providers.dart';
 import '../../auth/shared/change_email_sheet.dart';
@@ -204,127 +205,140 @@ class _BrandAccountScreenState extends ConsumerState<BrandAccountScreen> {
         child: ListView(
           padding: const EdgeInsets.only(bottom: AppSpacing.screenHorizontal),
           children: [
-            Container(
-              margin: const EdgeInsets.all(AppSpacing.screenHorizontal),
-              padding: const EdgeInsets.all(AppSpacing.card),
-              decoration: BoxDecoration(
-                color: AppColors.primary,
-                borderRadius: BorderRadius.circular(AppRadius.xl),
-              ),
+            StaggeredFadeIn(
               child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      ProfileAvatar(
-                        avatarUrl: profile?.avatarUrl,
-                        fallbackIcon: Icons.storefront,
-                        onEdit: _changeAvatar,
-                        isUploading: _isUploadingAvatar,
-                      ),
-                      const Spacer(),
-                      _QuickAction(
-                        icon: Icons.call_outlined,
-                        onTap: profile?.phone == null
-                            ? null
-                            : () => _launch(profile!.phone, scheme: 'tel:'),
-                      ),
-                      const SizedBox(width: 8),
-                      _QuickAction(
-                        icon: Icons.email_outlined,
-                        onTap: profile?.email == null
-                            ? null
-                            : () => _launch(profile!.email, scheme: 'mailto:'),
-                      ),
-                      const SizedBox(width: 8),
-                      _QuickAction(
-                        iconWidget: const LinkedInIcon(
-                          size: 18,
-                          fontSize: 12,
-                          monochrome: true,
+                  Container(
+                    margin: const EdgeInsets.all(AppSpacing.screenHorizontal),
+                    padding: const EdgeInsets.all(AppSpacing.card),
+                    decoration: BoxDecoration(
+                      color: AppColors.primary,
+                      borderRadius: BorderRadius.circular(AppRadius.xl),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            ProfileAvatar(
+                              avatarUrl: profile?.avatarUrl,
+                              fallbackIcon: Icons.storefront,
+                              onEdit: _changeAvatar,
+                              isUploading: _isUploadingAvatar,
+                            ),
+                            const Spacer(),
+                            _QuickAction(
+                              icon: Icons.call_outlined,
+                              onTap: profile?.phone == null
+                                  ? null
+                                  : () =>
+                                        _launch(profile!.phone, scheme: 'tel:'),
+                            ),
+                            const SizedBox(width: 8),
+                            _QuickAction(
+                              icon: Icons.email_outlined,
+                              onTap: profile?.email == null
+                                  ? null
+                                  : () => _launch(
+                                      profile!.email,
+                                      scheme: 'mailto:',
+                                    ),
+                            ),
+                            const SizedBox(width: 8),
+                            _QuickAction(
+                              iconWidget: const LinkedInIcon(
+                                size: 18,
+                                fontSize: 12,
+                                monochrome: true,
+                              ),
+                              onTap: (brandProfile?.linkedinUrl ?? '').isEmpty
+                                  ? null
+                                  : () => _launch(brandProfile!.linkedinUrl),
+                            ),
+                          ],
                         ),
-                        onTap: (brandProfile?.linkedinUrl ?? '').isEmpty
-                            ? null
-                            : () => _launch(brandProfile!.linkedinUrl),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 16),
-                  Text(
-                    profile?.displayName ?? 'Brand',
-                    style: AppTextStyles.heading2.copyWith(
-                      color: AppColors.white,
+                        const SizedBox(height: 16),
+                        Text(
+                          profile?.displayName ?? 'Brand',
+                          style: AppTextStyles.heading2.copyWith(
+                            color: AppColors.white,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          (brandProfile?.designation ?? '').isEmpty
+                              ? 'Add current job title'
+                              : brandProfile!.designation!,
+                          style: AppTextStyles.bodyMedium.copyWith(
+                            color: AppColors.white.withValues(alpha: 0.85),
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Row(
+                          children: [
+                            const Icon(
+                              Icons.business_outlined,
+                              color: AppColors.white,
+                              size: 16,
+                            ),
+                            const SizedBox(width: 6),
+                            Text(
+                              (brandProfile?.companyName ?? '').isEmpty
+                                  ? 'Add your company name'
+                                  : brandProfile!.companyName!,
+                              style: AppTextStyles.bodyMedium.copyWith(
+                                color: AppColors.white,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
                     ),
                   ),
-                  const SizedBox(height: 2),
-                  Text(
-                    (brandProfile?.designation ?? '').isEmpty
-                        ? 'Add current job title'
-                        : brandProfile!.designation!,
-                    style: AppTextStyles.bodyMedium.copyWith(
-                      color: AppColors.white.withValues(alpha: 0.85),
+                  if (missingDetails)
+                    Container(
+                      margin: const EdgeInsets.symmetric(
+                        horizontal: AppSpacing.screenHorizontal,
+                      ),
+                      padding: const EdgeInsets.all(AppSpacing.card),
+                      decoration: BoxDecoration(
+                        color: AppColors.errorLight,
+                        borderRadius: BorderRadius.circular(AppRadius.lg),
+                      ),
+                      child: Row(
+                        children: [
+                          const Icon(
+                            Icons.info_outline,
+                            color: AppColors.error,
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Text(
+                              'Company details missing',
+                              style: AppTextStyles.bodyMedium,
+                            ),
+                          ),
+                          TextButton(
+                            onPressed: () => _editTextField(
+                              title: 'Company name',
+                              initialValue: brandProfile?.companyName ?? '',
+                              hintText: 'Your company name',
+                              validator: (value) =>
+                                  (value == null || value.trim().isEmpty)
+                                  ? 'Enter your company name'
+                                  : null,
+                              onSave: (value) =>
+                                  _updateBrandProfile(companyName: value),
+                            ),
+                            child: const Text('Add now'),
+                          ),
+                        ],
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: 8),
-                  Row(
-                    children: [
-                      const Icon(
-                        Icons.business_outlined,
-                        color: AppColors.white,
-                        size: 16,
-                      ),
-                      const SizedBox(width: 6),
-                      Text(
-                        (brandProfile?.companyName ?? '').isEmpty
-                            ? 'Add your company name'
-                            : brandProfile!.companyName!,
-                        style: AppTextStyles.bodyMedium.copyWith(
-                          color: AppColors.white,
-                        ),
-                      ),
-                    ],
-                  ),
                 ],
               ),
             ),
-            if (missingDetails)
-              Container(
-                margin: const EdgeInsets.symmetric(
-                  horizontal: AppSpacing.screenHorizontal,
-                ),
-                padding: const EdgeInsets.all(AppSpacing.card),
-                decoration: BoxDecoration(
-                  color: AppColors.errorLight,
-                  borderRadius: BorderRadius.circular(AppRadius.lg),
-                ),
-                child: Row(
-                  children: [
-                    const Icon(Icons.info_outline, color: AppColors.error),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Text(
-                        'Company details missing',
-                        style: AppTextStyles.bodyMedium,
-                      ),
-                    ),
-                    TextButton(
-                      onPressed: () => _editTextField(
-                        title: 'Company name',
-                        initialValue: brandProfile?.companyName ?? '',
-                        hintText: 'Your company name',
-                        validator: (value) =>
-                            (value == null || value.trim().isEmpty)
-                            ? 'Enter your company name'
-                            : null,
-                        onSave: (value) =>
-                            _updateBrandProfile(companyName: value),
-                      ),
-                      child: const Text('Add now'),
-                    ),
-                  ],
-                ),
-              ),
             const SizedBox(height: 16),
             Padding(
               padding: const EdgeInsets.symmetric(
@@ -332,212 +346,230 @@ class _BrandAccountScreenState extends ConsumerState<BrandAccountScreen> {
               ),
               child: Column(
                 children: [
-                  Card(
-                    child: Column(
-                      children: [
-                        _DetailRow(
-                          icon: Icons.badge_outlined,
-                          title: 'Personal details',
-                          subtitle: [
-                            profile?.displayName,
-                            profile?.phone,
-                          ].whereType<String>().join(' • '),
-                          isLoading: isLoading,
-                          onTap: () => _editTextField(
-                            title: 'Full name',
-                            initialValue: profile?.displayName ?? '',
-                            validator: (value) =>
-                                (value == null || value.trim().isEmpty)
-                                ? 'Enter your name'
-                                : null,
-                            onSave: (value) async {
-                              await ref
-                                  .read(authControllerProvider.notifier)
-                                  .updateDisplayName(value);
-                              return !ref.read(authControllerProvider).hasError;
+                  StaggeredFadeIn(
+                    delay: const Duration(milliseconds: 90),
+                    child: Card(
+                      child: Column(
+                        children: [
+                          _DetailRow(
+                            icon: Icons.badge_outlined,
+                            title: 'Personal details',
+                            subtitle: [
+                              profile?.displayName,
+                              profile?.phone,
+                            ].whereType<String>().join(' • '),
+                            isLoading: isLoading,
+                            onTap: () => _editTextField(
+                              title: 'Full name',
+                              initialValue: profile?.displayName ?? '',
+                              validator: (value) =>
+                                  (value == null || value.trim().isEmpty)
+                                  ? 'Enter your name'
+                                  : null,
+                              onSave: (value) async {
+                                await ref
+                                    .read(authControllerProvider.notifier)
+                                    .updateDisplayName(value);
+                                return !ref
+                                    .read(authControllerProvider)
+                                    .hasError;
+                              },
+                            ),
+                          ),
+                          const Divider(height: 1),
+                          _DetailRow(
+                            icon: Icons.call_outlined,
+                            title: 'Phone number',
+                            subtitle: profile?.phone,
+                            placeholder: 'Add your phone number',
+                            isLoading: isLoading,
+                            onTap: () async {
+                              final changed = await ChangePhoneSheet.show(
+                                context,
+                              );
+                              if (changed == true) {
+                                ref.invalidate(currentProfileProvider);
+                              }
                             },
                           ),
-                        ),
-                        const Divider(height: 1),
-                        _DetailRow(
-                          icon: Icons.call_outlined,
-                          title: 'Phone number',
-                          subtitle: profile?.phone,
-                          placeholder: 'Add your phone number',
-                          isLoading: isLoading,
-                          onTap: () async {
-                            final changed = await ChangePhoneSheet.show(
-                              context,
-                            );
-                            if (changed == true) {
-                              ref.invalidate(currentProfileProvider);
-                            }
-                          },
-                        ),
-                        const Divider(height: 1),
-                        _DetailRow(
-                          iconWidget: const LinkedInIcon(
-                            size: 40,
-                            fontSize: 18,
-                            backgroundColor: AppColors.primaryLight,
-                            foregroundColor: Color(0xFF0A66C2),
+                          const Divider(height: 1),
+                          _DetailRow(
+                            iconWidget: const LinkedInIcon(
+                              size: 40,
+                              fontSize: 18,
+                              backgroundColor: AppColors.primaryLight,
+                              foregroundColor: Color(0xFF0A66C2),
+                            ),
+                            title: 'My LinkedIn',
+                            subtitle: brandProfile?.linkedinUrl,
+                            placeholder: 'Add your LinkedIn profile',
+                            isLoading: isLoading,
+                            onTap: () => _editTextField(
+                              title: 'LinkedIn profile',
+                              initialValue: brandProfile?.linkedinUrl ?? '',
+                              hintText: 'https://linkedin.com/in/you',
+                              keyboardType: TextInputType.url,
+                              validator: Validators.linkedinUrl,
+                              onSave: (value) =>
+                                  _updateBrandProfile(linkedinUrl: value),
+                            ),
                           ),
-                          title: 'My LinkedIn',
-                          subtitle: brandProfile?.linkedinUrl,
-                          placeholder: 'Add your LinkedIn profile',
-                          isLoading: isLoading,
-                          onTap: () => _editTextField(
-                            title: 'LinkedIn profile',
-                            initialValue: brandProfile?.linkedinUrl ?? '',
-                            hintText: 'https://linkedin.com/in/you',
-                            keyboardType: TextInputType.url,
-                            validator: Validators.linkedinUrl,
-                            onSave: (value) =>
-                                _updateBrandProfile(linkedinUrl: value),
+                          const Divider(height: 1),
+                          _DetailRow(
+                            icon: Icons.business_outlined,
+                            title: 'Current organization',
+                            subtitle: brandProfile?.companyName,
+                            placeholder: 'Add your company name',
+                            isLoading: isLoading,
+                            onTap: () => _editTextField(
+                              title: 'Company name',
+                              initialValue: brandProfile?.companyName ?? '',
+                              validator: (value) =>
+                                  (value == null || value.trim().isEmpty)
+                                  ? 'Enter your company name'
+                                  : null,
+                              onSave: (value) =>
+                                  _updateBrandProfile(companyName: value),
+                            ),
                           ),
-                        ),
-                        const Divider(height: 1),
-                        _DetailRow(
-                          icon: Icons.business_outlined,
-                          title: 'Current organization',
-                          subtitle: brandProfile?.companyName,
-                          placeholder: 'Add your company name',
-                          isLoading: isLoading,
-                          onTap: () => _editTextField(
-                            title: 'Company name',
-                            initialValue: brandProfile?.companyName ?? '',
-                            validator: (value) =>
-                                (value == null || value.trim().isEmpty)
-                                ? 'Enter your company name'
-                                : null,
-                            onSave: (value) =>
-                                _updateBrandProfile(companyName: value),
+                          const Divider(height: 1),
+                          _DetailRow(
+                            icon: Icons.mail_outline,
+                            title: 'Work email',
+                            subtitle: profile?.email,
+                            isLoading: isLoading,
+                            onTap: () async {
+                              final changed = await ChangeEmailSheet.show(
+                                context,
+                              );
+                              if (changed == true) {
+                                ref.invalidate(currentProfileProvider);
+                              }
+                            },
                           ),
-                        ),
-                        const Divider(height: 1),
-                        _DetailRow(
-                          icon: Icons.mail_outline,
-                          title: 'Work email',
-                          subtitle: profile?.email,
-                          isLoading: isLoading,
-                          onTap: () async {
-                            final changed = await ChangeEmailSheet.show(
-                              context,
-                            );
-                            if (changed == true) {
-                              ref.invalidate(currentProfileProvider);
-                            }
-                          },
-                        ),
-                        const Divider(height: 1),
-                        _DetailRow(
-                          icon: Icons.work_outline,
-                          title: 'Current job title',
-                          subtitle: brandProfile?.designation,
-                          placeholder: 'Add your current title/position',
-                          isLoading: isLoading,
-                          onTap: () => _editTextField(
-                            title: 'Your designation',
-                            initialValue: brandProfile?.designation ?? '',
-                            hintText: 'e.g. Marketing Manager',
-                            validator: (value) =>
-                                (value == null || value.trim().isEmpty)
-                                ? 'Enter your designation'
-                                : null,
-                            onSave: (value) =>
-                                _updateBrandProfile(designation: value),
+                          const Divider(height: 1),
+                          _DetailRow(
+                            icon: Icons.work_outline,
+                            title: 'Current job title',
+                            subtitle: brandProfile?.designation,
+                            placeholder: 'Add your current title/position',
+                            isLoading: isLoading,
+                            onTap: () => _editTextField(
+                              title: 'Your designation',
+                              initialValue: brandProfile?.designation ?? '',
+                              hintText: 'e.g. Marketing Manager',
+                              validator: (value) =>
+                                  (value == null || value.trim().isEmpty)
+                                  ? 'Enter your designation'
+                                  : null,
+                              onSave: (value) =>
+                                  _updateBrandProfile(designation: value),
+                            ),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
                   ),
                   const SizedBox(height: 16),
-                  Card(
+                  StaggeredFadeIn(
+                    delay: const Duration(milliseconds: 180),
+                    child: Card(
+                      child: Column(
+                        children: [
+                          _DetailRow(
+                            icon: Icons.public,
+                            title: 'Website',
+                            subtitle: brandProfile?.website,
+                            placeholder: 'Add your company website',
+                            isLoading: isLoading,
+                            onTap: () => _editTextField(
+                              title: 'Company website',
+                              initialValue: brandProfile?.website ?? '',
+                              hintText: 'https://yourbrand.com',
+                              keyboardType: TextInputType.url,
+                              validator: (value) =>
+                                  (value == null || value.trim().isEmpty)
+                                  ? 'Enter your website'
+                                  : null,
+                              onSave: (value) =>
+                                  _updateBrandProfile(website: value),
+                            ),
+                          ),
+                          const Divider(height: 1),
+                          _DetailRow(
+                            icon: Icons.groups_outlined,
+                            title: 'Company size',
+                            subtitle: brandProfile?.companySize,
+                            placeholder: 'Select company size',
+                            isLoading: isLoading,
+                            onTap: () => _editCompanySize(brandProfile),
+                          ),
+                          const Divider(height: 1),
+                          _DetailRow(
+                            icon: Icons.location_on_outlined,
+                            title: 'Location',
+                            subtitle: [brandProfile?.city, brandProfile?.state]
+                                .whereType<String>()
+                                .where((s) => s.isNotEmpty)
+                                .join(', '),
+                            placeholder: 'Add your city and state',
+                            isLoading: isLoading,
+                            onTap: () => _editLocation(brandProfile),
+                          ),
+                          const Divider(height: 1),
+                          _DetailRow(
+                            icon: Icons.category_outlined,
+                            title: 'Industries',
+                            subtitle: brandProfile?.categories.join(', '),
+                            placeholder: 'Select your industries',
+                            isLoading: isLoading,
+                            onTap: () => _editCategories(brandProfile),
+                          ),
+                          const Divider(height: 1),
+                          _DetailRow(
+                            icon: Icons.notes_outlined,
+                            title: 'Bio',
+                            subtitle: brandProfile?.bio,
+                            placeholder: 'Tell creators about your brand',
+                            isLoading: isLoading,
+                            onTap: () => _editTextField(
+                              title: 'Bio',
+                              initialValue: brandProfile?.bio ?? '',
+                              hintText: 'Tell creators a bit about your brand',
+                              maxLines: 4,
+                              onSave: (value) =>
+                                  _updateBrandProfile(bio: value),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  StaggeredFadeIn(
+                    delay: const Duration(milliseconds: 270),
                     child: Column(
                       children: [
-                        _DetailRow(
-                          icon: Icons.public,
-                          title: 'Website',
-                          subtitle: brandProfile?.website,
-                          placeholder: 'Add your company website',
-                          isLoading: isLoading,
-                          onTap: () => _editTextField(
-                            title: 'Company website',
-                            initialValue: brandProfile?.website ?? '',
-                            hintText: 'https://yourbrand.com',
-                            keyboardType: TextInputType.url,
-                            validator: (value) =>
-                                (value == null || value.trim().isEmpty)
-                                ? 'Enter your website'
-                                : null,
-                            onSave: (value) =>
-                                _updateBrandProfile(website: value),
+                        const SizedBox(height: 24),
+                        Card(
+                          child: ListTile(
+                            leading: const Icon(Icons.settings_outlined),
+                            title: const Text('Settings'),
+                            trailing: const Icon(Icons.chevron_right),
+                            onTap: () => context.push(AppRoutes.settings),
                           ),
                         ),
-                        const Divider(height: 1),
-                        _DetailRow(
-                          icon: Icons.groups_outlined,
-                          title: 'Company size',
-                          subtitle: brandProfile?.companySize,
-                          placeholder: 'Select company size',
-                          isLoading: isLoading,
-                          onTap: () => _editCompanySize(brandProfile),
-                        ),
-                        const Divider(height: 1),
-                        _DetailRow(
-                          icon: Icons.location_on_outlined,
-                          title: 'Location',
-                          subtitle: [brandProfile?.city, brandProfile?.state]
-                              .whereType<String>()
-                              .where((s) => s.isNotEmpty)
-                              .join(', '),
-                          placeholder: 'Add your city and state',
-                          isLoading: isLoading,
-                          onTap: () => _editLocation(brandProfile),
-                        ),
-                        const Divider(height: 1),
-                        _DetailRow(
-                          icon: Icons.category_outlined,
-                          title: 'Industries',
-                          subtitle: brandProfile?.categories.join(', '),
-                          placeholder: 'Select your industries',
-                          isLoading: isLoading,
-                          onTap: () => _editCategories(brandProfile),
-                        ),
-                        const Divider(height: 1),
-                        _DetailRow(
-                          icon: Icons.notes_outlined,
-                          title: 'Bio',
-                          subtitle: brandProfile?.bio,
-                          placeholder: 'Tell creators about your brand',
-                          isLoading: isLoading,
-                          onTap: () => _editTextField(
-                            title: 'Bio',
-                            initialValue: brandProfile?.bio ?? '',
-                            hintText: 'Tell creators a bit about your brand',
-                            maxLines: 4,
-                            onSave: (value) => _updateBrandProfile(bio: value),
-                          ),
+                        const SizedBox(height: 16),
+                        PrimaryButton(
+                          text: 'Sign out',
+                          backgroundColor: AppColors.surface,
+                          foregroundColor: AppColors.textPrimary,
+                          borderColor: AppColors.border,
+                          onPressed: () => ref
+                              .read(authControllerProvider.notifier)
+                              .signOut(),
                         ),
                       ],
                     ),
-                  ),
-                  const SizedBox(height: 24),
-                  Card(
-                    child: ListTile(
-                      leading: const Icon(Icons.settings_outlined),
-                      title: const Text('Settings'),
-                      trailing: const Icon(Icons.chevron_right),
-                      onTap: () => context.push(AppRoutes.settings),
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  PrimaryButton(
-                    text: 'Sign out',
-                    backgroundColor: AppColors.surface,
-                    foregroundColor: AppColors.textPrimary,
-                    onPressed: () =>
-                        ref.read(authControllerProvider.notifier).signOut(),
                   ),
                 ],
               ),

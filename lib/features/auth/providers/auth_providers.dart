@@ -315,6 +315,7 @@ class AuthController extends _$AuthController {
 
   Future<void> saveCreatorDetails({
     required List<String> languages,
+    required List<String> categories,
     required String stateName,
     required String city,
   }) async {
@@ -336,6 +337,7 @@ class AuthController extends _$AuthController {
         // Instagram in the very next onboarding step.
         displayName: profile?.displayName ?? '',
         languages: languages,
+        categories: categories,
         stateName: stateName,
         city: city,
       );

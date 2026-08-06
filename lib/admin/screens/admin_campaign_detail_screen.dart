@@ -206,7 +206,7 @@ class AdminCampaignDetailScreen extends ConsumerWidget {
                           children: [
                             AdminDetailRow(
                               icon: Icons.category_outlined,
-                              label: 'Category',
+                              label: 'Niche',
                               value: campaign.categoriesLabel,
                             ),
                             if ((campaign.goal ?? '').isNotEmpty)

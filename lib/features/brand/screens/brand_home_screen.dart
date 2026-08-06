@@ -400,66 +400,42 @@ class _ActiveCampaignsDeckState extends State<_ActiveCampaignsDeck> {
               ],
             ),
             const SizedBox(height: 12),
-            Row(
-              children: [
-                if (widget.campaigns.length > 1)
-                  IconButton(
-                    icon: const Icon(Icons.chevron_left),
-                    color: AppColors.primary,
-                    onPressed: _page == 0 ? null : () => _goToPage(_page - 1),
-                  ),
-                Expanded(
-                  child: SizedBox(
-                    height: 110,
-                    child: PageView.builder(
-                      controller: _pageController,
-                      itemCount: widget.campaigns.length,
-                      onPageChanged: (index) => setState(() => _page = index),
-                      itemBuilder: (context, index) {
-                        return AnimatedBuilder(
-                          animation: _pageController,
-                          builder: (context, child) {
-                            var distance = 0.0;
-                            if (_pageController.hasClients &&
-                                _pageController.position.haveDimensions) {
-                              distance =
-                                  ((_pageController.page ?? _page.toDouble()) -
-                                          index)
-                                      .abs();
-                            } else {
-                              distance = (_page - index).abs().toDouble();
-                            }
-                            final scale = (1 - distance * 0.08).clamp(0.9, 1.0);
-                            final opacity = (1 - distance * 0.5).clamp(
-                              0.4,
-                              1.0,
-                            );
-                            return Transform.scale(
-                              scale: scale,
-                              child: Opacity(opacity: opacity, child: child),
-                            );
-                          },
-                          child: Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 6),
-                            child: _CampaignStatPage(
-                              campaign: widget.campaigns[index],
-                              brandId: widget.brandId,
-                            ),
-                          ),
-                        );
-                      },
+            SizedBox(
+              height: 110,
+              child: PageView.builder(
+                controller: _pageController,
+                itemCount: widget.campaigns.length,
+                onPageChanged: (index) => setState(() => _page = index),
+                itemBuilder: (context, index) {
+                  return AnimatedBuilder(
+                    animation: _pageController,
+                    builder: (context, child) {
+                      var distance = 0.0;
+                      if (_pageController.hasClients &&
+                          _pageController.position.haveDimensions) {
+                        distance =
+                            ((_pageController.page ?? _page.toDouble()) - index)
+                                .abs();
+                      } else {
+                        distance = (_page - index).abs().toDouble();
+                      }
+                      final scale = (1 - distance * 0.08).clamp(0.9, 1.0);
+                      final opacity = (1 - distance * 0.5).clamp(0.4, 1.0);
+                      return Transform.scale(
+                        scale: scale,
+                        child: Opacity(opacity: opacity, child: child),
+                      );
+                    },
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 6),
+                      child: _CampaignStatPage(
+                        campaign: widget.campaigns[index],
+                        brandId: widget.brandId,
+                      ),
                     ),
-                  ),
-                ),
-                if (widget.campaigns.length > 1)
-                  IconButton(
-                    icon: const Icon(Icons.chevron_right),
-                    color: AppColors.primary,
-                    onPressed: _page == widget.campaigns.length - 1
-                        ? null
-                        : () => _goToPage(_page + 1),
-                  ),
-              ],
+                  );
+                },
+              ),
             ),
             if (widget.campaigns.length > 1) ...[
               const SizedBox(height: 12),
@@ -467,14 +443,17 @@ class _ActiveCampaignsDeckState extends State<_ActiveCampaignsDeck> {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: List.generate(widget.campaigns.length, (index) {
                   final isActive = index == _page;
-                  return AnimatedContainer(
-                    duration: const Duration(milliseconds: 200),
-                    margin: const EdgeInsets.symmetric(horizontal: 3),
-                    width: isActive ? 18 : 6,
-                    height: 6,
-                    decoration: BoxDecoration(
-                      color: isActive ? AppColors.primary : AppColors.border,
-                      borderRadius: BorderRadius.circular(999),
+                  return GestureDetector(
+                    onTap: () => _goToPage(index),
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 200),
+                      margin: const EdgeInsets.symmetric(horizontal: 3),
+                      width: isActive ? 18 : 6,
+                      height: 6,
+                      decoration: BoxDecoration(
+                        color: isActive ? AppColors.primary : AppColors.border,
+                        borderRadius: BorderRadius.circular(999),
+                      ),
                     ),
                   );
                 }),
@@ -550,7 +529,7 @@ IconData _categoryIcon(String category) => switch (category) {
 };
 
 /// A paginated grid of creator categories a brand can tap to jump straight
-/// into Discover pre-filtered — mirrors the reference "Creator categories"
+/// into Discover pre-filtered — mirrors the reference "Creator niche"
 /// section (icon-in-box tiles, two rows per page, swipeable with dots).
 class _CategoriesCard extends StatefulWidget {
   const _CategoriesCard();
@@ -592,7 +571,7 @@ class _CategoriesCardState extends State<_CategoriesCard> {
           children: [
             Row(
               children: [
-                Text('Creator categories', style: AppTextStyles.titleSmall),
+                Text('Creator niche', style: AppTextStyles.titleSmall),
                 const Spacer(),
                 TextButton(
                   onPressed: () => context.go(AppRoutes.brandDiscover),

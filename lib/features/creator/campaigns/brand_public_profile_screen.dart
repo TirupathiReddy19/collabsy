@@ -155,8 +155,18 @@ class BrandPublicProfileScreen extends ConsumerWidget {
         child: brandProfileAsync.when(
           data: (brandProfile) {
             final appProfile = appProfileAsync.value;
+            // Kept company-first for chat/report/block text below, matching
+            // the stored chat.brandName snapshot convention elsewhere — only
+            // the header display leads with the person's own name.
             final brandName =
                 brandProfile?.companyName ?? appProfile?.displayName ?? 'Brand';
+            final personName =
+                appProfile?.displayName ?? brandProfile?.companyName ?? 'Brand';
+            final companyName = brandProfile?.companyName;
+            final showCompanyLine =
+                companyName != null &&
+                companyName.isNotEmpty &&
+                companyName != personName;
 
             return ListView(
               padding: const EdgeInsets.all(AppSpacing.screenHorizontal),
@@ -171,7 +181,7 @@ class BrandPublicProfileScreen extends ConsumerWidget {
                   children: [
                     Flexible(
                       child: Text(
-                        brandName,
+                        personName,
                         style: AppTextStyles.heading1,
                         overflow: TextOverflow.ellipsis,
                       ),
@@ -186,6 +196,15 @@ class BrandPublicProfileScreen extends ConsumerWidget {
                     ],
                   ],
                 ),
+                if (showCompanyLine) ...[
+                  const SizedBox(height: 2),
+                  Text(
+                    companyName,
+                    style: AppTextStyles.bodyMedium.copyWith(
+                      color: AppColors.textSecondary,
+                    ),
+                  ),
+                ],
                 if ((brandProfile?.designation ?? '').isNotEmpty) ...[
                   const SizedBox(height: 2),
                   Text(

@@ -69,10 +69,17 @@ service cloud.firestore {
     // connected Instagram) which only the admin may ever write.
     match /creatorProfiles/{userId} {
       allow read: if request.auth != null;
+      // NOTE: on a merge write, request.resource.data reflects the full
+      // post-merge document, not just the fields the client sent — so once
+      // a creator is verified, "verificationStatus" is always present here
+      // even on an unrelated bio/categories edit. Checking it's unchanged
+      // (rather than absent) is what actually blocks the creator from
+      // altering it while still letting merge writes through.
       allow write: if isAdmin()
         || isActiveStaffWithPermission('/verification/creators')
         || (request.auth != null && request.auth.uid == userId
-            && !('verificationStatus' in request.resource.data));
+            && (!('verificationStatus' in request.resource.data)
+                || request.resource.data.verificationStatus == resource.data.verificationStatus));
     }
 
     // Brand-only profile extension (bio/industries/website) — same
@@ -81,10 +88,15 @@ service cloud.firestore {
     // website + LinkedIn) which only the admin may ever write.
     match /brandProfiles/{userId} {
       allow read: if request.auth != null;
+      // Same merge-write nuance as creatorProfiles above: request.resource.data
+      // reflects the post-merge document, so a verified brand's existing
+      // verificationStatus is always present here — check it's unchanged,
+      // not merely present, or every profile edit gets denied.
       allow write: if isAdmin()
         || isActiveStaffWithPermission('/verification/brands')
         || (request.auth != null && request.auth.uid == userId
-            && !('verificationStatus' in request.resource.data));
+            && (!('verificationStatus' in request.resource.data)
+                || request.resource.data.verificationStatus == resource.data.verificationStatus));
     }
 
     // Readable by any authenticated user (creators browse open campaigns),

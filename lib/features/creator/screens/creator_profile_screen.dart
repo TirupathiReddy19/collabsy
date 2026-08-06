@@ -15,6 +15,7 @@ import '../../../core/widgets/loading_indicator.dart';
 import '../../../core/widgets/primary_button.dart';
 import '../../../core/widgets/profile_avatar.dart';
 import '../../../core/widgets/searchable_dropdown_field.dart';
+import '../../../core/widgets/staggered_fade_in.dart';
 import '../../../shared/utils/creator_display_name.dart';
 import '../../../shared/widgets/multi_select_picker_screen.dart';
 import '../../auth/providers/auth_providers.dart';
@@ -128,7 +129,7 @@ class _CreatorProfileScreenState extends ConsumerState<CreatorProfileScreen> {
     final result = await Navigator.of(context).push<Set<String>>(
       MaterialPageRoute(
         builder: (context) => MultiSelectPickerScreen(
-          title: 'Content categories',
+          title: 'Niche',
           options: campaignCategories,
           initialSelected: _selectedCategories,
         ),
@@ -177,245 +178,309 @@ class _CreatorProfileScreenState extends ConsumerState<CreatorProfileScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              ProfileAvatar(
-                avatarUrl: instagramAccount?.profilePictureUrl,
-                fallbackIcon: Icons.person,
-              ),
-              const SizedBox(height: AppSpacing.md),
-              profile.when(
-                data: (value) => Column(
+              StaggeredFadeIn(
+                child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      creatorDisplayName(value?.displayName, instagramAccount),
-                      style: AppTextStyles.heading2,
+                    ProfileAvatar(
+                      avatarUrl: instagramAccount?.profilePictureUrl,
+                      fallbackIcon: Icons.person,
                     ),
-                    if (value?.email != null) ...[
-                      const SizedBox(height: 4),
-                      InkWell(
-                        onTap: () async {
-                          final changed = await ChangeEmailSheet.show(context);
-                          if (changed == true) {
-                            ref.invalidate(currentProfileProvider);
-                          }
-                        },
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Text(
-                              value!.email!,
-                              style: AppTextStyles.bodyMedium,
+                    const SizedBox(height: AppSpacing.md),
+                    profile.when(
+                      data: (value) => Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            creatorDisplayName(
+                              value?.displayName,
+                              instagramAccount,
                             ),
-                            const SizedBox(width: 4),
-                            const Icon(
-                              Icons.edit_outlined,
-                              size: 14,
-                              color: AppColors.textSecondary,
+                            style: AppTextStyles.heading2,
+                          ),
+                          if (value?.email != null) ...[
+                            const SizedBox(height: 4),
+                            InkWell(
+                              onTap: () async {
+                                final changed = await ChangeEmailSheet.show(
+                                  context,
+                                );
+                                if (changed == true) {
+                                  ref.invalidate(currentProfileProvider);
+                                }
+                              },
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Text(
+                                    value!.email!,
+                                    style: AppTextStyles.bodyMedium,
+                                  ),
+                                  const SizedBox(width: 4),
+                                  const Icon(
+                                    Icons.edit_outlined,
+                                    size: 14,
+                                    color: AppColors.textSecondary,
+                                  ),
+                                ],
+                              ),
                             ),
                           ],
+                          if (value?.phone != null) ...[
+                            const SizedBox(height: 4),
+                            InkWell(
+                              onTap: () async {
+                                final changed = await ChangePhoneSheet.show(
+                                  context,
+                                );
+                                if (changed == true) {
+                                  ref.invalidate(currentProfileProvider);
+                                }
+                              },
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Text(
+                                    value!.phone!,
+                                    style: AppTextStyles.bodyMedium,
+                                  ),
+                                  const SizedBox(width: 4),
+                                  const Icon(
+                                    Icons.edit_outlined,
+                                    size: 14,
+                                    color: AppColors.textSecondary,
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ],
+                      ),
+                      loading: () => const LoadingIndicator(size: 20),
+                      error: (error, stackTrace) => Text(
+                        'Could not load your profile',
+                        style: AppTextStyles.bodyMedium.copyWith(
+                          color: AppColors.error,
                         ),
                       ),
-                    ],
-                    if (value?.phone != null) ...[
-                      const SizedBox(height: 4),
-                      InkWell(
-                        onTap: () async {
-                          final changed = await ChangePhoneSheet.show(context);
-                          if (changed == true) {
-                            ref.invalidate(currentProfileProvider);
-                          }
-                        },
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Text(
-                              value!.phone!,
-                              style: AppTextStyles.bodyMedium,
-                            ),
-                            const SizedBox(width: 4),
-                            const Icon(
-                              Icons.edit_outlined,
-                              size: 14,
-                              color: AppColors.textSecondary,
-                            ),
-                          ],
+                    ),
+                  ],
+                ),
+              ),
+              StaggeredFadeIn(
+                delay: const Duration(milliseconds: 90),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const SizedBox(height: 24),
+                    Row(
+                      children: [
+                        Text('Bio', style: AppTextStyles.labelLarge),
+                        const Spacer(),
+                        IconButton(
+                          icon: const Icon(Icons.edit_outlined, size: 20),
+                          onPressed: isLoading
+                              ? null
+                              : () => setState(
+                                  () => _isEditingBio = !_isEditingBio,
+                                ),
                         ),
+                      ],
+                    ),
+                    if (_isEditingBio)
+                      AppTextField(
+                        controller: _bioController,
+                        hintText: 'Tell brands a bit about yourself',
+                        maxLines: 4,
+                        enabled: !isLoading,
+                      )
+                    else
+                      Text(
+                        _bioController.text.isEmpty
+                            ? 'Tell brands a bit about yourself'
+                            : _bioController.text,
+                        style: AppTextStyles.bodyMedium.copyWith(
+                          color: _bioController.text.isEmpty
+                              ? AppColors.textSecondary
+                              : AppColors.textPrimary,
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+              StaggeredFadeIn(
+                delay: const Duration(milliseconds: 180),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const SizedBox(height: 16),
+                    Row(
+                      children: [
+                        Text('Location', style: AppTextStyles.labelLarge),
+                        const Spacer(),
+                        IconButton(
+                          icon: const Icon(Icons.edit_outlined, size: 20),
+                          onPressed: isLoading
+                              ? null
+                              : () => setState(
+                                  () =>
+                                      _isEditingLocation = !_isEditingLocation,
+                                ),
+                        ),
+                      ],
+                    ),
+                    if (_isEditingLocation) ...[
+                      SearchableDropdownField(
+                        label: 'State',
+                        items: indianStates,
+                        selected: _selectedState,
+                        enabled: !isLoading,
+                        onChanged: (value) =>
+                            setState(() => _selectedState = value),
+                      ),
+                      const SizedBox(height: 12),
+                      AppTextField(
+                        controller: _cityController,
+                        label: 'City',
+                        hintText: 'Mumbai',
+                        enabled: !isLoading,
+                      ),
+                    ] else
+                      Text(
+                        _hasLocation
+                            ? [_cityController.text, _selectedState]
+                                  .where(
+                                    (value) =>
+                                        value != null && value.isNotEmpty,
+                                  )
+                                  .join(', ')
+                            : 'Add your city and state',
+                        style: AppTextStyles.bodyMedium.copyWith(
+                          color: _hasLocation
+                              ? AppColors.textPrimary
+                              : AppColors.textSecondary,
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+              StaggeredFadeIn(
+                delay: const Duration(milliseconds: 270),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const SizedBox(height: 16),
+                    Row(
+                      children: [
+                        Text('Niche', style: AppTextStyles.labelLarge),
+                        const Spacer(),
+                        TextButton(
+                          onPressed: isLoading ? null : _editCategories,
+                          child: Text(
+                            _selectedCategories.isEmpty ? 'Select' : 'Edit',
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    if (_selectedCategories.isEmpty)
+                      Text(
+                        'No niche selected yet',
+                        style: AppTextStyles.bodySmall,
+                      )
+                    else
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
+                        children: _selectedCategories.map((category) {
+                          return Chip(
+                            label: Text(category),
+                            onDeleted: isLoading
+                                ? null
+                                : () => setState(
+                                    () => _selectedCategories.remove(category),
+                                  ),
+                          );
+                        }).toList(),
+                      ),
+                  ],
+                ),
+              ),
+              StaggeredFadeIn(
+                delay: const Duration(milliseconds: 360),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const SizedBox(height: 16),
+                    Row(
+                      children: [
+                        Text('Languages', style: AppTextStyles.labelLarge),
+                        const Spacer(),
+                        TextButton(
+                          onPressed: isLoading ? null : _editLanguages,
+                          child: Text(
+                            _selectedLanguages.isEmpty ? 'Select' : 'Edit',
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    if (_selectedLanguages.isEmpty)
+                      Text(
+                        'No languages selected yet',
+                        style: AppTextStyles.bodySmall,
+                      )
+                    else
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
+                        children: _selectedLanguages.map((language) {
+                          return Chip(
+                            label: Text(language),
+                            onDeleted: isLoading
+                                ? null
+                                : () => setState(
+                                    () => _selectedLanguages.remove(language),
+                                  ),
+                          );
+                        }).toList(),
+                      ),
+                    if (_isDirty) ...[
+                      const SizedBox(height: 24),
+                      PrimaryButton(
+                        text: 'Save changes',
+                        onPressed: isLoading ? null : _save,
+                        isLoading: isLoading,
                       ),
                     ],
                   ],
                 ),
-                loading: () => const LoadingIndicator(size: 20),
-                error: (error, stackTrace) => Text(
-                  'Could not load your profile',
-                  style: AppTextStyles.bodyMedium.copyWith(
-                    color: AppColors.error,
-                  ),
-                ),
               ),
-              const SizedBox(height: 24),
-              Row(
-                children: [
-                  Text('Bio', style: AppTextStyles.labelLarge),
-                  const Spacer(),
-                  IconButton(
-                    icon: const Icon(Icons.edit_outlined, size: 20),
-                    onPressed: isLoading
-                        ? null
-                        : () => setState(() => _isEditingBio = !_isEditingBio),
-                  ),
-                ],
-              ),
-              if (_isEditingBio)
-                AppTextField(
-                  controller: _bioController,
-                  hintText: 'Tell brands a bit about yourself',
-                  maxLines: 4,
-                  enabled: !isLoading,
-                )
-              else
-                Text(
-                  _bioController.text.isEmpty
-                      ? 'Tell brands a bit about yourself'
-                      : _bioController.text,
-                  style: AppTextStyles.bodyMedium.copyWith(
-                    color: _bioController.text.isEmpty
-                        ? AppColors.textSecondary
-                        : AppColors.textPrimary,
-                  ),
-                ),
-              const SizedBox(height: 16),
-              Row(
-                children: [
-                  Text('Location', style: AppTextStyles.labelLarge),
-                  const Spacer(),
-                  IconButton(
-                    icon: const Icon(Icons.edit_outlined, size: 20),
-                    onPressed: isLoading
-                        ? null
-                        : () => setState(
-                            () => _isEditingLocation = !_isEditingLocation,
-                          ),
-                  ),
-                ],
-              ),
-              if (_isEditingLocation) ...[
-                SearchableDropdownField(
-                  label: 'State',
-                  items: indianStates,
-                  selected: _selectedState,
-                  enabled: !isLoading,
-                  onChanged: (value) => setState(() => _selectedState = value),
-                ),
-                const SizedBox(height: 12),
-                AppTextField(
-                  controller: _cityController,
-                  label: 'City',
-                  hintText: 'Mumbai',
-                  enabled: !isLoading,
-                ),
-              ] else
-                Text(
-                  _hasLocation
-                      ? [_cityController.text, _selectedState]
-                            .where((value) => value != null && value.isNotEmpty)
-                            .join(', ')
-                      : 'Add your city and state',
-                  style: AppTextStyles.bodyMedium.copyWith(
-                    color: _hasLocation
-                        ? AppColors.textPrimary
-                        : AppColors.textSecondary,
-                  ),
-                ),
-              const SizedBox(height: 16),
-              Row(
-                children: [
-                  Text('Content categories', style: AppTextStyles.labelLarge),
-                  const Spacer(),
-                  TextButton(
-                    onPressed: isLoading ? null : _editCategories,
-                    child: Text(
-                      _selectedCategories.isEmpty ? 'Select' : 'Edit',
+              StaggeredFadeIn(
+                delay: const Duration(milliseconds: 450),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const SizedBox(height: 24),
+                    Card(
+                      child: ListTile(
+                        leading: const Icon(Icons.settings_outlined),
+                        title: const Text('Settings'),
+                        trailing: const Icon(Icons.chevron_right),
+                        onTap: () => context.push(AppRoutes.settings),
+                      ),
                     ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 8),
-              if (_selectedCategories.isEmpty)
-                Text(
-                  'No categories selected yet',
-                  style: AppTextStyles.bodySmall,
-                )
-              else
-                Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
-                  children: _selectedCategories.map((category) {
-                    return Chip(
-                      label: Text(category),
-                      onDeleted: isLoading
-                          ? null
-                          : () => setState(
-                              () => _selectedCategories.remove(category),
-                            ),
-                    );
-                  }).toList(),
+                    const SizedBox(height: 16),
+                    PrimaryButton(
+                      text: 'Sign out',
+                      backgroundColor: AppColors.surface,
+                      foregroundColor: AppColors.textPrimary,
+                      borderColor: AppColors.border,
+                      onPressed: () =>
+                          ref.read(authControllerProvider.notifier).signOut(),
+                    ),
+                  ],
                 ),
-              const SizedBox(height: 16),
-              Row(
-                children: [
-                  Text('Languages', style: AppTextStyles.labelLarge),
-                  const Spacer(),
-                  TextButton(
-                    onPressed: isLoading ? null : _editLanguages,
-                    child: Text(_selectedLanguages.isEmpty ? 'Select' : 'Edit'),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 8),
-              if (_selectedLanguages.isEmpty)
-                Text(
-                  'No languages selected yet',
-                  style: AppTextStyles.bodySmall,
-                )
-              else
-                Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
-                  children: _selectedLanguages.map((language) {
-                    return Chip(
-                      label: Text(language),
-                      onDeleted: isLoading
-                          ? null
-                          : () => setState(
-                              () => _selectedLanguages.remove(language),
-                            ),
-                    );
-                  }).toList(),
-                ),
-              if (_isDirty) ...[
-                const SizedBox(height: 24),
-                PrimaryButton(
-                  text: 'Save changes',
-                  onPressed: isLoading ? null : _save,
-                  isLoading: isLoading,
-                ),
-              ],
-              const SizedBox(height: 24),
-              Card(
-                child: ListTile(
-                  leading: const Icon(Icons.settings_outlined),
-                  title: const Text('Settings'),
-                  trailing: const Icon(Icons.chevron_right),
-                  onTap: () => context.push(AppRoutes.settings),
-                ),
-              ),
-              const SizedBox(height: 16),
-              PrimaryButton(
-                text: 'Sign out',
-                backgroundColor: AppColors.surface,
-                foregroundColor: AppColors.textPrimary,
-                onPressed: () =>
-                    ref.read(authControllerProvider.notifier).signOut(),
               ),
             ],
           ),

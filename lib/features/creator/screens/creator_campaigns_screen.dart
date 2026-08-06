@@ -10,6 +10,7 @@ import '../../../core/utils/campaign_categories.dart';
 import '../../../core/widgets/app_snackbar.dart';
 import '../../../core/widgets/empty_state.dart';
 import '../../../core/widgets/loading_indicator.dart';
+import '../../../core/widgets/staggered_fade_in.dart';
 import '../../campaigns/models/application_status.dart';
 import '../../campaigns/models/campaign_application.dart';
 import '../../campaigns/models/deliverable_type.dart';
@@ -84,7 +85,7 @@ class _BrowseTab extends ConsumerWidget {
           child: Row(
             children: [
               _FilterChip(
-                label: category ?? 'Category',
+                label: category ?? 'Niche',
                 selected: category != null,
                 onTap: () => _pickCategory(context, ref),
               ),
@@ -116,10 +117,14 @@ class _BrowseTab extends ConsumerWidget {
                     const SizedBox(height: AppSpacing.sm),
                 itemBuilder: (context, index) {
                   final campaign = items[index];
-                  return CampaignCard(
-                    campaign: campaign,
-                    onTap: () => context.push(
-                      AppRoutes.creatorCampaignDetailPath(campaign.id),
+                  return StaggeredFadeIn(
+                    key: ValueKey(campaign.id),
+                    delay: Duration(milliseconds: (index * 40).clamp(0, 400)),
+                    child: CampaignCard(
+                      campaign: campaign,
+                      onTap: () => context.push(
+                        AppRoutes.creatorCampaignDetailPath(campaign.id),
+                      ),
                     ),
                   );
                 },
@@ -143,7 +148,7 @@ class _BrowseTab extends ConsumerWidget {
     final result = await showModalBottomSheet<String?>(
       context: context,
       builder: (context) => _FilterSheet(
-        title: 'Category',
+        title: 'Niche',
         options: campaignCategories,
         onClear: () => Navigator.of(context).pop(),
       ),
@@ -270,7 +275,10 @@ class _AppliedTab extends ConsumerWidget {
               const SizedBox(height: AppSpacing.sm),
           itemBuilder: (context, index) {
             final application = items[index];
-            return Card(
+            return StaggeredFadeIn(
+              key: ValueKey(application.id),
+              delay: Duration(milliseconds: (index * 40).clamp(0, 400)),
+              child: Card(
               elevation: 1,
               shadowColor: Colors.black.withValues(alpha: 0.06),
               shape: RoundedRectangleBorder(
@@ -307,6 +315,7 @@ class _AppliedTab extends ConsumerWidget {
                       ),
                     ),
                 ],
+              ),
               ),
             );
           },

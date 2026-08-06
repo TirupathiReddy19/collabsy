@@ -9,6 +9,7 @@ import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_text_styles.dart';
 import '../../../core/widgets/app_snackbar.dart';
 import '../../../core/widgets/app_text_field.dart';
+import '../../../core/widgets/staggered_fade_in.dart';
 import '../../auth/providers/auth_providers.dart';
 import '../../../shared/models/user_role.dart';
 
@@ -66,92 +67,134 @@ class SettingsScreen extends ConsumerWidget {
         child: ListView(
           padding: const EdgeInsets.all(AppSpacing.screenHorizontal),
           children: [
-            Text('Notifications', style: AppTextStyles.titleMedium),
-            const SizedBox(height: 8),
-            SwitchListTile(
-              contentPadding: EdgeInsets.zero,
-              title: const Text('Push notifications'),
-              subtitle: const Text(
-                'New applications, accept/reject updates, messages, and '
-                'deliverable reviews.',
+            StaggeredFadeIn(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('Notifications', style: AppTextStyles.titleMedium),
+                  const SizedBox(height: 8),
+                  SwitchListTile(
+                    contentPadding: EdgeInsets.zero,
+                    title: const Text('Push notifications'),
+                    subtitle: const Text(
+                      'New applications, accept/reject updates, messages, and '
+                      'deliverable reviews.',
+                    ),
+                    value: profile?.pushNotificationsEnabled ?? true,
+                    onChanged: isLoading
+                        ? null
+                        : (value) => _togglePush(context, ref, value),
+                  ),
+                ],
               ),
-              value: profile?.pushNotificationsEnabled ?? true,
-              onChanged: isLoading
-                  ? null
-                  : (value) => _togglePush(context, ref, value),
             ),
-            if (profile?.role == UserRole.creator) ...[
-              const SizedBox(height: 24),
-              Text('Account', style: AppTextStyles.titleMedium),
-              const SizedBox(height: 8),
-              ListTile(
-                contentPadding: EdgeInsets.zero,
-                title: const Text('Connected accounts'),
-                subtitle: const Text('Link your Instagram to your profile.'),
-                trailing: const Icon(
-                  Icons.chevron_right,
-                  color: AppColors.textSecondary,
+            if (profile?.role == UserRole.creator)
+              StaggeredFadeIn(
+                delay: const Duration(milliseconds: 90),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const SizedBox(height: 24),
+                    Text('Account', style: AppTextStyles.titleMedium),
+                    const SizedBox(height: 8),
+                    ListTile(
+                      contentPadding: EdgeInsets.zero,
+                      title: const Text('Connected accounts'),
+                      subtitle: const Text(
+                        'Link your Instagram to your profile.',
+                      ),
+                      trailing: const Icon(
+                        Icons.chevron_right,
+                        color: AppColors.textSecondary,
+                      ),
+                      onTap: () => context.push(AppRoutes.connectedAccounts),
+                    ),
+                  ],
                 ),
-                onTap: () => context.push(AppRoutes.connectedAccounts),
               ),
-            ],
-            const SizedBox(height: 24),
-            Text('Privacy & Safety', style: AppTextStyles.titleMedium),
-            const SizedBox(height: 8),
-            ListTile(
-              contentPadding: EdgeInsets.zero,
-              title: const Text('Blocked accounts'),
-              subtitle: const Text('Manage the users you have blocked.'),
-              trailing: const Icon(
-                Icons.chevron_right,
-                color: AppColors.textSecondary,
+            StaggeredFadeIn(
+              delay: const Duration(milliseconds: 180),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const SizedBox(height: 24),
+                  Text('Privacy & Safety', style: AppTextStyles.titleMedium),
+                  const SizedBox(height: 8),
+                  ListTile(
+                    contentPadding: EdgeInsets.zero,
+                    title: const Text('Blocked accounts'),
+                    subtitle: const Text('Manage the users you have blocked.'),
+                    trailing: const Icon(
+                      Icons.chevron_right,
+                      color: AppColors.textSecondary,
+                    ),
+                    onTap: () => context.push(AppRoutes.blockedAccounts),
+                  ),
+                ],
               ),
-              onTap: () => context.push(AppRoutes.blockedAccounts),
             ),
-            const SizedBox(height: 24),
-            Text('Legal', style: AppTextStyles.titleMedium),
-            const SizedBox(height: 8),
-            ListTile(
-              contentPadding: EdgeInsets.zero,
-              title: const Text('Privacy Policy'),
-              trailing: const Icon(
-                Icons.chevron_right,
-                color: AppColors.textSecondary,
+            StaggeredFadeIn(
+              delay: const Duration(milliseconds: 270),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const SizedBox(height: 24),
+                  Text('Legal', style: AppTextStyles.titleMedium),
+                  const SizedBox(height: 8),
+                  ListTile(
+                    contentPadding: EdgeInsets.zero,
+                    title: const Text('Privacy Policy'),
+                    trailing: const Icon(
+                      Icons.chevron_right,
+                      color: AppColors.textSecondary,
+                    ),
+                    onTap: () => _openUrl('$_legalBaseUrl/privacy/'),
+                  ),
+                  ListTile(
+                    contentPadding: EdgeInsets.zero,
+                    title: const Text('Terms of Service'),
+                    trailing: const Icon(
+                      Icons.chevron_right,
+                      color: AppColors.textSecondary,
+                    ),
+                    onTap: () => _openUrl('$_legalBaseUrl/terms/'),
+                  ),
+                ],
               ),
-              onTap: () => _openUrl('$_legalBaseUrl/privacy/'),
             ),
-            ListTile(
-              contentPadding: EdgeInsets.zero,
-              title: const Text('Terms of Service'),
-              trailing: const Icon(
-                Icons.chevron_right,
-                color: AppColors.textSecondary,
+            StaggeredFadeIn(
+              delay: const Duration(milliseconds: 360),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const SizedBox(height: 24),
+                  Text(
+                    'Danger Zone',
+                    style: AppTextStyles.titleMedium.copyWith(
+                      color: AppColors.error,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  ListTile(
+                    contentPadding: EdgeInsets.zero,
+                    title: const Text(
+                      'Delete account',
+                      style: TextStyle(color: AppColors.error),
+                    ),
+                    subtitle: const Text(
+                      'Permanently deletes your account and profile. This '
+                      "can't be undone.",
+                    ),
+                    trailing: const Icon(
+                      Icons.delete_outline,
+                      color: AppColors.error,
+                    ),
+                    onTap: isLoading
+                        ? null
+                        : () => _confirmAndDeleteAccount(context, ref),
+                  ),
+                ],
               ),
-              onTap: () => _openUrl('$_legalBaseUrl/terms/'),
-            ),
-            const SizedBox(height: 24),
-            Text(
-              'Danger Zone',
-              style: AppTextStyles.titleMedium.copyWith(color: AppColors.error),
-            ),
-            const SizedBox(height: 8),
-            ListTile(
-              contentPadding: EdgeInsets.zero,
-              title: const Text(
-                'Delete account',
-                style: TextStyle(color: AppColors.error),
-              ),
-              subtitle: const Text(
-                'Permanently deletes your account and profile. This '
-                "can't be undone.",
-              ),
-              trailing: const Icon(
-                Icons.delete_outline,
-                color: AppColors.error,
-              ),
-              onTap: isLoading
-                  ? null
-                  : () => _confirmAndDeleteAccount(context, ref),
             ),
           ],
         ),

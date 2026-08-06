@@ -10,6 +10,7 @@ import '../../../core/widgets/app_snackbar.dart';
 import '../../../core/widgets/empty_state.dart';
 import '../../../core/widgets/loading_indicator.dart';
 import '../../../core/widgets/profile_avatar.dart';
+import '../../../core/widgets/staggered_fade_in.dart';
 import '../../../shared/utils/creator_display_name.dart';
 import '../../auth/providers/auth_providers.dart';
 import '../../campaigns/models/application_status.dart';
@@ -68,7 +69,9 @@ class _BrandCampaignDetailScreenState
     if (!context.mounted) return;
     if (ref.read(campaignControllerProvider).hasError) {
       AppSnackbar.showError(context, "Couldn't update the campaign.");
+      return;
     }
+    AppSnackbar.showSuccess(context, 'Campaign updated.');
   }
 
   Future<void> _decideApplication(
@@ -86,6 +89,12 @@ class _BrandCampaignDetailScreenState
       AppSnackbar.showError(context, "Couldn't update the application.");
       return;
     }
+    AppSnackbar.showSuccess(
+      context,
+      status == ApplicationStatus.accepted
+          ? 'Application accepted.'
+          : 'Application rejected.',
+    );
     if (status == ApplicationStatus.accepted) {
       // Always moves any existing Requests-status chat (from the creator
       // messaging first) into Messages, or creates one directly there —
@@ -588,162 +597,193 @@ class _OverviewTab extends StatelessWidget {
     return ListView(
       padding: const EdgeInsets.all(AppSpacing.screenHorizontal),
       children: [
-        Text(campaign.description, style: AppTextStyles.bodyMedium),
-        const SizedBox(height: 20),
-        Text('Details', style: AppTextStyles.titleMedium),
-        const SizedBox(height: 12),
-        Card(
-          child: Padding(
-            padding: const EdgeInsets.all(AppSpacing.card),
-            child: Column(
-              children: [
-                _OverviewDetailRow(
-                  icon: Icons.category_outlined,
-                  label: 'Category',
-                  value: campaign.categoriesLabel,
-                ),
-                if ((campaign.goal ?? '').isNotEmpty)
-                  _OverviewDetailRow(
-                    icon: Icons.flag_outlined,
-                    label: 'Goal',
-                    value: campaign.goal!,
+        StaggeredFadeIn(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(campaign.description, style: AppTextStyles.bodyMedium),
+              const SizedBox(height: 20),
+              Text('Details', style: AppTextStyles.titleMedium),
+              const SizedBox(height: 12),
+              Card(
+                child: Padding(
+                  padding: const EdgeInsets.all(AppSpacing.card),
+                  child: Column(
+                    children: [
+                      _OverviewDetailRow(
+                        icon: Icons.category_outlined,
+                        label: 'Niche',
+                        value: campaign.categoriesLabel,
+                      ),
+                      if ((campaign.goal ?? '').isNotEmpty)
+                        _OverviewDetailRow(
+                          icon: Icons.flag_outlined,
+                          label: 'Goal',
+                          value: campaign.goal!,
+                        ),
+                      _OverviewDetailRow(
+                        icon:
+                            campaign.compensationType == CompensationType.barter
+                            ? Icons.handshake_outlined
+                            : Icons.currency_rupee,
+                        label: 'Compensation',
+                        value:
+                            campaign.compensationType == CompensationType.barter
+                            ? (campaign.barterDescription ?? 'Barter')
+                            : campaign.compensationLabel,
+                      ),
+                      _OverviewDetailRow(
+                        icon: Icons.location_on_outlined,
+                        label: 'Open to creators from',
+                        value: campaign.targetLocationsLabel,
+                      ),
+                      if (campaign.locationLabel.isNotEmpty)
+                        _OverviewDetailRow(
+                          icon: Icons.place_outlined,
+                          label: 'Campaign location',
+                          value: campaign.locationLabel,
+                        ),
+                      _OverviewDetailRow(
+                        icon: Icons.event_outlined,
+                        label: 'Timeline',
+                        value: campaign.timelineLabel,
+                        isLast: true,
+                      ),
+                    ],
                   ),
-                _OverviewDetailRow(
-                  icon: campaign.compensationType == CompensationType.barter
-                      ? Icons.handshake_outlined
-                      : Icons.currency_rupee,
-                  label: 'Compensation',
-                  value: campaign.compensationType == CompensationType.barter
-                      ? (campaign.barterDescription ?? 'Barter')
-                      : campaign.compensationLabel,
                 ),
-                _OverviewDetailRow(
-                  icon: Icons.location_on_outlined,
-                  label: 'Open to creators from',
-                  value: campaign.targetLocationsLabel,
-                ),
-                if (campaign.locationLabel.isNotEmpty)
-                  _OverviewDetailRow(
-                    icon: Icons.place_outlined,
-                    label: 'Campaign location',
-                    value: campaign.locationLabel,
-                  ),
-                _OverviewDetailRow(
-                  icon: Icons.event_outlined,
-                  label: 'Timeline',
-                  value: campaign.timelineLabel,
-                  isLast: true,
-                ),
-              ],
-            ),
+              ),
+            ],
           ),
         ),
-        const SizedBox(height: 20),
-        Card(
-          child: Padding(
-            padding: const EdgeInsets.all(AppSpacing.card),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text('Campaign progress', style: AppTextStyles.titleSmall),
-                const SizedBox(height: 4),
-                Text(
-                  campaign.timelineLabel,
-                  style: AppTextStyles.bodySmall.copyWith(
-                    color: AppColors.textSecondary,
+        StaggeredFadeIn(
+          delay: const Duration(milliseconds: 90),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const SizedBox(height: 20),
+              Card(
+                child: Padding(
+                  padding: const EdgeInsets.all(AppSpacing.card),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Campaign progress',
+                        style: AppTextStyles.titleSmall,
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        campaign.timelineLabel,
+                        style: AppTextStyles.bodySmall.copyWith(
+                          color: AppColors.textSecondary,
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      Row(
+                        children: [
+                          Text(
+                            'Overall completion',
+                            style: AppTextStyles.bodySmall,
+                          ),
+                          const Spacer(),
+                          Text(
+                            '${(progress * 100).round()}%',
+                            style: AppTextStyles.labelLarge.copyWith(
+                              color: AppColors.primary,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(999),
+                        child: LinearProgressIndicator(
+                          value: progress,
+                          minHeight: 8,
+                          backgroundColor: AppColors.border,
+                          color: AppColors.primary,
+                        ),
+                      ),
+                      const SizedBox(height: 20),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: _ProgressStat(
+                              label: 'Submitted',
+                              value: '$submitted/$accepted',
+                              color: AppColors.secondary,
+                            ),
+                          ),
+                          Expanded(
+                            child: _ProgressStat(
+                              label: 'Approved',
+                              value: '$approved/$accepted',
+                              color: AppColors.success,
+                            ),
+                          ),
+                          Expanded(
+                            child: _ProgressStat(
+                              label: 'Pending',
+                              value: '$pending',
+                              color: AppColors.warning,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
                   ),
                 ),
-                const SizedBox(height: 16),
-                Row(
-                  children: [
-                    Text('Overall completion', style: AppTextStyles.bodySmall),
-                    const Spacer(),
-                    Text(
-                      '${(progress * 100).round()}%',
-                      style: AppTextStyles.labelLarge.copyWith(
-                        color: AppColors.primary,
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 8),
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(999),
-                  child: LinearProgressIndicator(
-                    value: progress,
-                    minHeight: 8,
-                    backgroundColor: AppColors.border,
-                    color: AppColors.primary,
-                  ),
-                ),
-                const SizedBox(height: 20),
-                Row(
-                  children: [
-                    Expanded(
-                      child: _ProgressStat(
-                        label: 'Submitted',
-                        value: '$submitted/$accepted',
-                        color: AppColors.secondary,
-                      ),
-                    ),
-                    Expanded(
-                      child: _ProgressStat(
-                        label: 'Approved',
-                        value: '$approved/$accepted',
-                        color: AppColors.success,
-                      ),
-                    ),
-                    Expanded(
-                      child: _ProgressStat(
-                        label: 'Pending',
-                        value: '$pending',
-                        color: AppColors.warning,
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
+              ),
+            ],
           ),
         ),
-        const SizedBox(height: 20),
-        Text('Deliverables', style: AppTextStyles.titleMedium),
-        const SizedBox(height: 12),
-        Card(
-          child: Padding(
-            padding: const EdgeInsets.all(AppSpacing.card),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    const Icon(
-                      Icons.video_camera_back_outlined,
-                      color: AppColors.primary,
-                    ),
-                    const SizedBox(width: 10),
-                    Text(
-                      campaign.deliverableType.label,
-                      style: AppTextStyles.titleSmall,
-                    ),
-                  ],
+        StaggeredFadeIn(
+          delay: const Duration(milliseconds: 180),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const SizedBox(height: 20),
+              Text('Deliverables', style: AppTextStyles.titleMedium),
+              const SizedBox(height: 12),
+              Card(
+                child: Padding(
+                  padding: const EdgeInsets.all(AppSpacing.card),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          const Icon(
+                            Icons.video_camera_back_outlined,
+                            color: AppColors.primary,
+                          ),
+                          const SizedBox(width: 10),
+                          Text(
+                            campaign.deliverableType.label,
+                            style: AppTextStyles.titleSmall,
+                          ),
+                        ],
+                      ),
+                      if (campaign.instagramStoryCount > 0 ||
+                          campaign.instagramPostCount > 0) ...[
+                        const SizedBox(height: 12),
+                        if (campaign.instagramStoryCount > 0)
+                          Text(
+                            '${campaign.instagramStoryCount} Instagram Story per creator',
+                            style: AppTextStyles.bodySmall,
+                          ),
+                        if (campaign.instagramPostCount > 0)
+                          Text(
+                            '${campaign.instagramPostCount} Instagram Post per creator',
+                            style: AppTextStyles.bodySmall,
+                          ),
+                      ],
+                    ],
+                  ),
                 ),
-                if (campaign.instagramStoryCount > 0 ||
-                    campaign.instagramPostCount > 0) ...[
-                  const SizedBox(height: 12),
-                  if (campaign.instagramStoryCount > 0)
-                    Text(
-                      '${campaign.instagramStoryCount} Instagram Story per creator',
-                      style: AppTextStyles.bodySmall,
-                    ),
-                  if (campaign.instagramPostCount > 0)
-                    Text(
-                      '${campaign.instagramPostCount} Instagram Post per creator',
-                      style: AppTextStyles.bodySmall,
-                    ),
-                ],
-              ],
-            ),
+              ),
+            ],
           ),
         ),
       ],
@@ -820,15 +860,19 @@ class _CreatorsTab extends StatelessWidget {
               const SizedBox(height: AppSpacing.sm),
           itemBuilder: (context, index) {
             final application = items[index];
-            return _CreatorRow(
-              campaign: campaign,
-              application: application,
-              deliverable: deliverableByApplication[application.id],
-              isLoading: isLoading,
-              onAccept: () => onAccept(application),
-              onReject: () => onReject(application),
-              onMessage: () => onMessage(application),
-              onApprove: (deliverable) => onApprove(deliverable),
+            return StaggeredFadeIn(
+              key: ValueKey(application.id),
+              delay: Duration(milliseconds: (index * 40).clamp(0, 400)),
+              child: _CreatorRow(
+                campaign: campaign,
+                application: application,
+                deliverable: deliverableByApplication[application.id],
+                isLoading: isLoading,
+                onAccept: () => onAccept(application),
+                onReject: () => onReject(application),
+                onMessage: () => onMessage(application),
+                onApprove: (deliverable) => onApprove(deliverable),
+              ),
             );
           },
         );
@@ -1064,33 +1108,40 @@ class _AnalyticsTab extends StatelessWidget {
     return ListView(
       padding: const EdgeInsets.all(AppSpacing.screenHorizontal),
       children: [
-        Row(
-          children: [
-            Expanded(
-              child: _AnalyticsCard(
-                label: 'Reach',
-                value: '${campaign.reach}',
-                subtitle: 'Creators who viewed this campaign',
-                icon: Icons.groups_outlined,
+        StaggeredFadeIn(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Expanded(
+                    child: _AnalyticsCard(
+                      label: 'Reach',
+                      value: '${campaign.reach}',
+                      subtitle: 'Creators who viewed this campaign',
+                      icon: Icons.groups_outlined,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: _AnalyticsCard(
+                      label: 'Engagement',
+                      value: '${campaign.engagement}',
+                      subtitle: 'Times the details were opened',
+                      icon: Icons.visibility_outlined,
+                    ),
+                  ),
+                ],
               ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: _AnalyticsCard(
-                label: 'Engagement',
-                value: '${campaign.engagement}',
-                subtitle: 'Times the details were opened',
-                icon: Icons.visibility_outlined,
+              const SizedBox(height: 20),
+              Text(
+                'More detailed analytics (daily trends, per-post reach) '
+                "aren't tracked yet.",
+                style: AppTextStyles.bodySmall.copyWith(
+                  color: AppColors.textSecondary,
+                ),
               ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 20),
-        Text(
-          'More detailed analytics (daily trends, per-post reach) aren\'t '
-          'tracked yet.',
-          style: AppTextStyles.bodySmall.copyWith(
-            color: AppColors.textSecondary,
+            ],
           ),
         ),
       ],

@@ -8,7 +8,7 @@ import '../../features/settings/models/instagram_account.dart';
 String creatorDisplayName(
   String? displayName,
   InstagramAccount? instagram, {
-  String fallback = 'Creator',
+  String fallback = 'New creator',
 }) {
   if (instagram?.name?.isNotEmpty == true) return instagram!.name!;
   if (instagram?.username?.isNotEmpty == true) return '@${instagram!.username}';

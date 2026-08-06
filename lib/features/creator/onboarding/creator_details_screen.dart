@@ -6,6 +6,7 @@ import '../../../app/routes.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_text_styles.dart';
+import '../../../core/utils/campaign_categories.dart';
 import '../../../core/utils/india_regions.dart';
 import '../../../core/widgets/app_snackbar.dart';
 import '../../../core/widgets/app_text_field.dart';
@@ -30,6 +31,7 @@ class _CreatorDetailsScreenState extends ConsumerState<CreatorDetailsScreen> {
   final _cityController = TextEditingController();
   final _countryController = TextEditingController(text: 'India');
   final Set<String> _selectedLanguages = {};
+  final Set<String> _selectedCategories = {};
   String? _selectedState;
 
   @override
@@ -54,6 +56,7 @@ class _CreatorDetailsScreenState extends ConsumerState<CreatorDetailsScreen> {
         .read(authControllerProvider.notifier)
         .saveCreatorDetails(
           languages: _selectedLanguages.toList(),
+          categories: _selectedCategories.toList(),
           stateName: _selectedState!,
           city: _cityController.text.trim(),
         );
@@ -108,6 +111,40 @@ class _CreatorDetailsScreenState extends ConsumerState<CreatorDetailsScreen> {
                                 _selectedLanguages.add(lang);
                               } else {
                                 _selectedLanguages.remove(lang);
+                              }
+                            }),
+                      selectedColor: AppColors.primaryLight,
+                      checkmarkColor: AppColors.primary,
+                      labelStyle: AppTextStyles.bodySmall.copyWith(
+                        color: selected
+                            ? AppColors.primaryDark
+                            : AppColors.textSecondary,
+                      ),
+                      backgroundColor: AppColors.surface,
+                      side: BorderSide(
+                        color: selected ? AppColors.primary : AppColors.border,
+                      ),
+                    );
+                  }).toList(),
+                ),
+                const SizedBox(height: 24),
+                Text('Your niche', style: AppTextStyles.labelLarge),
+                const SizedBox(height: 8),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: campaignCategories.map((category) {
+                    final selected = _selectedCategories.contains(category);
+                    return FilterChip(
+                      label: Text(category),
+                      selected: selected,
+                      onSelected: isLoading
+                          ? null
+                          : (value) => setState(() {
+                              if (value) {
+                                _selectedCategories.add(category);
+                              } else {
+                                _selectedCategories.remove(category);
                               }
                             }),
                       selectedColor: AppColors.primaryLight,

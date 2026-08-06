@@ -72,7 +72,7 @@ class CreatorHomeScreen extends ConsumerWidget {
 
     final profileItems = <(String, bool)>[
       ('Bio', (myCreatorProfile?.bio ?? '').isNotEmpty),
-      ('Categories', myCategories.isNotEmpty),
+      ('Niche', myCategories.isNotEmpty),
       ('Languages', (myCreatorProfile?.languages ?? const []).isNotEmpty),
       (
         'Location',
@@ -159,7 +159,11 @@ class CreatorHomeScreen extends ConsumerWidget {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceAround,
               children: [
-                CountUpStat(label: 'Applications sent', value: sentCount),
+                CountUpStat(
+                  label: 'Applications sent',
+                  value: sentCount,
+                  color: AppColors.textPrimary,
+                ),
                 CountUpStat(
                   label: 'Accepted',
                   value: acceptedCount,
@@ -169,7 +173,7 @@ class CreatorHomeScreen extends ConsumerWidget {
                   label: 'Response rate',
                   value: responseRate,
                   suffix: '%',
-                  color: AppColors.secondary,
+                  color: AppColors.textPrimary,
                 ),
               ],
             ),

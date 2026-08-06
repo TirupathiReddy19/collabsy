@@ -415,7 +415,7 @@ class _AdminCreatorDetailScreenState
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            'Content categories',
+                            'Niche',
                             style: AppTextStyles.titleSmall,
                           ),
                           const SizedBox(height: 8),

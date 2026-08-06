@@ -16,6 +16,7 @@ class PrimaryButton extends StatelessWidget {
     this.height = 56,
     this.backgroundColor = AppColors.primary,
     this.foregroundColor = AppColors.white,
+    this.borderColor,
     this.borderRadius = AppRadius.lg,
     this.elevation = 0,
   });
@@ -33,6 +34,7 @@ class PrimaryButton extends StatelessWidget {
 
   final Color backgroundColor;
   final Color foregroundColor;
+  final Color? borderColor;
 
   final double borderRadius;
   final double elevation;
@@ -54,6 +56,9 @@ class PrimaryButton extends StatelessWidget {
           elevation: elevation,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(borderRadius),
+            side: borderColor == null
+                ? BorderSide.none
+                : BorderSide(color: borderColor!),
           ),
         ),
         child: AnimatedSwitcher(

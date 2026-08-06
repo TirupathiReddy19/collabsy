@@ -10,6 +10,7 @@ import '../../../core/widgets/app_snackbar.dart';
 import '../../../core/widgets/app_text_field.dart';
 import '../../../core/widgets/loading_indicator.dart';
 import '../../../core/widgets/primary_button.dart';
+import '../../../core/widgets/staggered_fade_in.dart';
 import '../../auth/providers/auth_providers.dart';
 import '../../campaigns/models/application_status.dart';
 import '../../campaigns/models/campaign.dart';
@@ -194,227 +195,291 @@ class _CreatorCampaignDetailScreenState
             return ListView(
               padding: const EdgeInsets.all(AppSpacing.screenHorizontal),
               children: [
-                InkWell(
-                  onTap: () => context.push(
-                    AppRoutes.brandPublicProfilePath(campaign.brandId),
-                  ),
-                  borderRadius: BorderRadius.circular(8),
-                  child: Row(
+                StaggeredFadeIn(
+                  child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const CircleAvatar(
-                        backgroundColor: AppColors.primaryLight,
-                        child: Icon(Icons.storefront, color: AppColors.primary),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Column(
+                      InkWell(
+                        onTap: () => context.push(
+                          AppRoutes.brandPublicProfilePath(campaign.brandId),
+                        ),
+                        borderRadius: BorderRadius.circular(8),
+                        child: Row(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(
-                              campaign.brandName,
-                              style: AppTextStyles.titleSmall,
-                            ),
-                            if (campaign.postedAgoLabel.isNotEmpty)
-                              Text(
-                                'Posted ${campaign.postedAgoLabel}',
-                                style: AppTextStyles.micro.copyWith(
-                                  color: AppColors.textSecondary,
-                                ),
+                            const CircleAvatar(
+                              backgroundColor: AppColors.primaryLight,
+                              child: Icon(
+                                Icons.storefront,
+                                color: AppColors.primary,
                               ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    campaign.brandName,
+                                    style: AppTextStyles.titleSmall,
+                                  ),
+                                  if (campaign.postedAgoLabel.isNotEmpty)
+                                    Text(
+                                      'Posted ${campaign.postedAgoLabel}',
+                                      style: AppTextStyles.micro.copyWith(
+                                        color: AppColors.textSecondary,
+                                      ),
+                                    ),
+                                ],
+                              ),
+                            ),
+                            _CampaignStatusChip(status: campaign.status),
+                            const SizedBox(width: 4),
+                            const Icon(
+                              Icons.chevron_right,
+                              color: AppColors.textSecondary,
+                            ),
                           ],
                         ),
                       ),
-                      _CampaignStatusChip(status: campaign.status),
-                      const SizedBox(width: 4),
-                      const Icon(
-                        Icons.chevron_right,
-                        color: AppColors.textSecondary,
+                      const SizedBox(height: 16),
+                      Text(campaign.title, style: AppTextStyles.heading1),
+                      const SizedBox(height: 16),
+                      OutlinedButton.icon(
+                        onPressed: chatLoading
+                            ? null
+                            : () => _messageBrand(context, ref, campaign),
+                        icon: const Icon(Icons.chat_bubble_outline),
+                        label: Text('Message ${campaign.brandName}'),
+                        style: OutlinedButton.styleFrom(
+                          minimumSize: const Size.fromHeight(48),
+                          foregroundColor: AppColors.primary,
+                          side: const BorderSide(color: AppColors.primary),
+                        ),
+                      ),
+                      if (campaign.goal != null) ...[
+                        const SizedBox(height: 20),
+                        Text(
+                          'Looking for',
+                          style: AppTextStyles.bodySmall.copyWith(
+                            color: AppColors.textSecondary,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(campaign.goal!, style: AppTextStyles.titleSmall),
+                      ],
+                    ],
+                  ),
+                ),
+                StaggeredFadeIn(
+                  delay: const Duration(milliseconds: 90),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const SizedBox(height: 20),
+                      Text('Highlights', style: AppTextStyles.titleMedium),
+                      const SizedBox(height: 12),
+                      Wrap(
+                        spacing: 12,
+                        runSpacing: 12,
+                        children: [
+                          _HighlightChip(
+                            icon: Icons.campaign_outlined,
+                            label: 'Brand',
+                            value: campaign.brandName,
+                          ),
+                          _HighlightChip(
+                            icon: Icons.category_outlined,
+                            label: 'Niche',
+                            value: campaign.categoriesLabel,
+                          ),
+                          if (campaign.creatorsNeeded != null)
+                            _HighlightChip(
+                              icon: Icons.groups_outlined,
+                              label: 'No. of creators',
+                              value: '${campaign.creatorsNeeded} creators',
+                            ),
+                        ],
                       ),
                     ],
                   ),
                 ),
-                const SizedBox(height: 16),
-                Text(campaign.title, style: AppTextStyles.heading1),
-                const SizedBox(height: 16),
-                OutlinedButton.icon(
-                  onPressed: chatLoading
-                      ? null
-                      : () => _messageBrand(context, ref, campaign),
-                  icon: const Icon(Icons.chat_bubble_outline),
-                  label: Text('Message ${campaign.brandName}'),
-                  style: OutlinedButton.styleFrom(
-                    minimumSize: const Size.fromHeight(48),
-                    foregroundColor: AppColors.primary,
-                    side: const BorderSide(color: AppColors.primary),
-                  ),
-                ),
-                if (campaign.goal != null) ...[
-                  const SizedBox(height: 20),
-                  Text(
-                    'Looking for',
-                    style: AppTextStyles.bodySmall.copyWith(
-                      color: AppColors.textSecondary,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(campaign.goal!, style: AppTextStyles.titleSmall),
-                ],
-                const SizedBox(height: 20),
-                Text('Highlights', style: AppTextStyles.titleMedium),
-                const SizedBox(height: 12),
-                Wrap(
-                  spacing: 12,
-                  runSpacing: 12,
-                  children: [
-                    _HighlightChip(
-                      icon: Icons.campaign_outlined,
-                      label: 'Brand',
-                      value: campaign.brandName,
-                    ),
-                    _HighlightChip(
-                      icon: Icons.category_outlined,
-                      label: 'Category',
-                      value: campaign.categoriesLabel,
-                    ),
-                    if (campaign.creatorsNeeded != null)
-                      _HighlightChip(
-                        icon: Icons.groups_outlined,
-                        label: 'No. of creators',
-                        value: '${campaign.creatorsNeeded} creators',
+                StaggeredFadeIn(
+                  delay: const Duration(milliseconds: 180),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const SizedBox(height: 24),
+                      Text(
+                        'About the campaign',
+                        style: AppTextStyles.titleMedium,
                       ),
-                  ],
+                      const SizedBox(height: 8),
+                      Text(
+                        campaign.description,
+                        style: AppTextStyles.bodyLarge,
+                      ),
+                    ],
+                  ),
                 ),
-                const SizedBox(height: 24),
-                Text('About the campaign', style: AppTextStyles.titleMedium),
-                const SizedBox(height: 8),
-                Text(campaign.description, style: AppTextStyles.bodyLarge),
-                const SizedBox(height: 24),
-                Text('Key details', style: AppTextStyles.titleMedium),
-                const SizedBox(height: 12),
-                Card(
-                  child: Padding(
-                    padding: const EdgeInsets.all(AppSpacing.card),
-                    child: Column(
-                      children: [
-                        _DetailRow(
-                          icon: Icons.category_outlined,
-                          label: 'Category',
-                          value: campaign.categoriesLabel,
-                        ),
-                        _DetailRow(
-                          icon: Icons.public,
-                          label: 'Platform',
-                          value: 'Instagram · ${_followerRangeLabel(campaign)}',
-                        ),
-                        _DetailRow(
-                          icon: Icons.groups_outlined,
-                          label: 'No. of creators',
-                          value: campaign.creatorsNeeded == null
-                              ? 'Not specified'
-                              : '${campaign.creatorsNeeded} creators',
-                        ),
-                        _DetailRow(
-                          icon: Icons.inventory_2_outlined,
-                          label: 'Deliverables',
-                          value: _deliverablesLabel(campaign),
-                        ),
-                        _DetailRow(
-                          icon:
-                              campaign.compensationType ==
-                                  CompensationType.barter
-                              ? Icons.handshake_outlined
-                              : Icons.currency_rupee,
-                          label: 'Compensation',
-                          value:
-                              campaign.compensationType ==
-                                  CompensationType.barter
-                              ? (campaign.barterDescription ?? 'Barter')
-                              : campaign.compensationLabel,
-                        ),
-                        _DetailRow(
-                          icon: Icons.location_on_outlined,
-                          label: 'Open to creators from',
-                          value: campaign.targetLocationsLabel,
-                        ),
-                        if (campaign.locationLabel.isNotEmpty)
-                          _DetailRow(
-                            icon: Icons.place_outlined,
-                            label: 'Campaign location',
-                            value: campaign.locationLabel,
+                StaggeredFadeIn(
+                  delay: const Duration(milliseconds: 270),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const SizedBox(height: 24),
+                      Text('Key details', style: AppTextStyles.titleMedium),
+                      const SizedBox(height: 12),
+                      Card(
+                        child: Padding(
+                          padding: const EdgeInsets.all(AppSpacing.card),
+                          child: Column(
+                            children: [
+                              _DetailRow(
+                                icon: Icons.category_outlined,
+                                label: 'Niche',
+                                value: campaign.categoriesLabel,
+                              ),
+                              _DetailRow(
+                                icon: Icons.public,
+                                label: 'Platform',
+                                value:
+                                    'Instagram · ${_followerRangeLabel(campaign)}',
+                              ),
+                              _DetailRow(
+                                icon: Icons.groups_outlined,
+                                label: 'No. of creators',
+                                value: campaign.creatorsNeeded == null
+                                    ? 'Not specified'
+                                    : '${campaign.creatorsNeeded} creators',
+                              ),
+                              _DetailRow(
+                                icon: Icons.inventory_2_outlined,
+                                label: 'Deliverables',
+                                value: _deliverablesLabel(campaign),
+                              ),
+                              _DetailRow(
+                                icon:
+                                    campaign.compensationType ==
+                                        CompensationType.barter
+                                    ? Icons.handshake_outlined
+                                    : Icons.currency_rupee,
+                                label: 'Compensation',
+                                value:
+                                    campaign.compensationType ==
+                                        CompensationType.barter
+                                    ? (campaign.barterDescription ?? 'Barter')
+                                    : campaign.compensationLabel,
+                              ),
+                              _DetailRow(
+                                icon: Icons.location_on_outlined,
+                                label: 'Open to creators from',
+                                value: campaign.targetLocationsLabel,
+                              ),
+                              if (campaign.locationLabel.isNotEmpty)
+                                _DetailRow(
+                                  icon: Icons.place_outlined,
+                                  label: 'Campaign location',
+                                  value: campaign.locationLabel,
+                                ),
+                              _DetailRow(
+                                icon: Icons.event_outlined,
+                                label: 'Timeline',
+                                value: campaign.timelineLabel,
+                                isLast: true,
+                              ),
+                            ],
                           ),
-                        _DetailRow(
-                          icon: Icons.event_outlined,
-                          label: 'Timeline',
-                          value: campaign.timelineLabel,
-                          isLast: true,
                         ),
-                      ],
-                    ),
+                      ),
+                    ],
                   ),
                 ),
-                const SizedBox(height: 24),
-                Text('Activity on this post', style: AppTextStyles.titleMedium),
-                const SizedBox(height: 12),
-                Row(
-                  children: [
-                    Expanded(
-                      child: _ActivityStat(
-                        label: 'Total views',
-                        value: '${campaign.engagement}',
+                StaggeredFadeIn(
+                  delay: const Duration(milliseconds: 360),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const SizedBox(height: 24),
+                      Text(
+                        'Activity on this post',
+                        style: AppTextStyles.titleMedium,
                       ),
-                    ),
-                    Expanded(
-                      child: _ActivityStat(
-                        label: 'Posted on',
-                        value: campaign.createdAt == null
-                            ? '—'
-                            : _formatShortDate(campaign.createdAt!),
-                      ),
-                    ),
-                    Expanded(
-                      child: _ActivityStat(
-                        label: 'Expires on',
-                        value: campaign.endDate == null
-                            ? '—'
-                            : _formatShortDate(campaign.endDate!),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 24),
-                if (applicationAsync != null)
-                  applicationAsync.when(
-                    data: (application) {
-                      if (application != null) {
-                        if (application.status == ApplicationStatus.accepted &&
-                            userId != null) {
-                          return _DeliverableSection(
-                            applicationId: application.id,
-                            creatorId: userId,
-                            onSubmit: (deliverable) => _submitDeliverable(
-                              context,
-                              ref,
-                              deliverable,
-                              campaign,
+                      const SizedBox(height: 12),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: _ActivityStat(
+                              label: 'Total views',
+                              value: '${campaign.engagement}',
                             ),
-                          );
-                        }
-                        return _AlreadyApplied(status: application.status);
-                      }
-                      return PrimaryButton(
-                        text: 'Apply to this campaign',
-                        isLoading: isLoading,
-                        onPressed: isLoading
-                            ? null
-                            : () => _apply(context, ref, campaign),
-                      );
-                    },
-                    loading: () => const Center(child: LoadingIndicator()),
-                    error: (error, stackTrace) => const Text(
-                      "Couldn't check your application status. Please try again.",
-                    ),
+                          ),
+                          Expanded(
+                            child: _ActivityStat(
+                              label: 'Posted on',
+                              value: campaign.createdAt == null
+                                  ? '—'
+                                  : _formatShortDate(campaign.createdAt!),
+                            ),
+                          ),
+                          Expanded(
+                            child: _ActivityStat(
+                              label: 'Expires on',
+                              value: campaign.endDate == null
+                                  ? '—'
+                                  : _formatShortDate(campaign.endDate!),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
                   ),
+                ),
+                StaggeredFadeIn(
+                  delay: const Duration(milliseconds: 450),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const SizedBox(height: 24),
+                      if (applicationAsync != null)
+                        applicationAsync.when(
+                          data: (application) {
+                            if (application != null) {
+                              if (application.status ==
+                                      ApplicationStatus.accepted &&
+                                  userId != null) {
+                                return _DeliverableSection(
+                                  applicationId: application.id,
+                                  creatorId: userId,
+                                  onSubmit: (deliverable) => _submitDeliverable(
+                                    context,
+                                    ref,
+                                    deliverable,
+                                    campaign,
+                                  ),
+                                );
+                              }
+                              return _AlreadyApplied(
+                                status: application.status,
+                              );
+                            }
+                            return PrimaryButton(
+                              text: 'Apply to this campaign',
+                              isLoading: isLoading,
+                              onPressed: isLoading
+                                  ? null
+                                  : () => _apply(context, ref, campaign),
+                            );
+                          },
+                          loading: () =>
+                              const Center(child: LoadingIndicator()),
+                          error: (error, stackTrace) => const Text(
+                            "Couldn't check your application status. Please try again.",
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
               ],
             );
           },

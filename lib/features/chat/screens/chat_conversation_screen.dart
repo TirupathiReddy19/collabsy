@@ -11,6 +11,7 @@ import '../../../core/widgets/app_snackbar.dart';
 import '../../../core/widgets/app_text_field.dart';
 import '../../../core/widgets/loading_indicator.dart';
 import '../../../core/widgets/profile_avatar.dart';
+import '../../../core/widgets/staggered_fade_in.dart';
 import '../../../core/widgets/verified_badge.dart';
 import '../../../shared/models/user_role.dart';
 import '../../../shared/models/verification_status.dart';
@@ -370,11 +371,14 @@ class _ChatConversationScreenState
                     itemBuilder: (context, index) {
                       final message = messages[messages.length - 1 - index];
                       final mine = message.senderId == myUid;
-                      return _MessageBubble(
-                        text: message.text,
-                        campaignId: message.campaignId,
-                        mine: mine,
-                        isCreator: isCreator,
+                      return StaggeredFadeIn(
+                        key: ValueKey(message.id),
+                        child: _MessageBubble(
+                          text: message.text,
+                          campaignId: message.campaignId,
+                          mine: mine,
+                          isCreator: isCreator,
+                        ),
                       );
                     },
                   );

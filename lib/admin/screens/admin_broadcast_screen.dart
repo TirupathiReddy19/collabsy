@@ -142,8 +142,8 @@ String _audienceDescription(Announcement announcement) {
     case 'category':
       final categories = announcement.targetCategories ?? const [];
       return categories.isEmpty
-          ? 'Category'
-          : 'Category: ${categories.join(', ')}';
+          ? 'Niche'
+          : 'Niche: ${categories.join(', ')}';
     case 'followerRange':
       final min = announcement.targetMinFollowers;
       final max = announcement.targetMaxFollowers;
@@ -238,8 +238,8 @@ class _AdminBroadcastScreenState extends ConsumerState<AdminBroadcastScreen> {
         return 'To: ${_selectedCreator != null ? _creatorLabel(_selectedCreator!, selectedInstagram) : 'one creator'}';
       case 'category':
         return _selectedCategories.isEmpty
-            ? 'Category'
-            : 'Category: ${_selectedCategories.join(', ')}';
+            ? 'Niche'
+            : 'Niche: ${_selectedCategories.join(', ')}';
       case 'followerRange':
         final min = int.tryParse(_minFollowersController.text.trim());
         final max = int.tryParse(_maxFollowersController.text.trim());
@@ -580,7 +580,7 @@ class _AdminBroadcastScreenState extends ConsumerState<AdminBroadcastScreen> {
                                     setState(() => _targetType = 'creator'),
                               ),
                               ChoiceChip(
-                                label: const Text('Category'),
+                                label: const Text('Niche'),
                                 selected: _targetType == 'category',
                                 onSelected: (_) =>
                                     setState(() => _targetType = 'category'),

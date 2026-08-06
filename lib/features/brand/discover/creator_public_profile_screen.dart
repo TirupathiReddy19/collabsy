@@ -219,7 +219,7 @@ class CreatorPublicProfileScreen extends ConsumerWidget {
                 ),
                 if (profile.categories.isNotEmpty) ...[
                   const SizedBox(height: 24),
-                  Text('Content categories', style: AppTextStyles.titleSmall),
+                  Text('Niche', style: AppTextStyles.titleSmall),
                   const SizedBox(height: 8),
                   Wrap(
                     spacing: 8,

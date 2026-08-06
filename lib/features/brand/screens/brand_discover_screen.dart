@@ -11,6 +11,7 @@ import '../../../core/utils/india_regions.dart';
 import '../../../core/widgets/empty_state.dart';
 import '../../../core/widgets/loading_indicator.dart';
 import '../../../core/widgets/profile_avatar.dart';
+import '../../../core/widgets/staggered_fade_in.dart';
 import '../../../core/widgets/verified_badge.dart';
 import '../../../shared/models/verification_status.dart';
 import '../../../shared/utils/creator_display_name.dart';
@@ -75,11 +76,11 @@ class BrandDiscoverScreen extends ConsumerWidget {
               child: Row(
                 children: [
                   _FilterChip(
-                    label: _chipLabel('Category', categories),
+                    label: _chipLabel('Niche', categories),
                     selected: categories.isNotEmpty,
                     onTap: () => _pickMultiple(
                       context,
-                      title: 'Categories',
+                      title: 'Niche',
                       options: campaignCategories,
                       current: categories,
                       onPicked: (value) => ref
@@ -143,10 +144,16 @@ class BrandDiscoverScreen extends ConsumerWidget {
                         const SizedBox(height: AppSpacing.sm),
                     itemBuilder: (context, index) {
                       final creator = filtered[index];
-                      return _CreatorCard(
-                        creator: creator,
-                        onTap: () => context.push(
-                          AppRoutes.creatorPublicProfilePath(creator.id),
+                      return StaggeredFadeIn(
+                        key: ValueKey(creator.id),
+                        delay: Duration(
+                          milliseconds: (index * 40).clamp(0, 400),
+                        ),
+                        child: _CreatorCard(
+                          creator: creator,
+                          onTap: () => context.push(
+                            AppRoutes.creatorPublicProfilePath(creator.id),
+                          ),
                         ),
                       );
                     },

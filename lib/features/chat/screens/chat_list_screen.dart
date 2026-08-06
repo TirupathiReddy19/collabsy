@@ -9,6 +9,7 @@ import '../../../core/theme/app_text_styles.dart';
 import '../../../core/widgets/empty_state.dart';
 import '../../../core/widgets/loading_indicator.dart';
 import '../../../core/widgets/profile_avatar.dart';
+import '../../../core/widgets/staggered_fade_in.dart';
 import '../../../core/widgets/verified_badge.dart';
 import '../../../shared/models/user_role.dart';
 import '../../../shared/models/verification_status.dart';
@@ -190,10 +191,14 @@ class _ChatSubList extends ConsumerWidget {
           separatorBuilder: (context, index) =>
               const SizedBox(height: AppSpacing.sm),
           itemBuilder: (context, index) {
-            return _ChatListTile(
-              chat: sorted[index],
-              isCreator: isCreator,
-              unread: _isUnread(sorted[index], isCreator),
+            return StaggeredFadeIn(
+              key: ValueKey(sorted[index].id),
+              delay: Duration(milliseconds: (index * 40).clamp(0, 400)),
+              child: _ChatListTile(
+                chat: sorted[index],
+                isCreator: isCreator,
+                unread: _isUnread(sorted[index], isCreator),
+              ),
             );
           },
         );

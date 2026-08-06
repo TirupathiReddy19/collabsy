@@ -359,7 +359,7 @@ class _TargetStep extends StatelessWidget {
           style: AppTextStyles.bodyMedium,
         ),
         const SizedBox(height: 24),
-        Text('Creator categories', style: AppTextStyles.labelLarge),
+        Text('Creator niche', style: AppTextStyles.labelLarge),
         const SizedBox(height: 8),
         Wrap(
           spacing: 8,
@@ -897,7 +897,7 @@ class _ReviewStep extends StatelessWidget {
                 const SizedBox(height: 16),
                 _ReviewRow(label: 'Goal', value: goal),
                 _ReviewRow(
-                  label: 'Categories',
+                  label: 'Niche',
                   value: categories.isEmpty ? '—' : categories.join(', '),
                 ),
                 _ReviewRow(

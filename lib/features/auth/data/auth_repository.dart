@@ -319,12 +319,14 @@ class AuthRepository {
     required String userId,
     required String displayName,
     required List<String> languages,
+    required List<String> categories,
     required String stateName,
     required String city,
   }) async {
     await _firestore.collection('creatorProfiles').doc(userId).set({
       'displayName': displayName,
       'languages': languages,
+      'categories': categories,
       'country': 'India',
       'state': stateName,
       'city': city,
