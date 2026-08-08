@@ -16,6 +16,8 @@ export { backfillCreatedAtFromAuth } from "./backfillCreatedAt";
 export { createStaffAccount } from "./createStaffAccount";
 export { getStaffLastSignIn, forceLogoutStaffAccount } from "./staffAccountActions";
 export { deleteAccount } from "./deleteAccount";
+export { checkEmailRegistered } from "./checkEmailRegistered";
+export { expireCampaigns } from "./campaigns/expireCampaigns";
 export { onAuthUserDeleted } from "./onAuthUserDeleted";
 export { suspendUserAccount, reinstateUserAccount } from "./suspendUserAccount";
 export { redirectLead } from "./leads/redirectLead";

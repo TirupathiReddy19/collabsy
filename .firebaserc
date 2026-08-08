@@ -1,5 +1,7 @@
 {
-  "projects": {},
+  "projects": {
+    "collabsy": "collabsy-mobile-applicaation"
+  },
   "targets": {
     "collabsy-mobile-applicaation": {
       "hosting": {

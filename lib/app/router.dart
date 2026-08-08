@@ -188,10 +188,20 @@ final routerProvider = Provider<GoRouter>((ref) {
       // their email is verified — unlike Google sign-ins, which have no
       // password provider and are always considered verified. Hold
       // unverified email/password users on checkEmail until they confirm.
+      //
+      // A phone-first account adding an email (CompleteProfileScreen's
+      // `_alreadyVerifiedPhone` case) has no `password` provider either, so
+      // it needs its own signal — `verifyBeforeUpdateEmail` deliberately
+      // leaves `user.email`/`emailVerified` untouched until the link is
+      // clicked, so there's nothing on `user` itself to gate on; the local
+      // cache set right before that email was sent is the only signal.
       final hasPasswordProvider = user.providerData.any(
         (p) => p.providerId == 'password',
       );
-      if (hasPasswordProvider && !user.emailVerified) {
+      final hasPendingPhoneEmail =
+          localStorage.pendingPhoneEmailVerification != null;
+      if ((hasPasswordProvider || hasPendingPhoneEmail) &&
+          !user.emailVerified) {
         return atCheckEmail ? null : AppRoutes.checkEmail;
       }
 

@@ -8,6 +8,7 @@ const _hasSeenOnboardingKey = 'has_seen_onboarding';
 const _pendingSignupRoleKey = 'pending_signup_role';
 const _pendingSignupDisplayNameKey = 'pending_signup_display_name';
 const _pendingSignupPhoneKey = 'pending_signup_phone';
+const _pendingPhoneEmailVerificationKey = 'pending_phone_email_verification';
 
 /// Overridden in `main()` with the real [SharedPreferences] instance once
 /// it's been awaited — everything else reads it through this provider.
@@ -54,6 +55,25 @@ class LocalStorageService {
     await _prefs.remove(_pendingSignupRoleKey);
     await _prefs.remove(_pendingSignupDisplayNameKey);
     await _prefs.remove(_pendingSignupPhoneKey);
+  }
+
+  /// A phone-first account (see [CompleteProfileScreen]'s
+  /// `_alreadyVerifiedPhone` case) has no `password` provider, so
+  /// `Auth.currentUser.email` stays null until its `verifyBeforeUpdateEmail`
+  /// link is actually clicked — there's no Firebase-native signal to gate
+  /// on in the meantime, unlike the password-signup path's `providerData`.
+  /// This cached value is that signal: set right before the verification
+  /// email is sent, read by the router to hold the account on
+  /// [AppRoutes.checkEmail], and cleared once verification succeeds.
+  Future<void> savePendingPhoneEmailVerification(String email) {
+    return _prefs.setString(_pendingPhoneEmailVerificationKey, email);
+  }
+
+  String? get pendingPhoneEmailVerification =>
+      _prefs.getString(_pendingPhoneEmailVerificationKey);
+
+  Future<void> clearPendingPhoneEmailVerification() {
+    return _prefs.remove(_pendingPhoneEmailVerificationKey);
   }
 
   /// Whether the Home screen's profile-completeness card has already

@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.sendPushOnNotificationCreate = exports.sendPushOnAnnouncementCreate = exports.onBrandProfileWritten = exports.redirectBrandLead = exports.onOnboardingComplete = exports.redirectLead = exports.reinstateUserAccount = exports.suspendUserAccount = exports.onAuthUserDeleted = exports.deleteAccount = exports.forceLogoutStaffAccount = exports.getStaffLastSignIn = exports.createStaffAccount = exports.backfillCreatedAtFromAuth = exports.instagramOAuthRedirect = exports.refreshConnectedInstagramProfiles = exports.refreshExpiringInstagramTokens = exports.refreshInstagramProfile = exports.disconnectInstagram = exports.exchangeInstagramCode = void 0;
+exports.sendPushOnNotificationCreate = exports.sendPushOnAnnouncementCreate = exports.onBrandProfileWritten = exports.redirectBrandLead = exports.onOnboardingComplete = exports.redirectLead = exports.reinstateUserAccount = exports.suspendUserAccount = exports.onAuthUserDeleted = exports.expireCampaigns = exports.checkEmailRegistered = exports.deleteAccount = exports.forceLogoutStaffAccount = exports.getStaffLastSignIn = exports.createStaffAccount = exports.backfillCreatedAtFromAuth = exports.instagramOAuthRedirect = exports.refreshConnectedInstagramProfiles = exports.refreshExpiringInstagramTokens = exports.refreshInstagramProfile = exports.disconnectInstagram = exports.exchangeInstagramCode = void 0;
 const app_1 = require("firebase-admin/app");
 const firestore_1 = require("firebase-admin/firestore");
 const messaging_1 = require("firebase-admin/messaging");
@@ -28,6 +28,10 @@ Object.defineProperty(exports, "getStaffLastSignIn", { enumerable: true, get: fu
 Object.defineProperty(exports, "forceLogoutStaffAccount", { enumerable: true, get: function () { return staffAccountActions_1.forceLogoutStaffAccount; } });
 var deleteAccount_1 = require("./deleteAccount");
 Object.defineProperty(exports, "deleteAccount", { enumerable: true, get: function () { return deleteAccount_1.deleteAccount; } });
+var checkEmailRegistered_1 = require("./checkEmailRegistered");
+Object.defineProperty(exports, "checkEmailRegistered", { enumerable: true, get: function () { return checkEmailRegistered_1.checkEmailRegistered; } });
+var expireCampaigns_1 = require("./campaigns/expireCampaigns");
+Object.defineProperty(exports, "expireCampaigns", { enumerable: true, get: function () { return expireCampaigns_1.expireCampaigns; } });
 var onAuthUserDeleted_1 = require("./onAuthUserDeleted");
 Object.defineProperty(exports, "onAuthUserDeleted", { enumerable: true, get: function () { return onAuthUserDeleted_1.onAuthUserDeleted; } });
 var suspendUserAccount_1 = require("./suspendUserAccount");

@@ -264,6 +264,7 @@ class _StatusBadge extends StatelessWidget {
     CampaignStatus.paused => Colors.orange,
     CampaignStatus.rejected => AppColors.error,
     CampaignStatus.closed => AdminColors.textHint(context),
+    CampaignStatus.expired => AdminColors.textHint(context),
     CampaignStatus.draft => AdminColors.textSecondary(context),
   };
 

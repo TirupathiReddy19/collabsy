@@ -80,6 +80,16 @@ abstract class Campaign with _$Campaign {
     return 'All India';
   }
 
+  /// True once [endDate] has passed — a campaign with no [endDate] never
+  /// expires. This is the client-side signal that hides an expired
+  /// campaign from the Creator browse tab immediately (see
+  /// `openCampaigns` in campaigns_providers.dart); the scheduled
+  /// `expireCampaigns` Cloud Function is the slower (up to 24h),
+  /// authoritative counterpart that actually flips [status] to
+  /// [CampaignStatus.expired] so it also drops out of every other
+  /// `status == active` query (admin dashboards, etc).
+  bool get isExpired => endDate != null && endDate!.isBefore(DateTime.now());
+
   String get timelineLabel {
     if (startDate == null && endDate == null) return 'No timeline set';
     if (startDate != null && endDate != null) {

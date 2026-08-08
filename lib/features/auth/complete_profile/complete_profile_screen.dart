@@ -1,3 +1,4 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -18,17 +19,23 @@ import '../shared/auth_header.dart';
 import '../shared/otp_verification_view.dart';
 import '../shared/role_tab_selector.dart';
 
-/// Shown after any sign-in that has no [UserRole] yet — either a Google
-/// sign-in (which never gives us a phone number), or an email/password
-/// signup returning from its confirmation link after a cold start (in which
-/// case the role/name/phone typed during signup are pre-filled from the
-/// local cache [LocalStorageService.savePendingSignup] left behind).
+/// Shown after any sign-in that has no [UserRole] yet — a Google sign-in
+/// (which never gives us a phone number), an email/password signup
+/// returning from its confirmation link after a cold start (in which case
+/// the role/name/phone typed during signup are pre-filled from the local
+/// cache [LocalStorageService.savePendingSignup] left behind), or a phone
+/// **login** attempt on a number that turned out to be unregistered —
+/// Firebase's phone auth can't tell sign-in from sign-up apart, so that
+/// last case already has a verified phone (the account's own identity) and
+/// just needs a role and an email (sent a `verifyBeforeUpdateEmail` link,
+/// same as password-signup's confirmation email — see
+/// [_alreadyVerifiedPhone]).
 ///
-/// For that second case the role/phone are already known — the role tab is
-/// locked (re-picking it here would be confusing, not useful) and the phone
-/// OTP is sent automatically so the user never has to tap through a form
-/// they already filled in at signup. It only surfaces if that auto-send
-/// fails, so they can retry or fix a mistyped number.
+/// For the signup-cache case the role/phone are already known — the role
+/// tab is locked (re-picking it here would be confusing, not useful) and
+/// the phone OTP is sent automatically so the user never has to tap through
+/// a form they already filled in at signup. It only surfaces if that
+/// auto-send fails, so they can retry or fix a mistyped number.
 class CompleteProfileScreen extends ConsumerStatefulWidget {
   const CompleteProfileScreen({super.key});
 
@@ -40,11 +47,18 @@ class CompleteProfileScreen extends ConsumerStatefulWidget {
 class _CompleteProfileScreenState extends ConsumerState<CompleteProfileScreen> {
   final _formKey = GlobalKey<FormState>();
   final _phoneController = TextEditingController();
+  final _emailController = TextEditingController();
 
   UserRole _role = UserRole.creator;
   String? _pendingDisplayName;
   bool _roleLocked = false;
   bool _autoSubmitted = false;
+  // Set when this account's identity already *is* a verified phone number
+  // (a phone-login attempt on an unregistered number, which Firebase turns
+  // into a brand-new bare account) — Google/Apple never populate this, and
+  // the email/password path only gets a phone once this screen links one,
+  // so a non-null value here can only mean that case.
+  String? _alreadyVerifiedPhone;
 
   @override
   void initState() {
@@ -67,17 +81,73 @@ class _CompleteProfileScreenState extends ConsumerState<CompleteProfileScreen> {
           _continue();
         }
       });
+    } else {
+      _alreadyVerifiedPhone = ref
+          .read(authRepositoryProvider)
+          .currentUser
+          ?.phoneNumber;
     }
   }
 
   @override
   void dispose() {
     _phoneController.dispose();
+    _emailController.dispose();
     super.dispose();
   }
 
   Future<void> _continue() async {
     if (!_formKey.currentState!.validate()) return;
+
+    final alreadyVerifiedPhone = _alreadyVerifiedPhone;
+    if (alreadyVerifiedPhone != null) {
+      // The phone is already this account's own verified identity (see
+      // initState) — sending another OTP would just try to re-link a
+      // credential the account already has. Skip straight to assigning the
+      // role instead of routing back through OtpVerificationView.
+      await ref
+          .read(authControllerProvider.notifier)
+          .chooseRole(
+            _role,
+            displayName: _pendingDisplayName,
+            phone: alreadyVerifiedPhone,
+          );
+      if (!mounted) return;
+      if (ref.read(authControllerProvider).hasError) {
+        AppSnackbar.showError(
+          context,
+          "Couldn't finish setting up your account.",
+        );
+        return;
+      }
+
+      // The role's already saved at this point (harmless to redo if the
+      // step below fails and this whole method re-runs on retry — setRole
+      // merges rather than duplicating). Only advance to checkEmail once
+      // the verification link genuinely sent; otherwise the user would be
+      // stuck on a screen waiting for an email that never went out.
+      final email = _emailController.text.trim();
+      await ref
+          .read(authControllerProvider.notifier)
+          .verifyBeforeUpdateEmail(email);
+      if (!mounted) return;
+      if (ref.read(authControllerProvider).hasError) {
+        final error = ref.read(authControllerProvider).error;
+        AppSnackbar.showError(
+          context,
+          error is FirebaseAuthException && error.code == 'email-already-in-use'
+              ? 'That email is already in use by another account.'
+              : "Couldn't send a verification email. Please try again.",
+        );
+        return;
+      }
+      await ref
+          .read(localStorageServiceProvider)
+          .savePendingPhoneEmailVerification(email);
+      if (!mounted) return;
+      context.go(AppRoutes.checkEmail);
+      return;
+    }
 
     final phone = _phoneController.text.trim();
     final verificationId = await ref
@@ -128,6 +198,10 @@ class _CompleteProfileScreenState extends ConsumerState<CompleteProfileScreen> {
                   title: 'A couple more details',
                   subtitle: _roleLocked
                       ? 'Verifying your phone number...'
+                      : _alreadyVerifiedPhone != null
+                      ? "${_alreadyVerifiedPhone!} isn't registered yet — "
+                            'pick a role and add an email to finish creating '
+                            'your account'
                       : "We just need your role and phone to finish setting up your account",
                 ),
                 const SizedBox(height: 24),
@@ -141,16 +215,28 @@ class _CompleteProfileScreenState extends ConsumerState<CompleteProfileScreen> {
                         : (role) => setState(() => _role = role),
                   ),
                 const SizedBox(height: 24),
-                AppTextField(
-                  controller: _phoneController,
-                  label: 'Phone number',
-                  hintText: '98765 43210',
-                  keyboardType: TextInputType.phone,
-                  textInputAction: TextInputAction.done,
-                  enabled: !isLoading,
-                  validator: Validators.phone,
-                  onSubmitted: (_) => _continue(),
-                ),
+                if (_alreadyVerifiedPhone == null)
+                  AppTextField(
+                    controller: _phoneController,
+                    label: 'Phone number',
+                    hintText: '98765 43210',
+                    keyboardType: TextInputType.phone,
+                    textInputAction: TextInputAction.done,
+                    enabled: !isLoading,
+                    validator: Validators.phone,
+                    onSubmitted: (_) => _continue(),
+                  )
+                else
+                  AppTextField(
+                    controller: _emailController,
+                    label: 'Email',
+                    hintText: 'you@example.com',
+                    keyboardType: TextInputType.emailAddress,
+                    textInputAction: TextInputAction.done,
+                    enabled: !isLoading,
+                    validator: Validators.email,
+                    onSubmitted: (_) => _continue(),
+                  ),
                 const SizedBox(height: 24),
                 AuthButton(
                   text: 'Continue',

@@ -221,10 +221,21 @@ service cloud.firestore {
     // Matching on the id itself needs no `resource` at all, so a `.get()`
     // on a doc that doesn't exist is allowed and returns exists:false.
     match /blocks/{blockId} {
+      // The `resource.data.blockerId == request.auth.uid` disjunct exists
+      // specifically for `watchBlockedByMe`'s `where('blockerId', ==, uid)`
+      // list query (Settings' Blocked Accounts screen) — Firestore can only
+      // grant a *list* query if the rule can be matched against the
+      // query's own filter on a data field; a document-id-only condition
+      // (the other two disjuncts below) works for single-doc `.get()`s
+      // like `isBlockedEitherWay`, but Firestore rejects the entire list
+      // request outright if the only guard is on `resource.id`, which is
+      // exactly why Blocked Accounts showed "Couldn't load" with no doc
+      // ever actually failing its own rule.
       allow read: if isAdmin()
         || isActiveStaffWithPermission('/trust-safety')
         || (request.auth != null
-            && (blockId.split('_')[0] == request.auth.uid
+            && (resource.data.blockerId == request.auth.uid
+                || blockId.split('_')[0] == request.auth.uid
                 || blockId.split('_')[1] == request.auth.uid));
       allow create: if request.auth != null
         && request.resource.data.blockerId == request.auth.uid

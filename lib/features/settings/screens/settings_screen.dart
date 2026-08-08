@@ -36,9 +36,10 @@ class SettingsScreen extends ConsumerWidget {
     BuildContext context,
     WidgetRef ref,
   ) async {
+    final role = ref.read(currentProfileProvider).value?.role;
     final confirmed = await showDialog<bool>(
       context: context,
-      builder: (context) => const _DeleteAccountDialog(),
+      builder: (context) => _DeleteAccountDialog(role: role),
     );
     if (confirmed != true) return;
     if (!context.mounted) return;
@@ -208,7 +209,9 @@ class SettingsScreen extends ConsumerWidget {
 /// `deleteAccount` Cloud Function uses the Admin SDK, so there's no
 /// `requires-recent-login` constraint to satisfy).
 class _DeleteAccountDialog extends StatefulWidget {
-  const _DeleteAccountDialog();
+  const _DeleteAccountDialog({required this.role});
+
+  final UserRole? role;
 
   @override
   State<_DeleteAccountDialog> createState() => _DeleteAccountDialogState();
@@ -226,18 +229,21 @@ class _DeleteAccountDialogState extends State<_DeleteAccountDialog> {
 
   @override
   Widget build(BuildContext context) {
+    final warning = widget.role == UserRole.brand
+        ? 'This permanently deletes your account, profile, and all of your '
+              "campaigns (and the applications filed against them). Messages "
+              "you're part of stay visible to the other side, but you won't "
+              "be able to sign back in."
+        : 'This permanently deletes your account and profile. Applications '
+              "and messages you're part of stay visible to the other side, "
+              "but you won't be able to sign back in.";
     return AlertDialog(
       title: const Text('Delete account?'),
       content: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'This permanently deletes your account and profile. Campaigns, '
-            "applications, and messages you're part of stay visible to the "
-            "other side, but you won't be able to sign back in.\n\n"
-            'Type DELETE to confirm.',
-          ),
+          Text('$warning\n\nType DELETE to confirm.'),
           const SizedBox(height: 16),
           AppTextField(
             controller: _controller,

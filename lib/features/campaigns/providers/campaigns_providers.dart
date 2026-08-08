@@ -66,9 +66,16 @@ Stream<List<Campaign>> openCampaigns(Ref ref) {
       .watch(campaignsRepositoryProvider)
       .watchOpenCampaigns(deliverableType: deliverableType)
       .map((campaigns) {
+        // Belt-and-suspenders with the `expireCampaigns` scheduled Cloud
+        // Function, which flips `status` away from `active` once `endDate`
+        // passes but only runs every 24 hours — this catches a campaign the
+        // moment it expires instead of leaving it visible for up to a day.
+        final notExpired = campaigns
+            .where((campaign) => !campaign.isExpired)
+            .toList();
         final filtered = category == null
-            ? campaigns
-            : campaigns
+            ? notExpired
+            : notExpired
                   .where((campaign) => campaign.categories.contains(category))
                   .toList();
         return [...filtered]..sort(

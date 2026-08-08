@@ -70,6 +70,31 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     }
 
     if (ref.read(authControllerProvider).hasError) {
+      // Firebase's own sign-in error is deliberately ambiguous (it won't say
+      // whether the email doesn't exist vs. the password is just wrong, to
+      // stop email-existence probing) — this secondary check exists only to
+      // redirect an unregistered email to signup instead of a dead-end
+      // generic error, same as an unregistered phone number already gets.
+      var registered = true;
+      try {
+        registered = await ref
+            .read(authControllerProvider.notifier)
+            .checkEmailRegistered(email);
+      } catch (_) {
+        // Fall through to the generic message below — this check failing
+        // shouldn't block a normal invalid-password error from showing.
+      }
+      if (!mounted) return;
+
+      if (!registered) {
+        AppSnackbar.showInfo(
+          context,
+          "This email isn't registered — please create your account.",
+        );
+        context.push(AppRoutes.signup);
+        return;
+      }
+
       AppSnackbar.showError(
         context,
         authErrorMessage(

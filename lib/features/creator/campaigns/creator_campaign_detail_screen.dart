@@ -528,6 +528,7 @@ class _CampaignStatusChip extends StatelessWidget {
       CampaignStatus.paused => AppColors.warning,
       CampaignStatus.rejected => AppColors.error,
       CampaignStatus.closed => AppColors.textHint,
+      CampaignStatus.expired => AppColors.textHint,
       CampaignStatus.draft => AppColors.secondary,
     };
     return Container(

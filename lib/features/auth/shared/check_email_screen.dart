@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../app/routes.dart';
+import '../../../core/services/local_storage_service.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_text_styles.dart';
@@ -15,15 +16,35 @@ import 'auth_header.dart';
 /// screen doesn't wait passively — the user taps "I've verified" once
 /// they're done and this polls Firebase for the up-to-date status.
 ///
-/// The router's own redirect guard can land here on its own (right after
-/// signup signs the user in but before their email is verified), so this
-/// reads the email off the signed-in user rather than requiring it be
-/// passed in as route `extra` — that redirect never carries one.
+/// Two distinct paths land here, told apart by
+/// [LocalStorageService.pendingPhoneEmailVerification]:
+/// - Password signup: the router's own redirect guard lands here on its
+///   own, so the email is read off the signed-in user (`currentUser.email`
+///   is already set — Firebase sets it at account creation, verified or
+///   not).
+/// - A phone-first account adding an email (see
+///   `CompleteProfileScreen._alreadyVerifiedPhone`): this uses
+///   `verifyBeforeUpdateEmail`, which deliberately leaves
+///   `currentUser.email` null until the link is actually clicked — so the
+///   email to display/resend comes from the local cache instead, and role
+///   assignment already happened, so verifying here goes straight to
+///   splash rather than back through complete-profile.
 class CheckEmailScreen extends ConsumerWidget {
   const CheckEmailScreen({super.key});
 
   Future<void> _resend(BuildContext context, WidgetRef ref) async {
-    await ref.read(authControllerProvider.notifier).resendEmailVerification();
+    final pendingPhoneEmail = ref
+        .read(localStorageServiceProvider)
+        .pendingPhoneEmailVerification;
+    if (pendingPhoneEmail != null) {
+      await ref
+          .read(authControllerProvider.notifier)
+          .verifyBeforeUpdateEmail(pendingPhoneEmail);
+    } else {
+      await ref
+          .read(authControllerProvider.notifier)
+          .resendEmailVerification();
+    }
     if (!context.mounted) return;
     if (ref.read(authControllerProvider).hasError) {
       AppSnackbar.showError(context, "Couldn't resend. Please try again.");
@@ -51,6 +72,14 @@ class CheckEmailScreen extends ConsumerWidget {
       return;
     }
 
+    final localStorage = ref.read(localStorageServiceProvider);
+    if (localStorage.pendingPhoneEmailVerification != null) {
+      await localStorage.clearPendingPhoneEmailVerification();
+      if (!context.mounted) return;
+      context.go(AppRoutes.splash);
+      return;
+    }
+
     context.go(AppRoutes.completeProfile);
   }
 
@@ -60,6 +89,13 @@ class CheckEmailScreen extends ConsumerWidget {
   /// is the escape hatch for a typo'd email: abandon the pending account
   /// by signing out first, which the guard then lets through.
   Future<void> _backToLogin(BuildContext context, WidgetRef ref) async {
+    // Also clears the phone-first pending-email cache, if set — otherwise
+    // logging back in with this now-registered phone would hit the
+    // router's gate and land right back here with the same typo'd email
+    // and no way to fix it.
+    await ref
+        .read(localStorageServiceProvider)
+        .clearPendingPhoneEmailVerification();
     await ref.read(authControllerProvider.notifier).signOut();
     if (!context.mounted) return;
     context.go(AppRoutes.login);
@@ -68,7 +104,10 @@ class CheckEmailScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final isLoading = ref.watch(authControllerProvider).isLoading;
-    final email = ref.watch(authRepositoryProvider).currentUser?.email ?? '';
+    final email =
+        ref.watch(localStorageServiceProvider).pendingPhoneEmailVerification ??
+        ref.watch(authRepositoryProvider).currentUser?.email ??
+        '';
 
     return Scaffold(
       body: SafeArea(

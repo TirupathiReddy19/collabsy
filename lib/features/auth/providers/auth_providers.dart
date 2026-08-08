@@ -127,6 +127,15 @@ class AuthController extends _$AuthController {
     );
   }
 
+  /// Adds and starts verifying an email for a phone-first account — see
+  /// [AuthRepository.verifyBeforeUpdateEmail].
+  Future<void> verifyBeforeUpdateEmail(String email) async {
+    state = const AsyncLoading();
+    state = await AsyncValue.guard(
+      () => ref.read(authRepositoryProvider).verifyBeforeUpdateEmail(email),
+    );
+  }
+
   /// Returns true once the signed-in user's email has been verified.
   Future<bool> checkEmailVerified() async {
     state = const AsyncLoading();
@@ -172,6 +181,14 @@ class AuthController extends _$AuthController {
     );
   }
 
+  /// Whether [email] has an account at all — see
+  /// [AuthRepository.checkEmailRegistered]. Deliberately does not touch
+  /// [state]/loading: this runs as a secondary check after a sign-in attempt
+  /// has already failed, and shouldn't clear or overwrite that error.
+  Future<bool> checkEmailRegistered(String email) {
+    return ref.read(authRepositoryProvider).checkEmailRegistered(email);
+  }
+
   /// Sends the SMS code and returns the `verificationId` needed by
   /// [verifyPhoneOtp]/[linkPhoneCredential]. [link] must match whichever
   /// of those the caller intends to use once the code arrives.
@@ -187,16 +204,20 @@ class AuthController extends _$AuthController {
   }
 
   /// Phone-as-primary login — signs in as the phone number's own identity.
-  Future<void> verifyPhoneOtp({
+  /// Returns whether this created a brand-new account (i.e. the number
+  /// wasn't already registered), or null if verification failed.
+  Future<bool?> verifyPhoneOtp({
     required String verificationId,
     required String smsCode,
   }) async {
     state = const AsyncLoading();
-    state = await AsyncValue.guard(
-      () => ref
+    bool? isNewUser;
+    state = await AsyncValue.guard(() async {
+      isNewUser = await ref
           .read(authRepositoryProvider)
-          .verifyPhoneOtp(verificationId: verificationId, smsCode: smsCode),
-    );
+          .verifyPhoneOtp(verificationId: verificationId, smsCode: smsCode);
+    });
+    return isNewUser;
   }
 
   /// Finishing a signup — attaches the phone to the already-signed-in

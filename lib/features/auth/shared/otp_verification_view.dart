@@ -78,6 +78,7 @@ class _OtpVerificationViewState extends ConsumerState<OtpVerificationView> {
   Future<void> _handleCompleted(String code) async {
     final controller = ref.read(authControllerProvider.notifier);
     final role = _args.role;
+    var isNewUser = false;
 
     if (role != null) {
       await controller.linkPhoneCredential(
@@ -85,10 +86,12 @@ class _OtpVerificationViewState extends ConsumerState<OtpVerificationView> {
         smsCode: code,
       );
     } else {
-      await controller.verifyPhoneOtp(
-        verificationId: _verificationId,
-        smsCode: code,
-      );
+      isNewUser =
+          await controller.verifyPhoneOtp(
+            verificationId: _verificationId,
+            smsCode: code,
+          ) ??
+          false;
     }
     if (!mounted) return;
 
@@ -131,6 +134,21 @@ class _OtpVerificationViewState extends ConsumerState<OtpVerificationView> {
       // would be gone with nothing to show for it.
       await ref.read(localStorageServiceProvider).clearPendingSignup();
       if (!mounted) return;
+    } else if (isNewUser) {
+      // This phone number had no account at all — Firebase's phone auth
+      // can't tell "sign in" from "sign up" apart, so verifying the code
+      // just created a bare, role-less account rather than logging into an
+      // existing one. Send them straight into finishing signup instead of
+      // silently leaving them on a blank "complete your profile" form with
+      // no explanation.
+      ref.read(pendingOtpProvider.notifier).clear();
+      AppSnackbar.showInfo(
+        context,
+        "This number isn't registered yet — let's finish setting up your "
+        'account.',
+      );
+      if (mounted) context.go(AppRoutes.completeProfile);
+      return;
     } else if (_args.expectedRole != null) {
       // Plain phone login — reject it if this account's real role doesn't
       // match the tab picked on the login screen, rather than silently

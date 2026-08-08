@@ -70,6 +70,20 @@ class AuthRepository {
     await user.sendEmailVerification();
   }
 
+  /// Adds an email to an account that doesn't have one yet (a phone-first
+  /// signup — see `CompleteProfileScreen`'s `_alreadyVerifiedPhone` case)
+  /// and sends a verification link for it. Deliberately `verifyBeforeUpdateEmail`
+  /// rather than `updateEmail` + `sendEmailVerification`: it doesn't touch
+  /// `currentUser.email`/`emailVerified` at all until the link is actually
+  /// clicked, so an unverified email is never silently attached to the
+  /// account — the exact same "unverified until confirmed" guarantee the
+  /// password-signup path gets from Firebase for free.
+  Future<void> verifyBeforeUpdateEmail(String email) async {
+    final user = _auth.currentUser;
+    if (user == null) throw StateError('No signed-in user to add an email to.');
+    await user.verifyBeforeUpdateEmail(email);
+  }
+
   Future<bool> reloadAndCheckEmailVerified() async {
     final user = _auth.currentUser;
     if (user == null) return false;
@@ -90,6 +104,20 @@ class AuthRepository {
 
   Future<void> sendPasswordResetEmail(String email) {
     return _auth.sendPasswordResetEmail(email: email);
+  }
+
+  /// Whether [email] has an account at all — Firebase Auth's own sign-in
+  /// error is deliberately ambiguous (`invalid-credential` covers both wrong
+  /// password and no such user, to stop email-existence probing), so this
+  /// goes through the `checkEmailRegistered` Cloud Function (Admin SDK)
+  /// instead. Only call this *after* a sign-in attempt has already failed —
+  /// it's for redirecting an unregistered email to signup, not for
+  /// pre-checking on every keystroke.
+  Future<bool> checkEmailRegistered(String email) async {
+    final result = await _functions.httpsCallable('checkEmailRegistered').call(
+      {'email': email},
+    );
+    return result.data['registered'] as bool;
   }
 
   /// Starts phone verification and returns the `verificationId` needed by
@@ -129,7 +157,13 @@ class AuthRepository {
 
   /// Signs in AS the phone number's own identity — for phone-as-primary
   /// login, where there's no existing account to attach it to.
-  Future<void> verifyPhoneOtp({
+  ///
+  /// Firebase Phone Auth doesn't distinguish sign-in from sign-up: this
+  /// silently creates a brand-new account if [verificationId]'s phone number
+  /// has never signed in before. Returns whether that just happened, so a
+  /// login attempt on an unregistered number can be redirected into
+  /// finishing signup instead of leaving a bare, role-less account behind.
+  Future<bool> verifyPhoneOtp({
     required String verificationId,
     required String smsCode,
   }) async {
@@ -137,7 +171,8 @@ class AuthRepository {
       verificationId: verificationId,
       smsCode: smsCode,
     );
-    await _auth.signInWithCredential(credential);
+    final result = await _auth.signInWithCredential(credential);
+    return result.additionalUserInfo?.isNewUser ?? false;
   }
 
   /// Attaches the phone number to the currently signed-in account instead
