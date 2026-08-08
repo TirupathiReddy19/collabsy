@@ -32,6 +32,20 @@ service cloud.firestore {
         || exists(/databases/$(database)/documents/blocks/$(b + '_' + a));
     }
 
+    // Notification types that only ever originate from an admin/staff
+    // action (campaign review, brand/creator verification, support reply)
+    // — never from ordinary Creator/Brand app code. Used by the
+    // notifications create rule below to stop a regular user from forging
+    // e.g. a fake "profile verified" or "campaign approved" push to
+    // another user.
+    function isAdminNotificationType(type) {
+      return type in [
+        'campaignApproved', 'campaignRejected',
+        'profileVerified', 'profileRejected',
+        'supportReply'
+      ];
+    }
+
     // Any active staff account, regardless of which specific features
     // they've been granted — used only for auditLogs' create rule, so
     // whatever action a staff account takes (in whichever section they're
@@ -122,8 +136,19 @@ service cloud.firestore {
             && !(request.resource.data.status == 'active'
                  && (resource.data.status == 'underReview'
                      || resource.data.status == 'rejected')))
-        || request.resource.data.diff(resource.data).affectedKeys()
-            .hasOnly(['viewCount', 'viewedByCreatorIds']);
+        // View-tracking from a creator opening the detail screen — auth
+        // required (this used to have none at all), the count can only
+        // ever go up by exactly 1 per write, and the id being added to
+        // viewedByCreatorIds must be the caller's own, with no existing
+        // entries removed. Without these, anyone could inflate a brand's
+        // view count or inject fake creator ids into their own analytics.
+        || (request.auth != null
+            && request.resource.data.diff(resource.data).affectedKeys()
+                .hasOnly(['viewCount', 'viewedByCreatorIds'])
+            && request.resource.data.viewCount == resource.data.get('viewCount', 0) + 1
+            && request.resource.data.viewedByCreatorIds.hasAny([request.auth.uid])
+            && request.resource.data.viewedByCreatorIds
+                .hasAll(resource.data.get('viewedByCreatorIds', [])));
       allow delete: if request.auth != null
         && resource.data.brandId == request.auth.uid;
     }
@@ -137,12 +162,22 @@ service cloud.firestore {
             && (resource.data.creatorId == request.auth.uid
                 || resource.data.brandId == request.auth.uid));
       allow create: if request.auth != null
-        && request.resource.data.creatorId == request.auth.uid;
-      // Creator can update their own (e.g. withdraw); the owning brand can
-      // update it too (accept/reject).
+        && request.resource.data.creatorId == request.auth.uid
+        && request.resource.data.status == 'pending';
+      // `status` is the ONLY field either party may ever change here, and
+      // only along the one transition each side actually owns — a creator
+      // withdrawing their own still-open application, or the owning brand
+      // accepting/rejecting a pending one. Without this, either side could
+      // write any field to any value, including a creator self-accepting
+      // their own application (skipping the brand's review entirely).
       allow update: if request.auth != null
-        && (resource.data.creatorId == request.auth.uid
-            || resource.data.brandId == request.auth.uid);
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status'])
+        && ((resource.data.creatorId == request.auth.uid
+             && request.resource.data.status == 'withdrawn'
+             && resource.data.status in ['pending', 'accepted'])
+            || (resource.data.brandId == request.auth.uid
+                && request.resource.data.status in ['accepted', 'rejected']
+                && resource.data.status == 'pending'));
     }
 
     // One per accepted application — the creator submits proof of posted
@@ -154,22 +189,63 @@ service cloud.firestore {
         && (resource.data.creatorId == request.auth.uid
             || resource.data.brandId == request.auth.uid);
       allow create: if request.auth != null
-        && request.resource.data.brandId == request.auth.uid;
+        && request.resource.data.brandId == request.auth.uid
+        && request.resource.data.status == 'pending';
+      // The creator can only submit their own still-pending deliverable;
+      // the owning brand can only approve one the creator has already
+      // submitted. These two transitions are the only writes either side
+      // can make — otherwise a creator could self-approve their own
+      // deliverable without the brand ever reviewing it.
       allow update: if request.auth != null
-        && (resource.data.creatorId == request.auth.uid
-            || resource.data.brandId == request.auth.uid);
+        && ((resource.data.creatorId == request.auth.uid
+             && resource.data.status == 'pending'
+             && request.resource.data.status == 'submitted'
+             && request.resource.data.diff(resource.data).affectedKeys()
+                 .hasOnly(['status', 'submissionNote', 'submittedAt']))
+            || (resource.data.brandId == request.auth.uid
+                && resource.data.status == 'submitted'
+                && request.resource.data.status == 'approved'
+                && request.resource.data.diff(resource.data).affectedKeys()
+                    .hasOnly(['status', 'reviewedAt'])));
     }
 
     // The writer usually isn't the recipient (a creator applying writes a
-    // notification FOR the brand, and vice versa) — same pattern as
-    // deliverables' create rule, so creation itself is only gated on being
-    // signed in, while read/update stay locked to the true owner.
+    // notification FOR the brand, and vice versa), so creation can't be
+    // owner-gated the way read/update are — see the shape/content
+    // restrictions on `create` below instead.
     match /notifications/{notificationId} {
       allow read: if request.auth != null
         && resource.data.userId == request.auth.uid;
-      allow create: if request.auth != null;
+      // Previously just `request.auth != null` — any signed-in user could
+      // write an arbitrary title/body to ANY other user's notifications
+      // (which sendPushOnNotificationCreate then forwards as a real push),
+      // with no shape or length limits. This is a real phishing/spam
+      // vector, so: a strict field allow-list, capped content length, a
+      // fixed initial `read`/`createdAt`, and admin-only types (profile
+      // verification, campaign decisions, support replies) blocked unless
+      // the caller is actually admin/staff.
+      allow create: if request.auth != null
+        && request.resource.data.keys().hasOnly(
+            ['userId', 'type', 'title', 'body', 'referenceType', 'referenceId', 'read', 'createdAt'])
+        && request.resource.data.userId is string
+        && request.resource.data.type in [
+             'newApplication', 'applicationAccepted', 'applicationRejected', 'applicationWithdrawn',
+             'newMessage', 'deliverableSubmitted', 'deliverableApproved',
+             'campaignApproved', 'campaignRejected', 'profileVerified', 'profileRejected', 'supportReply'
+           ]
+        && (!isAdminNotificationType(request.resource.data.type) || isAdmin() || isActiveStaff())
+        && request.resource.data.title is string && request.resource.data.title.size() < 200
+        && request.resource.data.body is string && request.resource.data.body.size() < 1000
+        && (!('referenceType' in request.resource.data) || request.resource.data.referenceType is string)
+        && (!('referenceId' in request.resource.data) || request.resource.data.referenceId is string)
+        && request.resource.data.read == false
+        && request.resource.data.createdAt == request.time;
+      // Only the recipient marking their own notification read — same
+      // shape as markRead/markAllRead, nothing else is ever legitimately
+      // changed after creation.
       allow update: if request.auth != null
-        && resource.data.userId == request.auth.uid;
+        && resource.data.userId == request.auth.uid
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['read']);
     }
 
     // Chat threads and their messages — visible only to the two
@@ -185,9 +261,18 @@ service cloud.firestore {
         && (request.resource.data.creatorId == request.auth.uid
             || request.resource.data.brandId == request.auth.uid)
         && !isBlocked(request.resource.data.creatorId, request.resource.data.brandId);
+      // Neither participant may ever rewrite who the other party is —
+      // status/lastMessage(At) are shared, but each side may only touch
+      // their own lastReadAt. Without a field allow-list here, a
+      // participant could silently reassign creatorId/brandId to a
+      // completely different account.
       allow update: if request.auth != null
-        && (resource.data.creatorId == request.auth.uid
-            || resource.data.brandId == request.auth.uid);
+        && ((resource.data.creatorId == request.auth.uid
+             && request.resource.data.diff(resource.data).affectedKeys()
+                 .hasOnly(['status', 'lastMessage', 'lastMessageAt', 'creatorLastReadAt']))
+            || (resource.data.brandId == request.auth.uid
+                && request.resource.data.diff(resource.data).affectedKeys()
+                    .hasOnly(['status', 'lastMessage', 'lastMessageAt', 'brandLastReadAt'])));
 
       match /messages/{messageId} {
         allow read: if request.auth != null
