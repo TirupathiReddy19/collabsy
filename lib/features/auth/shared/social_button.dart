@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 
 import '../../../core/theme/app_colors.dart';
@@ -52,22 +53,13 @@ class _GoogleMark extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
+    // The real, current four-color Google "G" — the mark Google itself
+    // distributes for third-party "Sign in with Google" buttons — rather
+    // than a plain letter on a solid circle.
+    return SvgPicture.asset(
+      'assets/icons/google_logo.svg',
       width: 20,
       height: 20,
-      alignment: Alignment.center,
-      decoration: const BoxDecoration(
-        color: AppColors.google,
-        shape: BoxShape.circle,
-      ),
-      child: const Text(
-        'G',
-        style: TextStyle(
-          color: AppColors.white,
-          fontSize: 12,
-          fontWeight: FontWeight.w800,
-        ),
-      ),
     );
   }
 }

@@ -88,7 +88,6 @@ class AppColors {
   // Social Login
   // ==========================================================
 
-  static const Color google = Color(0xFFDB4437);
   static const Color facebook = Color(0xFF1877F2);
   static const Color apple = Color(0xFF000000);
 
