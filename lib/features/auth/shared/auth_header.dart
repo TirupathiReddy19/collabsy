@@ -16,7 +16,7 @@ class AuthHeader extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const AppLogo(size: 56, showText: false),
+        const AppLogo(size: 72, showText: false),
         const SizedBox(height: 24),
         Text(title, style: AppTextStyles.heading1),
         if (subtitle != null) ...[

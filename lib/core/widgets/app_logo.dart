@@ -22,7 +22,7 @@ class AppLogo extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final double borderRadius = size * 0.25;
-    final double markSize = size * 0.5;
+    final double markSize = size * 0.62;
 
     return Column(
       mainAxisSize: MainAxisSize.min,
@@ -105,7 +105,7 @@ class _CollabsyMarkPainter extends CustomPainter {
     // local coordinate space) — scaled to occupy ~62% of the given size,
     // the same proportion as the app icon's adaptive-icon safe zone, and
     // centered.
-    final scale = size.shortestSide * 0.62 / 100;
+    final scale = size.shortestSide * 0.82 / 100;
     Offset toCanvas(double lx, double ly) =>
         center + Offset((lx - 50) * scale, (ly - 50) * scale);
     final strokeWidth = 14 * scale;
