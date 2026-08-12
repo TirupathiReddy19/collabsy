@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Matches SplashBackground's base color
+         (lib/features/splash/widgets/splash_background.dart) so the native
+         launch screen and the Dart splash screen hand off without a color
+         flash. -->
+    <color name="splash_background">#F97316</color>
+</resources>

@@ -85,12 +85,13 @@ class AppLogo extends StatelessWidget {
   }
 }
 
-/// The Collabsy mark: two rounded squares — one solid, one an outline —
-/// overlapping at opposing angles. Reads as two parties (creator + brand)
-/// meeting in the middle, which is the whole product in one shape, rather
-/// than a plain letterform. Vector-drawn so it stays crisp at every size
-/// this widget is used at (the 56px auth header through the 96px splash
-/// badge) without shipping raster assets.
+/// The Collabsy mark: an open white ring (a "C") with a smaller two-tone
+/// accent ring nested in its gap — the same geometry as the app icon
+/// (assets/icon/collabsy_icon_master.png and the Android adaptive icon's
+/// ic_launcher_foreground.xml), so the in-app logo, splash screen, and
+/// home-screen icon all read as the same mark. Vector-drawn so it stays
+/// crisp at every size this widget is used at (the 56px auth header
+/// through the 96px splash badge) without shipping raster assets.
 class _CollabsyMark extends StatelessWidget {
   const _CollabsyMark();
 
@@ -104,50 +105,40 @@ class _CollabsyMarkPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final center = Offset(size.width / 2, size.height / 2);
-    // Sized + separated so the two squares read as distinctly overlapping
-    // shapes rather than merging into a blob — the corner radius stays
-    // modest and the center-to-center offset is large relative to the
-    // side length specifically to keep each square's own silhouette
-    // legible at a glance.
-    final squareSide = size.shortestSide * 0.56;
-    final cornerRadius = squareSide * 0.18;
-    final rect = Rect.fromCenter(
-      center: Offset.zero,
-      width: squareSide,
-      height: squareSide,
-    );
-    final rrect = RRect.fromRectAndRadius(
-      rect,
-      Radius.circular(cornerRadius),
-    );
-    final offset = squareSide * 0.4;
+    // Source geometry lives in a 100x100 logical box (the icon SVG's own
+    // local coordinate space) — scaled to occupy ~62% of the given size,
+    // the same proportion as the app icon's adaptive-icon safe zone, and
+    // centered.
+    final scale = size.shortestSide * 0.62 / 100;
+    Offset toCanvas(double lx, double ly) =>
+        center + Offset((lx - 50) * scale, (ly - 50) * scale);
+    final strokeWidth = 14 * scale;
 
-    final outlinePaint = Paint()
+    final outerPaint = Paint()
       ..color = Colors.white
       ..style = PaintingStyle.stroke
-      ..strokeWidth = squareSide * 0.1;
-
-    canvas.save();
-    canvas.translate(
-      center.dx - offset * math.cos(math.pi / 4),
-      center.dy - offset * math.sin(math.pi / 4),
+      ..strokeWidth = strokeWidth
+      ..strokeCap = StrokeCap.round;
+    canvas.drawArc(
+      Rect.fromCircle(center: toCanvas(53.345, 50), radius: 32 * scale),
+      -54.3665 * math.pi / 180,
+      -251.267 * math.pi / 180,
+      false,
+      outerPaint,
     );
-    canvas.rotate(-0.28);
-    canvas.drawRRect(rrect, outlinePaint);
-    canvas.restore();
 
-    final fillPaint = Paint()
-      ..color = Colors.white
-      ..style = PaintingStyle.fill;
-
-    canvas.save();
-    canvas.translate(
-      center.dx + offset * math.cos(math.pi / 4),
-      center.dy + offset * math.sin(math.pi / 4),
+    final innerPaint = Paint()
+      ..color = const Color(0xFFB85C18)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = strokeWidth
+      ..strokeCap = StrokeCap.round;
+    canvas.drawArc(
+      Rect.fromCircle(center: toCanvas(64.247, 50), radius: 18 * scale),
+      -117.25 * math.pi / 180,
+      234.5 * math.pi / 180,
+      false,
+      innerPaint,
     );
-    canvas.rotate(0.28);
-    canvas.drawRRect(rrect, fillPaint);
-    canvas.restore();
   }
 
   @override
