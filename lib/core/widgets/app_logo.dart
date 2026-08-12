@@ -1,5 +1,4 @@
 import 'dart:math' as math;
-import 'dart:ui';
 
 import 'package:flutter/material.dart';
 
@@ -28,28 +27,23 @@ class AppLogo extends StatelessWidget {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        ClipRRect(
-          borderRadius: BorderRadius.circular(borderRadius),
-          child: BackdropFilter(
-            filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
-            child: Container(
-              width: size,
-              height: size,
-              decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.20),
-                borderRadius: BorderRadius.circular(borderRadius),
-                border: Border.all(
-                  color: Colors.white.withValues(alpha: 0.30),
-                  width: 1,
-                ),
-              ),
-              child: Center(
-                child: SizedBox(
-                  width: markSize,
-                  height: markSize,
-                  child: const _CollabsyMark(),
-                ),
-              ),
+        // Solid orange badge — same color as the app icon — rather than a
+        // translucent glass card. A glass card only reads correctly over a
+        // colored/blurred backdrop (the splash screen's orange gradient);
+        // on the plain light background every auth screen actually uses
+        // it, the card and the white mark inside it both disappear.
+        Container(
+          width: size,
+          height: size,
+          decoration: BoxDecoration(
+            color: const Color(0xFFF97316),
+            borderRadius: BorderRadius.circular(borderRadius),
+          ),
+          child: Center(
+            child: SizedBox(
+              width: markSize,
+              height: markSize,
+              child: const CollabsyMark(),
             ),
           ),
         ),
@@ -91,9 +85,11 @@ class AppLogo extends StatelessWidget {
 /// ic_launcher_foreground.xml), so the in-app logo, splash screen, and
 /// home-screen icon all read as the same mark. Vector-drawn so it stays
 /// crisp at every size this widget is used at (the 56px auth header
-/// through the 96px splash badge) without shipping raster assets.
-class _CollabsyMark extends StatelessWidget {
-  const _CollabsyMark();
+/// through the splash screen's bare mark) without shipping raster assets.
+/// Public so the splash screen can render it directly, without [AppLogo]'s
+/// glass card and text.
+class CollabsyMark extends StatelessWidget {
+  const CollabsyMark({super.key});
 
   @override
   Widget build(BuildContext context) {
