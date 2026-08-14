@@ -16,6 +16,7 @@ Lead _leadFromDoc(DocumentSnapshot<Map<String, dynamic>> doc) {
     internId: data['internId'] as String? ?? '',
     internEmail: data['internEmail'] as String? ?? '',
     message: data['message'] as String? ?? '',
+    comment: data['comment'] as String? ?? 'looking for collabs check your DM.',
     status: data['status'] as String? ?? 'linkGenerated',
     createdAt: _asDate(data['createdAt']),
     clickedAt: _asDate(data['clickedAt']),
@@ -23,6 +24,10 @@ Lead _leadFromDoc(DocumentSnapshot<Map<String, dynamic>> doc) {
     matchedUid: data['matchedUid'] as String?,
     signedUpAt: _asDate(data['signedUpAt']),
     onboardingCompleteAt: _asDate(data['onboardingCompleteAt']),
+    internConfirmedSent: data['internConfirmedSent'] as bool? ?? false,
+    internConfirmedSentAt: _asDate(data['internConfirmedSentAt']),
+    lastFollowUpSentAt: _asDate(data['lastFollowUpSentAt']),
+    followUpCount: data['followUpCount'] as int? ?? 0,
   );
 }
 

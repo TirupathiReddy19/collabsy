@@ -49,6 +49,11 @@ app.*.map.json
 *.env
 !*.env.example
 
+# Release signing (never commit — this is the Play Store upload key)
+/android/key.properties
+/android/app/*.jks
+/android/app/*.keystore
+
 # Node (Cloud Functions)
 node_modules/
 

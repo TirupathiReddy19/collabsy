@@ -364,6 +364,33 @@ service cloud.firestore {
       allow delete: if false;
     }
 
+    // Submitted from the public, unauthenticated marketing website's
+    // Brands page ("managed campaign" lead form) — same shape/rationale as
+    // `accountDeletionRequests` above: a strict field allow-list, capped
+    // lengths, a fixed initial status, deliberately not readable by
+    // whoever submitted it. Only admin/staff with the `/campaign-requests`
+    // permission ever see these.
+    match /campaignRequests/{requestId} {
+      allow read: if isAdmin() || isActiveStaffWithPermission('/campaign-requests');
+      allow create: if request.resource.data.keys().hasOnly(
+          ['companyName', 'contactName', 'workEmail', 'phone', 'budgetRange', 'campaignBrief', 'status', 'createdAt'])
+        && request.resource.data.status == 'new'
+        && request.resource.data.companyName is string
+        && request.resource.data.companyName.size() > 0 && request.resource.data.companyName.size() < 200
+        && request.resource.data.contactName is string
+        && request.resource.data.contactName.size() > 0 && request.resource.data.contactName.size() < 200
+        && request.resource.data.workEmail is string
+        && request.resource.data.workEmail.size() > 0 && request.resource.data.workEmail.size() < 320
+        && (!('phone' in request.resource.data) || (request.resource.data.phone is string && request.resource.data.phone.size() < 40))
+        && request.resource.data.budgetRange in ['under_50k', '50k_2l', '2l_10l', '10l_plus', 'not_sure']
+        && request.resource.data.campaignBrief is string
+        && request.resource.data.campaignBrief.size() > 0 && request.resource.data.campaignBrief.size() < 3000
+        && request.resource.data.createdAt == request.time;
+      allow update: if (isAdmin() || isActiveStaffWithPermission('/campaign-requests'))
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status']);
+      allow delete: if false;
+    }
+
     // Instagram Business Login connection — profile snapshot + status
     // only. Readable by any authenticated user (same pattern as
     // users/creatorProfiles) so Brands can see a Creator's follower count
@@ -429,13 +456,64 @@ service cloud.firestore {
     // creates the initial doc when they generate an outreach link — every
     // status transition after that (clicked/signedUp/onboardingComplete)
     // is written only by Cloud Functions (Admin SDK), so an intern can
-    // never fake their own conversion numbers.
+    // never fake their own conversion numbers. The one exception is
+    // `internConfirmedSent(At)` — a one-way false-to-true self-report the
+    // intern makes after actually sending the DM (see the timed reveal in
+    // intern_home_screen.dart). It's not proof of anything, just an
+    // explicit claim instead of silence — still can't be faked as a
+    // conversion metric since it's a separate field from `status`.
     match /leads/{handle} {
       allow read: if isAdmin() || isActiveStaffWithPermission('/outreach-leads');
       allow create: if (isAdmin() || isActiveStaffWithPermission('/outreach-leads'))
         && request.resource.data.internId == request.auth.uid
         && request.resource.data.status == 'linkGenerated';
-      allow update, delete: if false;
+      allow update: if (isAdmin() || isActiveStaffWithPermission('/outreach-leads'))
+        && resource.data.internId == request.auth.uid
+        && (
+          (
+            request.resource.data.diff(resource.data).affectedKeys().hasOnly(['internConfirmedSent', 'internConfirmedSentAt'])
+            && request.resource.data.internConfirmedSent == true
+            && resource.data.get('internConfirmedSent', false) == false
+            && request.resource.data.internConfirmedSentAt == request.time
+          ) || (
+            // The intern's "I followed up again" self-report — can
+            // happen more than once per lead, so it's a counter instead
+            // of a one-way flip. See `logFollowUp` in
+            // intern_leads_providers.dart.
+            request.resource.data.diff(resource.data).affectedKeys().hasOnly(['lastFollowUpSentAt', 'followUpCount'])
+            && request.resource.data.lastFollowUpSentAt == request.time
+            && request.resource.data.followUpCount == resource.data.get('followUpCount', 0) + 1
+          )
+        );
+      allow delete: if false;
+    }
+
+    // One doc per intern per day (`{internId}_{YYYY-MM-DD}`) — accumulates
+    // seconds the intern actually spent with the outreach tool's tab
+    // focused (see lib/intern/screens/intern_home_screen.dart's
+    // WidgetsBindingObserver-driven 30s tick), not raw login-to-logout time.
+    // Each write is capped to a 60s increment so a compromised/buggy client
+    // can't inflate a shift arbitrarily in one call.
+    match /internShiftStats/{statId} {
+      allow read: if (resource.data.internId == request.auth.uid)
+        || isAdmin() || isActiveStaffWithPermission('/intern-shift-report');
+      allow create: if (isAdmin() || isActiveStaffWithPermission('/outreach-leads'))
+        && request.resource.data.internId == request.auth.uid
+        && statId == request.auth.uid + '_' + request.resource.data.date
+        && request.resource.data.keys().hasOnly(['internId', 'internEmail', 'date', 'activeSeconds', 'updatedAt'])
+        && request.resource.data.activeSeconds is int
+        && request.resource.data.activeSeconds >= 0 && request.resource.data.activeSeconds <= 60
+        && request.resource.data.updatedAt == request.time;
+      allow update: if (isAdmin() || isActiveStaffWithPermission('/outreach-leads'))
+        && resource.data.internId == request.auth.uid
+        && request.resource.data.internId == resource.data.internId
+        && request.resource.data.date == resource.data.date
+        && request.resource.data.keys().hasOnly(['internId', 'internEmail', 'date', 'activeSeconds', 'updatedAt'])
+        && request.resource.data.activeSeconds is int
+        && request.resource.data.activeSeconds - resource.data.get('activeSeconds', 0) >= 0
+        && request.resource.data.activeSeconds - resource.data.get('activeSeconds', 0) <= 60
+        && request.resource.data.updatedAt == request.time;
+      allow delete: if false;
     }
 
     // Small admin-editable settings for the outreach tool — the DM message

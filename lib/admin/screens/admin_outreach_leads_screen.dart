@@ -43,8 +43,30 @@ String _dateKey(DateTime day) =>
     '${day.month.toString().padLeft(2, '0')}'
     '${day.day.toString().padLeft(2, '0')}';
 
+/// A lead that hasn't been clicked yet needs a follow-up once it's been
+/// sitting this long since the link was generated. A lead that was
+/// clicked but never signed up needs one once it's been this long since
+/// the click — except once the intern has actually logged a follow-up
+/// send (`lastFollowUpSentAt` set), at which point it drops out of the
+/// bucket for good. Mirrors `intern_home_screen.dart`'s `_needsFollowUp`.
+const _followUpNoClickAfter = Duration(days: 3);
+const _followUpNoSignupAfter = Duration(days: 7);
+
+bool _needsFollowUp(Lead lead) {
+  if (lead.lastFollowUpSentAt != null) return false;
+  final now = DateTime.now();
+  if (lead.status == 'linkGenerated' && lead.createdAt != null) {
+    return now.difference(lead.createdAt!) >= _followUpNoClickAfter;
+  }
+  if (lead.status == 'clicked' && lead.clickedAt != null) {
+    return now.difference(lead.clickedAt!) >= _followUpNoSignupAfter;
+  }
+  return false;
+}
+
 enum _StatusFilter {
   all('All statuses'),
+  needsFollowUp('Needs follow-up'),
   linkGenerated('Link generated'),
   clicked('Clicked'),
   signedUp('Signed up'),
@@ -122,8 +144,14 @@ class _AdminOutreachLeadsScreenState
   List<Lead> _filter(List<Lead> leads) {
     return leads.where((lead) {
       if (!_inRange(lead.createdAt, _start, _endExclusive)) return false;
-      if (_statusFilter == _StatusFilter.all) return true;
-      return lead.status == _statusFilter.name;
+      switch (_statusFilter) {
+        case _StatusFilter.all:
+          return true;
+        case _StatusFilter.needsFollowUp:
+          return _needsFollowUp(lead);
+        default:
+          return lead.status == _statusFilter.name;
+      }
     }).toList();
   }
 
@@ -331,6 +359,23 @@ class _LeadRow extends StatelessWidget {
               ),
             ),
           ),
+          if (_needsFollowUp(lead)) ...[
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+              decoration: BoxDecoration(
+                color: AppColors.warningLight,
+                borderRadius: BorderRadius.circular(999),
+              ),
+              child: Text(
+                'Follow up',
+                style: AppTextStyles.bodySmall.copyWith(
+                  color: AppColors.warning,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+            const SizedBox(width: 6),
+          ],
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
             decoration: BoxDecoration(

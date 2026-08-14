@@ -17,6 +17,7 @@ Lead _leadFromDoc(DocumentSnapshot<Map<String, dynamic>> doc) {
     internId: data['internId'] as String? ?? '',
     internEmail: data['internEmail'] as String? ?? '',
     message: data['message'] as String? ?? '',
+    comment: data['comment'] as String? ?? 'looking for collabs check your DM.',
     status: data['status'] as String? ?? 'linkGenerated',
     createdAt: _asDate(data['createdAt']),
     clickedAt: _asDate(data['clickedAt']),
@@ -24,6 +25,10 @@ Lead _leadFromDoc(DocumentSnapshot<Map<String, dynamic>> doc) {
     matchedUid: data['matchedUid'] as String?,
     signedUpAt: _asDate(data['signedUpAt']),
     onboardingCompleteAt: _asDate(data['onboardingCompleteAt']),
+    internConfirmedSent: data['internConfirmedSent'] as bool? ?? false,
+    internConfirmedSentAt: _asDate(data['internConfirmedSentAt']),
+    lastFollowUpSentAt: _asDate(data['lastFollowUpSentAt']),
+    followUpCount: data['followUpCount'] as int? ?? 0,
   );
 }
 
@@ -49,6 +54,7 @@ class InternLeadsRepository {
     required String internId,
     required String internEmail,
     required String message,
+    required String comment,
   }) {
     return _doc(handle).set({
       'instagramHandle': handle,
@@ -56,9 +62,34 @@ class InternLeadsRepository {
       'internId': internId,
       'internEmail': internEmail,
       'message': message,
+      'comment': comment,
       'status': 'linkGenerated',
       'createdAt': FieldValue.serverTimestamp(),
       'clickCount': 0,
+      'internConfirmedSent': false,
+    });
+  }
+
+  /// The intern's one-way "I actually sent this" self-report — see the
+  /// timed reveal in `intern_home_screen.dart`'s `_SuccessCard`. Firestore
+  /// rules enforce this can only flip false→true, only by the lead's own
+  /// creator, and only touches these two fields.
+  Future<void> confirmSent(String handle) {
+    return _doc(handle).update({
+      'internConfirmedSent': true,
+      'internConfirmedSentAt': FieldValue.serverTimestamp(),
+    });
+  }
+
+  /// Logs a follow-up DM the intern says they just sent to a lead that's
+  /// still un-clicked or clicked-but-unsigned — same self-report pattern
+  /// as [confirmSent]. Unlike that one-way flip, this can happen more
+  /// than once per lead (a lead can keep needing follow-up for as long as
+  /// it stays stuck), so it increments a counter instead.
+  Future<void> logFollowUp(String handle) {
+    return _doc(handle).update({
+      'lastFollowUpSentAt': FieldValue.serverTimestamp(),
+      'followUpCount': FieldValue.increment(1),
     });
   }
 

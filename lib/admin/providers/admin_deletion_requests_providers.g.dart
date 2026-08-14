@@ -8,16 +8,18 @@ part of 'admin_deletion_requests_providers.dart';
 
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // ignore_for_file: type=lint, type=warning
-/// Every account-deletion request submitted from the public web page
-/// linked from the Play Console Data Safety form — see
-/// `web-legal/delete-account/index.html`. Newest first.
+/// Every account-deletion request submitted from the public website's
+/// `/delete-account` page, linked from the Play Console Data Safety form —
+/// see `lib/website/screens/website_delete_account_screen.dart`. Newest
+/// first.
 
 @ProviderFor(allDeletionRequests)
 final allDeletionRequestsProvider = AllDeletionRequestsProvider._();
 
-/// Every account-deletion request submitted from the public web page
-/// linked from the Play Console Data Safety form — see
-/// `web-legal/delete-account/index.html`. Newest first.
+/// Every account-deletion request submitted from the public website's
+/// `/delete-account` page, linked from the Play Console Data Safety form —
+/// see `lib/website/screens/website_delete_account_screen.dart`. Newest
+/// first.
 
 final class AllDeletionRequestsProvider
     extends
@@ -29,9 +31,10 @@ final class AllDeletionRequestsProvider
     with
         $FutureModifier<List<DeletionRequest>>,
         $StreamProvider<List<DeletionRequest>> {
-  /// Every account-deletion request submitted from the public web page
-  /// linked from the Play Console Data Safety form — see
-  /// `web-legal/delete-account/index.html`. Newest first.
+  /// Every account-deletion request submitted from the public website's
+  /// `/delete-account` page, linked from the Play Console Data Safety form —
+  /// see `lib/website/screens/website_delete_account_screen.dart`. Newest
+  /// first.
   AllDeletionRequestsProvider._()
     : super(
         from: null,

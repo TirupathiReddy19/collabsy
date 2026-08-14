@@ -10,6 +10,14 @@
       "rewrites": [
         { "source": "/l/**", "function": "redirectLead" },
         { "source": "**", "destination": "/index.html" }
+      ],
+      "headers": [
+        {
+          "source": "**",
+          "headers": [
+            { "key": "Cache-Control", "value": "no-cache, no-store, must-revalidate" }
+          ]
+        }
       ]
     },
     {
@@ -19,12 +27,42 @@
       "rewrites": [
         { "source": "/bl/**", "function": "redirectBrandLead" },
         { "source": "**", "destination": "/index.html" }
+      ],
+      "headers": [
+        {
+          "source": "**",
+          "headers": [
+            { "key": "Cache-Control", "value": "no-cache, no-store, must-revalidate" }
+          ]
+        }
       ]
     },
     {
       "target": "legal",
       "public": "web-legal",
-      "ignore": ["firebase.json", "**/.*"]
+      "ignore": ["firebase.json", "**/.*"],
+      "headers": [
+        {
+          "source": "**",
+          "headers": [
+            { "key": "Cache-Control", "value": "no-cache, no-store, must-revalidate" }
+          ]
+        }
+      ]
+    },
+    {
+      "target": "website",
+      "public": "build/web-website",
+      "ignore": ["firebase.json", "**/.*"],
+      "rewrites": [{ "source": "**", "destination": "/index.html" }],
+      "headers": [
+        {
+          "source": "**",
+          "headers": [
+            { "key": "Cache-Control", "value": "no-cache, no-store, must-revalidate" }
+          ]
+        }
+      ]
     }
   ],
   "flutter": {

@@ -13,9 +13,10 @@ typedef DeletionRequest = ({
   DateTime? createdAt,
 });
 
-/// Every account-deletion request submitted from the public web page
-/// linked from the Play Console Data Safety form — see
-/// `web-legal/delete-account/index.html`. Newest first.
+/// Every account-deletion request submitted from the public website's
+/// `/delete-account` page, linked from the Play Console Data Safety form —
+/// see `lib/website/screens/website_delete_account_screen.dart`. Newest
+/// first.
 @riverpod
 Stream<List<DeletionRequest>> allDeletionRequests(Ref ref) {
   return ref

@@ -295,7 +295,7 @@ final class OpenCampaignsProvider
   }
 }
 
-String _$openCampaignsHash() => r'dcd160487e982d9a65bff7640467c98e61010a39';
+String _$openCampaignsHash() => r'c6a1f2e2cd8a914c5dcb51e44b1a0b89f56dc2de';
 
 @ProviderFor(creatorApplications)
 final creatorApplicationsProvider = CreatorApplicationsProvider._();

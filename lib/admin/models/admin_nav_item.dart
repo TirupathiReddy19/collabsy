@@ -144,6 +144,16 @@ const adminNavGroups = [
         label: 'Brand Outreach Leads',
         icon: Icons.groups_outlined,
       ),
+      AdminNavItem(
+        path: '/campaign-requests',
+        label: 'Campaign Requests',
+        icon: Icons.request_quote_outlined,
+      ),
+      AdminNavItem(
+        path: '/intern-shift-report',
+        label: 'Intern Shift Report',
+        icon: Icons.timer_outlined,
+      ),
     ],
   ),
   AdminNavGroup(

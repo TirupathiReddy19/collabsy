@@ -16,12 +16,14 @@ import 'screens/admin_brand_outreach_leads_screen.dart';
 import 'screens/admin_broadcast_screen.dart';
 import 'screens/admin_brands_screen.dart';
 import 'screens/admin_campaign_detail_screen.dart';
+import 'screens/admin_campaign_requests_screen.dart';
 import 'screens/admin_campaigns_screen.dart';
 import 'screens/admin_coming_soon_screen.dart';
 import 'screens/admin_creator_detail_screen.dart';
 import 'screens/admin_creators_screen.dart';
 import 'screens/admin_dashboard_screen.dart';
 import 'screens/admin_deletion_requests_screen.dart';
+import 'screens/admin_intern_shift_report_screen.dart';
 import 'screens/admin_login_screen.dart';
 import 'screens/admin_no_access_screen.dart';
 import 'screens/admin_outreach_leads_screen.dart';
@@ -88,6 +90,9 @@ final Map<String, GoRouterWidgetBuilder> _builtScreens = {
   '/outreach-leads': (context, state) => const AdminOutreachLeadsScreen(),
   '/brand-outreach-leads': (context, state) =>
       const AdminBrandOutreachLeadsScreen(),
+  '/campaign-requests': (context, state) => const AdminCampaignRequestsScreen(),
+  '/intern-shift-report': (context, state) =>
+      const AdminInternShiftReportScreen(),
   '/settings': (context, state) => const AdminSettingsScreen(),
   '/trust-safety': (context, state) => const AdminTrustSafetyScreen(),
 };

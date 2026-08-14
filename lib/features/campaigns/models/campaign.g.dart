@@ -108,4 +108,5 @@ const _$CampaignStatusEnumMap = {
   CampaignStatus.paused: 'paused',
   CampaignStatus.rejected: 'rejected',
   CampaignStatus.closed: 'closed',
+  CampaignStatus.expired: 'expired',
 };

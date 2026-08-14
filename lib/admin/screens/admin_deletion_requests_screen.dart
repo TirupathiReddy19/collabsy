@@ -34,9 +34,10 @@ String _fmt(DateTime? time) {
   return '${_months[time.month - 1]} ${time.day}, $hour:$minute $period';
 }
 
-/// Requests submitted from the public web page linked from the Play
-/// Console Data Safety form — see `web-legal/delete-account/index.html`.
-/// Deliberately manual: staff verify the identifier really belongs to the
+/// Requests submitted from the public website's `/delete-account` page,
+/// linked from the Play Console Data Safety form — see
+/// `lib/website/screens/website_delete_account_screen.dart`. Deliberately
+/// manual: staff verify the identifier really belongs to the
 /// account before running the same `deleteAccount` flow the in-app button
 /// uses, rather than deleting anything automatically off an unauthenticated
 /// form submission.
