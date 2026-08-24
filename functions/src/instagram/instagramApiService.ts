@@ -112,7 +112,7 @@ export async function exchangeForLongLivedToken(params: {
 export async function refreshLongLivedToken(params: {
   accessToken: string;
 }): Promise<LongLivedTokenResponse> {
-  const url = new URL(`${GRAPH_HOST}/refresh_access_token`);
+  const url = new URL(`${GRAPH_HOST}/${API_VERSION}/refresh_access_token`);
   url.searchParams.set("grant_type", "ig_refresh_token");
   url.searchParams.set("access_token", params.accessToken);
   const response = await fetch(url);

@@ -25,12 +25,13 @@ class InstagramConfig {
 
   /// Current (non-deprecated) Instagram Business Login scopes — the older
   /// `business_basic`/`business_content_publish`/etc. names were retired.
-  static const List<String> scopes = [
-    'instagram_business_basic',
-    'instagram_business_content_publish',
-    'instagram_business_manage_comments',
-    'instagram_business_manage_messages',
-  ];
+  ///
+  /// Only `instagram_business_basic` is requested: it's the only scope the
+  /// app actually calls (profile + follower stats via [fetchProfile] in the
+  /// Cloud Functions). Requesting publish/comments/messages scopes the app
+  /// never uses would need Advanced Access + Meta App Review to go Live,
+  /// and reviewers reject permission requests that don't match real usage.
+  static const List<String> scopes = ['instagram_business_basic'];
 
   static const String authorizeUrl =
       'https://www.instagram.com/oauth/authorize';

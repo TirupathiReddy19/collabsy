@@ -70,7 +70,7 @@ async function exchangeForLongLivedToken(params) {
  * token is at least 24h old and still valid — a token that's already
  * expired or been revoked can't be refreshed and needs a full reconnect. */
 async function refreshLongLivedToken(params) {
-    const url = new URL(`${GRAPH_HOST}/refresh_access_token`);
+    const url = new URL(`${GRAPH_HOST}/${API_VERSION}/refresh_access_token`);
     url.searchParams.set("grant_type", "ig_refresh_token");
     url.searchParams.set("access_token", params.accessToken);
     const response = await fetch(url);

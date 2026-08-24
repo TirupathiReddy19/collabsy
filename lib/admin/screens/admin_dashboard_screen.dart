@@ -9,6 +9,9 @@ import '../../core/theme/app_text_styles.dart';
 import '../../core/widgets/loading_indicator.dart';
 import '../../features/brand/models/brand_profile.dart';
 import '../../features/brand/providers/brand_profile_providers.dart';
+import '../../features/campaigns/models/campaign.dart';
+import '../../features/campaigns/models/campaign_status.dart';
+import '../../features/campaigns/providers/campaigns_providers.dart';
 import '../../features/creator/models/creator_profile.dart';
 import '../../features/creator/providers/creator_profile_providers.dart';
 import '../../features/support/models/support_chat.dart';
@@ -123,10 +126,16 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
         (ref.watch(brandDirectoryProvider).value ?? <BrandProfile>[])
             .where((p) => p.verificationStatus == VerificationStatus.pending)
             .length;
+    final pendingCampaigns =
+        (ref.watch(allCampaignsProvider).value ?? <Campaign>[])
+            .where((c) => c.status == CampaignStatus.underReview)
+            .length;
     final supportChats =
         ref.watch(allSupportChatsProvider).value ?? <SupportChat>[];
     final overdueTickets = supportChats.where(_isOverdue).length;
-    final needsAttention = pendingCreators + pendingBrands + overdueTickets > 0;
+    final needsAttention =
+        pendingCreators + pendingBrands + pendingCampaigns + overdueTickets >
+        0;
 
     // "Needs your attention" and "Platform overview" are deliberately
     // all-time/current-state snapshots (what needs action right now, how
@@ -193,6 +202,14 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
                           icon: Icons.business_outlined,
                           iconColor: AppColors.info,
                           onTap: () => context.go('/verification/brands'),
+                        ),
+                      if (pendingCampaigns > 0)
+                        AdminStatCard(
+                          label: 'Campaigns Pending Review',
+                          value: '$pendingCampaigns',
+                          icon: Icons.campaign_outlined,
+                          iconColor: AppColors.info,
+                          onTap: () => context.go('/campaigns/review'),
                         ),
                       if (overdueTickets > 0)
                         AdminStatCard(

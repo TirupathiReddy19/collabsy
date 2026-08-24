@@ -16,6 +16,9 @@
         ],
         "website": [
           "collabsy-website"
+        ],
+        "admin": [
+          "collabsy-admin"
         ]
       }
     }

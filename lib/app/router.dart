@@ -201,7 +201,8 @@ final routerProvider = Provider<GoRouter>((ref) {
       final hasPendingPhoneEmail =
           localStorage.pendingPhoneEmailVerification != null;
       if ((hasPasswordProvider || hasPendingPhoneEmail) &&
-          !user.emailVerified) {
+          !user.emailVerified &&
+          !atSuspended) {
         return atCheckEmail ? null : AppRoutes.checkEmail;
       }
 

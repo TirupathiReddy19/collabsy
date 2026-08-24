@@ -187,11 +187,24 @@ class AuthRepository {
     if (user == null) {
       throw StateError('No signed-in user to link a phone number to.');
     }
+    // On some devices, Android's own instant/automatic phone verification
+    // (see `verificationCompleted` above) already links the credential in
+    // the background before the user ever gets to type anything — the SMS
+    // still arrives and this screen still shows regardless, since nothing
+    // here is told that already happened. Re-linking a phone the account
+    // already has throws `provider-already-linked`; since the end state
+    // (phone verified and attached) is exactly what a successful manual
+    // entry would produce anyway, this is a no-op success, not an error.
+    if (user.phoneNumber != null) return;
     final credential = PhoneAuthProvider.credential(
       verificationId: verificationId,
       smsCode: smsCode,
     );
-    await user.linkWithCredential(credential);
+    try {
+      await user.linkWithCredential(credential);
+    } on FirebaseAuthException catch (e) {
+      if (e.code != 'provider-already-linked') rethrow;
+    }
   }
 
   Future<void> signInWithGoogle() async {

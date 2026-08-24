@@ -7,50 +7,6 @@
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:132008349319:android:b9eaacff5a5f93b3857222",
-        "android_client_info": {
-          "package_name": "com.example.collabsy"
-        }
-      },
-      "oauth_client": [
-        {
-          "client_id": "132008349319-kfibc24205j91uttt8b216olq2jcr92s.apps.googleusercontent.com",
-          "client_type": 1,
-          "android_info": {
-            "package_name": "com.example.collabsy",
-            "certificate_hash": "9249de3cf1127204a6ec483a12d3f5c1590265c4"
-          }
-        },
-        {
-          "client_id": "132008349319-m9l1ort97f6035sfla6j1b64e7t06s4e.apps.googleusercontent.com",
-          "client_type": 3
-        }
-      ],
-      "api_key": [
-        {
-          "current_key": "AIzaSyDNwFpAS1ZH7ve9UXdSZlx-UuIkqwe0g_U"
-        }
-      ],
-      "services": {
-        "appinvite_service": {
-          "other_platform_oauth_client": [
-            {
-              "client_id": "132008349319-m9l1ort97f6035sfla6j1b64e7t06s4e.apps.googleusercontent.com",
-              "client_type": 3
-            },
-            {
-              "client_id": "132008349319-bi5sujvul6hfaa2b6g53ct42qrsuo335.apps.googleusercontent.com",
-              "client_type": 2,
-              "ios_info": {
-                "bundle_id": "com.example.collabsy"
-              }
-            }
-          ]
-        }
-      }
-    },
-    {
-      "client_info": {
         "mobilesdk_app_id": "1:132008349319:android:cdddb66dd4ab8557857222",
         "android_client_info": {
           "package_name": "online.collabsy.app"
@@ -63,6 +19,22 @@
           "android_info": {
             "package_name": "online.collabsy.app",
             "certificate_hash": "9249de3cf1127204a6ec483a12d3f5c1590265c4"
+          }
+        },
+        {
+          "client_id": "132008349319-37i35k6a9eis29ev61g2kh6q6mbqmg4p.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "online.collabsy.app",
+            "certificate_hash": "7bd14abb147d202540213c5a200c3f99a42039e7"
+          }
+        },
+        {
+          "client_id": "132008349319-fg3ft2os5jknjjuf7gqiqpsj08dqk15s.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "online.collabsy.app",
+            "certificate_hash": "25abf6f942a14cb63bff549f7e9003037ff96714"
           }
         },
         {
