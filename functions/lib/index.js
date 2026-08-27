@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.sendPushOnNotificationCreate = exports.sendPushOnAnnouncementCreate = exports.onBrandProfileWritten = exports.redirectBrandLead = exports.onOnboardingComplete = exports.redirectLead = exports.reinstateUserAccount = exports.suspendUserAccount = exports.onAuthUserDeleted = exports.expireCampaigns = exports.checkEmailRegistered = exports.deleteAccount = exports.forceLogoutStaffAccount = exports.getStaffLastSignIn = exports.createStaffAccount = exports.backfillCreatedAtFromAuth = exports.instagramOAuthRedirect = exports.refreshConnectedInstagramProfiles = exports.refreshExpiringInstagramTokens = exports.refreshInstagramProfile = exports.disconnectInstagram = exports.exchangeInstagramCode = void 0;
+exports.sendPushOnNotificationCreate = exports.backfillWelcomeMessages = exports.onBrandApproved = exports.onCreatorApproved = exports.getCrashAnalytics = exports.sendPushOnAnnouncementCreate = exports.onBrandProfileWritten = exports.redirectBrandLead = exports.onOnboardingComplete = exports.redirectLead = exports.reinstateUserAccount = exports.suspendUserAccount = exports.onAuthUserDeleted = exports.expireCampaigns = exports.checkEmailRegistered = exports.deleteAccount = exports.forceLogoutStaffAccount = exports.getStaffLastSignIn = exports.createStaffAccount = exports.backfillCreatedAtFromAuth = exports.instagramOAuthRedirect = exports.refreshConnectedInstagramProfiles = exports.refreshExpiringInstagramTokens = exports.refreshInstagramProfile = exports.disconnectInstagram = exports.exchangeInstagramCode = void 0;
 const app_1 = require("firebase-admin/app");
 const firestore_1 = require("firebase-admin/firestore");
 const messaging_1 = require("firebase-admin/messaging");
@@ -47,6 +47,13 @@ var onBrandProfileWritten_1 = require("./brandLeads/onBrandProfileWritten");
 Object.defineProperty(exports, "onBrandProfileWritten", { enumerable: true, get: function () { return onBrandProfileWritten_1.onBrandProfileWritten; } });
 var sendPushOnAnnouncementCreate_1 = require("./sendPushOnAnnouncementCreate");
 Object.defineProperty(exports, "sendPushOnAnnouncementCreate", { enumerable: true, get: function () { return sendPushOnAnnouncementCreate_1.sendPushOnAnnouncementCreate; } });
+var getCrashAnalytics_1 = require("./admin/getCrashAnalytics");
+Object.defineProperty(exports, "getCrashAnalytics", { enumerable: true, get: function () { return getCrashAnalytics_1.getCrashAnalytics; } });
+var sendWelcomeMessage_1 = require("./onboarding/sendWelcomeMessage");
+Object.defineProperty(exports, "onCreatorApproved", { enumerable: true, get: function () { return sendWelcomeMessage_1.onCreatorApproved; } });
+Object.defineProperty(exports, "onBrandApproved", { enumerable: true, get: function () { return sendWelcomeMessage_1.onBrandApproved; } });
+var backfillWelcomeMessages_1 = require("./onboarding/backfillWelcomeMessages");
+Object.defineProperty(exports, "backfillWelcomeMessages", { enumerable: true, get: function () { return backfillWelcomeMessages_1.backfillWelcomeMessages; } });
 /**
  * Sends a push notification whenever a `notifications/{id}` document is
  * created — the client app never talks to FCM's send API directly (it can't;

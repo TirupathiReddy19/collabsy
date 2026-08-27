@@ -1,10 +1,14 @@
 import 'package:firebase_analytics/firebase_analytics.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../core/services/firebase_service.dart';
 import '../core/services/local_storage_service.dart';
+import '../features/auth/data/auth_repository.dart';
+import '../features/brand/data/brand_profile_repository.dart';
+import '../features/creator/data/creator_profile_repository.dart';
 import '../features/announcements/screens/announcements_screen.dart';
 import '../features/auth/complete_profile/complete_profile_screen.dart';
 import '../features/auth/login/login_screen.dart';
@@ -52,6 +56,94 @@ import '../shared/models/user_role.dart';
 import 'app_shell.dart';
 import 'router_refresh_stream.dart';
 import 'routes.dart';
+
+/// Everything the redirect callback does once it knows the account needs
+/// role/verification/onboarding resolved — pulled out into its own
+/// function purely so the try/catch around it (see the call site) wraps
+/// one call instead of needing to be threaded through every `await`
+/// inside this logic individually.
+Future<String?> _resolvePostAuthRedirect({
+  required Ref ref,
+  required AuthRepository authRepository,
+  required BrandProfileRepository brandProfileRepository,
+  required CreatorProfileRepository creatorProfileRepository,
+  required User user,
+  required String location,
+  required bool atCompleteProfile,
+  required bool atSuspended,
+  required bool atTermsGate,
+  required bool atCreatorOnboarding,
+  required bool atBrandOnboarding,
+}) async {
+  final profile = await authRepository.fetchProfile(user.uid);
+  ref.invalidate(currentProfileProvider);
+  if (profile?.role == null) {
+    // No role yet (fresh Google sign-in never asked for one) — send
+    // them to fill in the missing role + phone.
+    return atCompleteProfile ? null : AppRoutes.completeProfile;
+  }
+  if (profile!.suspended) {
+    // Sign-in itself is still allowed for a suspended account (see
+    // suspendUserAccount) — this is what actually locks them out,
+    // ahead of every other gate below, so a suspended account never
+    // gets as far as re-accepting terms or finishing onboarding.
+    return atSuspended ? null : AppRoutes.suspended;
+  }
+  if (profile.termsAcceptedAt == null) {
+    // Every brand-new signup lands here right after their role is
+    // known, before any onboarding step — and since nothing ever set
+    // this field before the gate existed, every pre-existing account
+    // lands here too, exactly once, the next time they open the app.
+    return atTermsGate ? null : AppRoutes.termsGate;
+  }
+  if (profile.role == UserRole.creator && !profile.onboardingCompleted) {
+    // Creator role set but hasn't finished the languages/location +
+    // Instagram-connect steps yet — Instagram connect is required
+    // (not skippable), since verification below needs real data.
+    return atCreatorOnboarding ? null : AppRoutes.creatorDetails;
+  }
+  if (profile.role == UserRole.brand && !profile.onboardingCompleted) {
+    // Brand role set but hasn't filled in company details yet —
+    // also catches every pre-existing Brand account, since nothing
+    // ever set this flag true for them before this step existed.
+    return atBrandOnboarding ? null : AppRoutes.brandDetails;
+  }
+  if (profile.role == UserRole.brand) {
+    // Onboarding is done, but the dashboard is still gated on admin
+    // approval. `verificationStatus` defaults to pending whenever
+    // it's missing from Firestore, so this also catches every
+    // pre-existing Brand account created before verification existed
+    // — not just brand-new signups.
+    final brandProfile = await brandProfileRepository.fetchBrandProfile(
+      user.uid,
+    );
+    final verified =
+        brandProfile?.verificationStatus == VerificationStatus.approved;
+    if (!verified) {
+      return location == AppRoutes.brandVerificationPending
+          ? null
+          : AppRoutes.brandVerificationPending;
+    }
+  }
+  if (profile.role == UserRole.creator) {
+    // Onboarding is done, but the dashboard is still gated on admin
+    // approval — same reasoning as the Brand gate above, and the
+    // same free retroactive catch for every pre-existing Creator
+    // account.
+    final creatorProfile = await creatorProfileRepository
+        .fetchCreatorProfile(user.uid);
+    final verified =
+        creatorProfile?.verificationStatus == VerificationStatus.approved;
+    if (!verified) {
+      return location == AppRoutes.creatorVerificationPending
+          ? null
+          : AppRoutes.creatorVerificationPending;
+    }
+  }
+  return profile.role == UserRole.creator
+      ? AppRoutes.creatorHome
+      : AppRoutes.brandHome;
+}
 
 final routerProvider = Provider<GoRouter>((ref) {
   final authRepository = ref.watch(authRepositoryProvider);
@@ -220,74 +312,33 @@ final routerProvider = Provider<GoRouter>((ref) {
       // sign-out+sign-in, briefly still reflecting "no user") and
       // wrongly concluding a role-having account had none.
       if (atOnboarding || atAuth || atCreatorOnboarding || atBrandOnboarding) {
-        final profile = await authRepository.fetchProfile(user.uid);
-        ref.invalidate(currentProfileProvider);
-        if (profile?.role == null) {
-          // No role yet (fresh Google sign-in never asked for one) — send
-          // them to fill in the missing role + phone.
-          return atCompleteProfile ? null : AppRoutes.completeProfile;
-        }
-        if (profile!.suspended) {
-          // Sign-in itself is still allowed for a suspended account (see
-          // suspendUserAccount) — this is what actually locks them out,
-          // ahead of every other gate below, so a suspended account never
-          // gets as far as re-accepting terms or finishing onboarding.
-          return atSuspended ? null : AppRoutes.suspended;
-        }
-        if (profile.termsAcceptedAt == null) {
-          // Every brand-new signup lands here right after their role is
-          // known, before any onboarding step — and since nothing ever set
-          // this field before the gate existed, every pre-existing account
-          // lands here too, exactly once, the next time they open the app.
-          return atTermsGate ? null : AppRoutes.termsGate;
-        }
-        if (profile.role == UserRole.creator && !profile.onboardingCompleted) {
-          // Creator role set but hasn't finished the languages/location +
-          // Instagram-connect steps yet — Instagram connect is required
-          // (not skippable), since verification below needs real data.
-          return atCreatorOnboarding ? null : AppRoutes.creatorDetails;
-        }
-        if (profile.role == UserRole.brand && !profile.onboardingCompleted) {
-          // Brand role set but hasn't filled in company details yet —
-          // also catches every pre-existing Brand account, since nothing
-          // ever set this flag true for them before this step existed.
-          return atBrandOnboarding ? null : AppRoutes.brandDetails;
-        }
-        if (profile.role == UserRole.brand) {
-          // Onboarding is done, but the dashboard is still gated on admin
-          // approval. `verificationStatus` defaults to pending whenever
-          // it's missing from Firestore, so this also catches every
-          // pre-existing Brand account created before verification existed
-          // — not just brand-new signups.
-          final brandProfile = await brandProfileRepository.fetchBrandProfile(
-            user.uid,
+        // Every branch below awaits a one-shot Firestore `.get()` (fresh
+        // reads, deliberately not the cached stream providers — see the
+        // comment above this block). Firestore throws `[unavailable]`
+        // rather than falling back to cache for these when the device has
+        // no network right at this instant, and go_router doesn't catch
+        // exceptions thrown from `redirect` — an uncaught one here crashes
+        // the entire app (seen in production Crashlytics: OnePlus/Android
+        // 11, `cloud_firestore/unavailable`). Staying put and retrying on
+        // the next redirect evaluation (auth state change, connectivity
+        // restored, manual retry) is far better than a hard crash.
+        try {
+          return await _resolvePostAuthRedirect(
+            ref: ref,
+            authRepository: authRepository,
+            brandProfileRepository: brandProfileRepository,
+            creatorProfileRepository: creatorProfileRepository,
+            user: user,
+            location: location,
+            atCompleteProfile: atCompleteProfile,
+            atSuspended: atSuspended,
+            atTermsGate: atTermsGate,
+            atCreatorOnboarding: atCreatorOnboarding,
+            atBrandOnboarding: atBrandOnboarding,
           );
-          final verified =
-              brandProfile?.verificationStatus == VerificationStatus.approved;
-          if (!verified) {
-            return location == AppRoutes.brandVerificationPending
-                ? null
-                : AppRoutes.brandVerificationPending;
-          }
+        } catch (_) {
+          return null;
         }
-        if (profile.role == UserRole.creator) {
-          // Onboarding is done, but the dashboard is still gated on admin
-          // approval — same reasoning as the Brand gate above, and the
-          // same free retroactive catch for every pre-existing Creator
-          // account.
-          final creatorProfile = await creatorProfileRepository
-              .fetchCreatorProfile(user.uid);
-          final verified =
-              creatorProfile?.verificationStatus == VerificationStatus.approved;
-          if (!verified) {
-            return location == AppRoutes.creatorVerificationPending
-                ? null
-                : AppRoutes.creatorVerificationPending;
-          }
-        }
-        return profile.role == UserRole.creator
-            ? AppRoutes.creatorHome
-            : AppRoutes.brandHome;
       }
 
       return null;

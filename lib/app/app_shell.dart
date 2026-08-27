@@ -5,7 +5,48 @@ import 'package:go_router/go_router.dart';
 
 import '../core/services/push_notification_service.dart';
 import '../features/auth/providers/auth_providers.dart';
+import '../shared/models/user_role.dart';
 import 'routes.dart';
+
+/// Routes a tapped push notification to the screen it's actually about,
+/// mirroring `NotificationsScreen._open`'s referenceType switch — without
+/// this, every push (a chat message, a campaign decision, a broadcast)
+/// dumped the user on the Notifications tab regardless of what it was
+/// actually for. Falls back to Notifications for anything unrecognized
+/// (including a message with no referenceType at all).
+void _routeForMessage(BuildContext context, WidgetRef ref, RemoteMessage message) {
+  final referenceType = message.data['referenceType'] as String?;
+  final referenceId = message.data['referenceId'] as String?;
+
+  switch (referenceType) {
+    case 'announcement':
+      context.push(AppRoutes.announcements);
+      return;
+    case 'campaign' when referenceId != null:
+      final isCreator =
+          ref.read(currentProfileProvider).value?.role == UserRole.creator;
+      context.push(
+        isCreator
+            ? AppRoutes.creatorCampaignDetailPath(referenceId)
+            : AppRoutes.brandCampaignDetailPath(referenceId),
+      );
+      return;
+    case 'chat' when referenceId != null:
+      context.push(AppRoutes.chatDetailPath(referenceId));
+      return;
+    case 'brand':
+      context.go(AppRoutes.brandAccount);
+      return;
+    case 'creator':
+      context.go(AppRoutes.creatorProfile);
+      return;
+    case 'support' when referenceId != null:
+      context.push(AppRoutes.supportChatPath(referenceId));
+      return;
+    default:
+      context.push(AppRoutes.notifications);
+  }
+}
 
 /// Requests push permission and registers the FCM token once per session,
 /// shortly after landing in either portal's shell — by then the user is
@@ -31,7 +72,7 @@ mixin _PushSetupMixin<T extends StatefulWidget> on State<T> {
       final initialMessage = await FirebaseMessaging.instance
           .getInitialMessage();
       if (initialMessage != null && mounted) {
-        context.push(AppRoutes.notifications);
+        _routeForMessage(context, ref, initialMessage);
       }
 
       FirebaseMessaging.onMessage.listen((message) {
@@ -49,7 +90,7 @@ mixin _PushSetupMixin<T extends StatefulWidget> on State<T> {
 
       FirebaseMessaging.onMessageOpenedApp.listen((message) {
         if (!mounted) return;
-        context.push(AppRoutes.notifications);
+        _routeForMessage(context, ref, message);
       });
     });
   }

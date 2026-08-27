@@ -13,8 +13,9 @@ import '../theme/admin_colors.dart';
 /// of snapping straight to its final size — used by every bar in this
 /// file, vertical or horizontal. [delay] staggers bars across a chart so
 /// they grow in left-to-right/top-to-bottom rather than all at once.
-class _AnimatedBar extends StatefulWidget {
-  const _AnimatedBar({
+class AdminAnimatedBar extends StatefulWidget {
+  const AdminAnimatedBar({
+    super.key,
     this.width,
     this.height,
     required this.color,
@@ -29,10 +30,10 @@ class _AnimatedBar extends StatefulWidget {
   final Duration delay;
 
   @override
-  State<_AnimatedBar> createState() => _AnimatedBarState();
+  State<AdminAnimatedBar> createState() => AdminAnimatedBarState();
 }
 
-class _AnimatedBarState extends State<_AnimatedBar> {
+class AdminAnimatedBarState extends State<AdminAnimatedBar> {
   double? _width;
   double? _height;
 
@@ -51,7 +52,7 @@ class _AnimatedBarState extends State<_AnimatedBar> {
   }
 
   @override
-  void didUpdateWidget(covariant _AnimatedBar oldWidget) {
+  void didUpdateWidget(covariant AdminAnimatedBar oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.width != widget.width || oldWidget.height != widget.height) {
       setState(() {
@@ -187,7 +188,7 @@ class DailySignupsChart extends StatelessWidget {
                         mainAxisAlignment: MainAxisAlignment.end,
                         children: [
                           if (brandCounts[day]! > 0)
-                            _AnimatedBar(
+                            AdminAnimatedBar(
                               height: brandCounts[day]! * scale,
                               color: AppColors.brand,
                               delay: Duration(
@@ -195,7 +196,7 @@ class DailySignupsChart extends StatelessWidget {
                               ),
                             ),
                           if (creatorCounts[day]! > 0)
-                            _AnimatedBar(
+                            AdminAnimatedBar(
                               height: creatorCounts[day]! * scale,
                               color: AppColors.creator,
                               borderRadius: brandCounts[day] == 0
@@ -348,7 +349,7 @@ class DailyActiveUsersChart extends StatelessWidget {
                         mainAxisAlignment: MainAxisAlignment.end,
                         children: [
                           if (otherCounts[day]! > 0)
-                            _AnimatedBar(
+                            AdminAnimatedBar(
                               height: otherCounts[day]! * scale,
                               color: AdminColors.textHint(context),
                               delay: Duration(
@@ -356,7 +357,7 @@ class DailyActiveUsersChart extends StatelessWidget {
                               ),
                             ),
                           if (brandCounts[day]! > 0)
-                            _AnimatedBar(
+                            AdminAnimatedBar(
                               height: brandCounts[day]! * scale,
                               color: AppColors.brand,
                               delay: Duration(
@@ -364,7 +365,7 @@ class DailyActiveUsersChart extends StatelessWidget {
                               ),
                             ),
                           if (creatorCounts[day]! > 0)
-                            _AnimatedBar(
+                            AdminAnimatedBar(
                               height: creatorCounts[day]! * scale,
                               color: AppColors.creator,
                               borderRadius:
@@ -438,7 +439,7 @@ class AdminBarList extends StatelessWidget {
                               borderRadius: BorderRadius.circular(4),
                             ),
                           ),
-                          _AnimatedBar(
+                          AdminAnimatedBar(
                             width: constraints.maxWidth * fraction,
                             height: 8,
                             color: color,

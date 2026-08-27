@@ -25,6 +25,9 @@ export { onOnboardingComplete } from "./leads/onOnboardingComplete";
 export { redirectBrandLead } from "./brandLeads/redirectBrandLead";
 export { onBrandProfileWritten } from "./brandLeads/onBrandProfileWritten";
 export { sendPushOnAnnouncementCreate } from "./sendPushOnAnnouncementCreate";
+export { getCrashAnalytics } from "./admin/getCrashAnalytics";
+export { onCreatorApproved, onBrandApproved } from "./onboarding/sendWelcomeMessage";
+export { backfillWelcomeMessages } from "./onboarding/backfillWelcomeMessages";
 
 /**
  * Sends a push notification whenever a `notifications/{id}` document is

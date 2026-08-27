@@ -15,7 +15,8 @@ enum NotificationType {
   profileVerified,
   profileRejected,
   supportReply,
-  applicationWithdrawn;
+  applicationWithdrawn,
+  welcomeMessage;
 
   static NotificationType fromDbValue(String? value) => switch (value) {
     'newApplication' => NotificationType.newApplication,
@@ -29,6 +30,7 @@ enum NotificationType {
     'profileVerified' => NotificationType.profileVerified,
     'profileRejected' => NotificationType.profileRejected,
     'supportReply' => NotificationType.supportReply,
+    'welcomeMessage' => NotificationType.welcomeMessage,
     _ => NotificationType.newMessage,
   };
 
@@ -47,5 +49,6 @@ enum NotificationType {
     NotificationType.profileRejected => Icons.gpp_bad_outlined,
     NotificationType.supportReply => Icons.help_outline,
     NotificationType.applicationWithdrawn => Icons.undo_outlined,
+    NotificationType.welcomeMessage => Icons.celebration_outlined,
   };
 }

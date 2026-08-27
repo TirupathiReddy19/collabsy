@@ -21,6 +21,7 @@ import '../../features/support/providers/support_chat_providers.dart';
 import '../../shared/models/user_role.dart';
 import '../../shared/models/verification_status.dart';
 import '../providers/admin_analytics_providers.dart';
+import '../providers/admin_crash_analytics_providers.dart';
 import '../providers/admin_dashboard_providers.dart';
 import '../widgets/admin_analytics_charts.dart';
 import '../widgets/admin_stat_card.dart';
@@ -113,6 +114,11 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
     final brands = ref.watch(totalBrandsCountProvider);
     final activeCampaigns = ref.watch(activeCampaignsCountProvider);
     final applications = ref.watch(totalApplicationsCountProvider);
+    final crashAnalytics = ref.watch(crashAnalyticsProvider(14));
+    final fatalCrashes14d = crashAnalytics.value?.trend.fold<int>(
+      0,
+      (sum, entry) => sum + entry.count,
+    );
 
     // Same client-side filtering already used by the Verification Queue
     // landing page and the Support Tickets screen — reused here so the
@@ -411,6 +417,17 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
                       value: _valueOf(applications),
                       icon: Icons.assignment_outlined,
                       iconColor: Colors.orange,
+                    ),
+                    AdminStatCard(
+                      label: 'Fatal Crashes (14d)',
+                      value: crashAnalytics.when(
+                        data: (_) => '${fatalCrashes14d ?? 0}',
+                        loading: () => '—',
+                        error: (_, _) => '!',
+                      ),
+                      icon: Icons.bug_report_outlined,
+                      iconColor: AppColors.error,
+                      onTap: () => context.go('/crash-analytics'),
                     ),
                   ],
                 ),

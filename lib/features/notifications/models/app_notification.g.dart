@@ -46,4 +46,5 @@ const _$NotificationTypeEnumMap = {
   NotificationType.profileRejected: 'profileRejected',
   NotificationType.supportReply: 'supportReply',
   NotificationType.applicationWithdrawn: 'applicationWithdrawn',
+  NotificationType.welcomeMessage: 'welcomeMessage',
 };

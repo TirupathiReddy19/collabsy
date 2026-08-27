@@ -19,6 +19,7 @@ import 'screens/admin_campaign_detail_screen.dart';
 import 'screens/admin_campaign_requests_screen.dart';
 import 'screens/admin_campaigns_screen.dart';
 import 'screens/admin_coming_soon_screen.dart';
+import 'screens/admin_crash_analytics_screen.dart';
 import 'screens/admin_creator_detail_screen.dart';
 import 'screens/admin_creators_screen.dart';
 import 'screens/admin_dashboard_screen.dart';
@@ -71,6 +72,7 @@ CustomTransitionPage<void> _fadePage(GoRouterState state, Widget child) {
 final Map<String, GoRouterWidgetBuilder> _builtScreens = {
   _dashboard: (context, state) => const AdminDashboardScreen(),
   '/analytics': (context, state) => const AdminAnalyticsScreen(),
+  '/crash-analytics': (context, state) => const AdminCrashAnalyticsScreen(),
   '/reports': (context, state) => const AdminReportsScreen(),
   '/creators': (context, state) => const AdminCreatorsScreen(),
   '/brands': (context, state) => const AdminBrandsScreen(),

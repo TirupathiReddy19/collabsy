@@ -40,6 +40,11 @@ const adminNavGroups = [
         icon: Icons.bar_chart_outlined,
       ),
       AdminNavItem(
+        path: '/crash-analytics',
+        label: 'Crash Analytics',
+        icon: Icons.bug_report_outlined,
+      ),
+      AdminNavItem(
         path: '/reports',
         label: 'Reports',
         icon: Icons.summarize_outlined,

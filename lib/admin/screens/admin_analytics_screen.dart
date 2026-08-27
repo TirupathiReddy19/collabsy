@@ -30,6 +30,7 @@ class AdminAnalyticsScreen extends ConsumerStatefulWidget {
 
 class _AdminAnalyticsScreenState extends ConsumerState<AdminAnalyticsScreen> {
   bool _isBackfilling = false;
+  bool _isSendingWelcomes = false;
 
   /// One-time migration, run server-side: `setRole()` never wrote
   /// `createdAt` for password/phone signups until that bug was fixed, so
@@ -69,6 +70,42 @@ class _AdminAnalyticsScreenState extends ConsumerState<AdminAnalyticsScreen> {
     }
   }
 
+  /// One-time catch-up for every creator/brand already approved before the
+  /// welcome-message automation existed — going forward, `onCreatorApproved`
+  /// / `onBrandApproved` send it automatically the moment admin approves
+  /// someone, from any screen. Safe to tap more than once: the Cloud
+  /// Function skips anyone who's already received their welcome.
+  Future<void> _sendWelcomeBackfill() async {
+    setState(() => _isSendingWelcomes = true);
+    try {
+      final result = await ref
+          .read(firebaseFunctionsProvider)
+          .httpsCallable('backfillWelcomeMessages')
+          .call();
+      final sent = result.data['sent'] as int;
+
+      if (!mounted) return;
+      AppSnackbar.showSuccess(
+        context,
+        sent == 0
+            ? 'Everyone already has their welcome message.'
+            : 'Sent a welcome message to $sent existing account'
+                  '${sent == 1 ? '' : 's'}.',
+      );
+    } on FirebaseFunctionsException catch (e) {
+      if (!mounted) return;
+      AppSnackbar.showError(
+        context,
+        e.message ?? "Couldn't send welcome messages.",
+      );
+    } catch (_) {
+      if (!mounted) return;
+      AppSnackbar.showError(context, "Couldn't send welcome messages.");
+    } finally {
+      if (mounted) setState(() => _isSendingWelcomes = false);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final signups = ref.watch(allUserSignupsProvider);
@@ -93,6 +130,18 @@ class _AdminAnalyticsScreenState extends ConsumerState<AdminAnalyticsScreen> {
                     )
                   : const Icon(Icons.history, size: 18),
               label: const Text('Backfill signup dates'),
+            ),
+            const SizedBox(width: 8),
+            TextButton.icon(
+              onPressed: _isSendingWelcomes ? null : _sendWelcomeBackfill,
+              icon: _isSendingWelcomes
+                  ? const SizedBox(
+                      width: 14,
+                      height: 14,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const Icon(Icons.celebration_outlined, size: 18),
+              label: const Text('Send welcome to existing users'),
             ),
           ],
         ),
