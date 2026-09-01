@@ -1,0 +1,118 @@
+.form-card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 24px;
+  padding: 40px;
+  width: 100%;
+}
+
+@media (max-width: 560px) {
+  .form-card {
+    padding: 24px;
+  }
+}
+
+.form-title {
+  font-size: 24px;
+  margin: 0 0 6px;
+}
+
+.form-subtitle {
+  font-size: 15px;
+  color: var(--color-text-secondary);
+  margin: 0 0 28px;
+}
+
+.form-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 18px;
+}
+
+.form-label {
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--color-text-primary);
+}
+
+.form-field input,
+.form-field select,
+.form-field textarea {
+  font-family: var(--font-sans);
+  font-size: 15px;
+  padding: 13px 14px;
+  border-radius: 12px;
+  border: 1.5px solid var(--color-border);
+  background: var(--color-background);
+  color: var(--color-text-primary);
+  resize: vertical;
+  transition: border-color 0.2s;
+}
+
+.form-field input:focus,
+.form-field select:focus,
+.form-field textarea:focus {
+  outline: none;
+  border-color: var(--color-primary);
+}
+
+.form-error {
+  font-size: 13px;
+  color: var(--color-error);
+}
+
+.form-error-banner {
+  background: #fee2e2;
+  color: var(--color-error);
+  padding: 12px 14px;
+  border-radius: 10px;
+  font-size: 14px;
+  margin-bottom: 16px;
+}
+
+.form-submit {
+  width: 100%;
+  margin-top: 6px;
+}
+
+.form-submit:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.form-fineprint {
+  text-align: center;
+  font-size: 13px;
+  color: var(--color-text-hint);
+  margin: 12px 0 0;
+}
+
+.form-success {
+  text-align: center;
+  padding: 56px 40px;
+}
+
+.form-success-icon {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background: #dcfce7;
+  color: var(--color-success);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 20px;
+}
+
+.form-success h3 {
+  font-size: 22px;
+  margin: 0 0 8px;
+}
+
+.form-success p {
+  font-size: 15px;
+  color: var(--color-text-secondary);
+  margin: 0;
+}

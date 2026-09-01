@@ -1,0 +1,126 @@
+.brands-plans {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 28px;
+  align-items: start;
+}
+
+@media (max-width: 900px) {
+  .brands-plans {
+    grid-template-columns: 1fr;
+  }
+}
+
+.plan-card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 24px;
+  padding: 36px;
+}
+
+.plan-card-highlight {
+  border: 1.5px solid var(--color-primary);
+  box-shadow: 0 24px 60px -30px rgba(249, 115, 22, 0.45);
+}
+
+.plan-tag {
+  display: inline-block;
+  font-size: 11.5px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  padding: 5px 12px;
+  border-radius: 999px;
+  margin-bottom: 14px;
+}
+
+.plan-tag-serve {
+  background: rgba(14, 165, 233, 0.12);
+  color: var(--color-brand);
+}
+
+.plan-tag-managed {
+  background: var(--color-primary-light);
+  color: var(--color-primary);
+}
+
+.plan-title {
+  font-size: 24px;
+  margin: 0;
+}
+
+/* Campaign engine */
+
+.brands-engine {
+  background: var(--color-ink);
+  color: white;
+}
+
+.engine-row {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px 4px;
+}
+
+.engine-input {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  width: 200px;
+  padding: 28px 16px;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  position: relative;
+}
+
+.engine-input-label {
+  font-family: var(--font-display);
+  font-size: 19px;
+  margin-bottom: 8px;
+}
+
+.engine-input-detail {
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.55);
+  line-height: 1.5;
+}
+
+.engine-plus {
+  position: absolute;
+  right: -20px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 22px;
+  color: var(--color-primary);
+  font-weight: 700;
+}
+
+@media (max-width: 900px) {
+  .engine-plus {
+    display: none;
+  }
+}
+
+.engine-equals {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  max-width: 480px;
+  margin: 40px auto 0;
+}
+
+.engine-equals-line {
+  flex: 1;
+  height: 1px;
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.engine-equals-result {
+  font-family: var(--font-display);
+  font-size: 28px;
+  font-weight: 600;
+  color: var(--color-primary);
+  white-space: nowrap;
+}

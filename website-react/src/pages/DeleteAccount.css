@@ -1,0 +1,8 @@
+.delete-account-notice {
+  background: var(--color-primary-light);
+  border-radius: 14px;
+  padding: 16px 18px;
+  font-size: 14.5px;
+  line-height: 1.6;
+  margin-bottom: 24px;
+}

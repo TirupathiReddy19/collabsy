@@ -1,0 +1,286 @@
+.home-hero {
+  position: relative;
+  min-height: 92vh;
+  display: flex;
+  align-items: center;
+  overflow: hidden;
+  padding-top: 80px;
+  padding-bottom: 80px;
+}
+
+.home-hero-scrim {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  background: radial-gradient(
+    620px 480px at 50% 46%,
+    rgba(11, 11, 13, 0.82) 0%,
+    rgba(11, 11, 13, 0.55) 45%,
+    rgba(11, 11, 13, 0) 78%
+  );
+}
+
+.home-hero-inner {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+.home-hero-headline {
+  font-size: clamp(30px, 6.4vw, 72px);
+  color: white;
+  margin: 0 0 24px;
+  max-width: 920px;
+}
+
+.home-hero-line {
+  display: block;
+  overflow: hidden;
+}
+
+/* Each line is hand-broken to fit one row at desktop sizes, which is what
+   the mask-reveal animation (overflow: hidden clipping a translateY) needs
+   to look right. Below ~480px "Where Creators and Brands" no longer fits
+   on one row even at the clamped-down size, so the line would wrap and
+   collide with the fixed-height overflow:hidden clip — switching to
+   overflow: visible there trades the clip-reveal for a plain slide-up
+   (still animated, just not masked), which degrades safely instead of
+   overlapping text. */
+@media (max-width: 480px) {
+  .home-hero-headline {
+    font-size: clamp(26px, 8vw, 40px);
+  }
+  .home-hero-line {
+    overflow: visible;
+  }
+}
+
+.home-hero-line-inner {
+  display: block;
+}
+
+.home-hero-sub {
+  max-width: 620px;
+  margin: 0 auto 32px;
+  font-size: 18px;
+}
+
+.home-flow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  margin-bottom: 40px;
+}
+
+.home-flow-step {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.75);
+  padding: 8px 4px;
+}
+
+.home-flow-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--color-primary);
+  box-shadow: 0 0 12px 2px rgba(249, 115, 22, 0.7);
+}
+
+.home-flow-arrow {
+  color: rgba(255, 255, 255, 0.3);
+  margin-left: 6px;
+}
+
+.home-hero-ctas {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+/* How it works */
+
+.home-steps {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 32px;
+}
+
+@media (max-width: 900px) {
+  .home-steps {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+@media (max-width: 560px) {
+  .home-steps {
+    grid-template-columns: 1fr;
+  }
+}
+
+.home-step-number {
+  display: block;
+  font-family: var(--font-display);
+  font-size: 34px;
+  color: var(--color-primary);
+  opacity: 0.4;
+  margin-bottom: 8px;
+}
+
+.home-step-title {
+  font-size: 19px;
+  margin: 0 0 8px;
+}
+
+.home-step-body {
+  font-size: 15px;
+  color: var(--color-text-secondary);
+  line-height: 1.55;
+  margin: 0;
+}
+
+/* Audience split */
+
+.home-audience {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 28px;
+}
+
+@media (max-width: 900px) {
+  .home-audience {
+    grid-template-columns: 1fr;
+  }
+}
+
+.home-audience-card {
+  background: var(--color-surface);
+  border-radius: 24px;
+  padding: 40px;
+  border: 1px solid var(--color-border);
+  transform-style: preserve-3d;
+  transition: box-shadow 0.3s;
+  will-change: transform;
+}
+
+.home-audience-card:hover {
+  box-shadow: 0 24px 60px -24px rgba(17, 24, 39, 0.2);
+}
+
+.home-audience-title {
+  font-size: 26px;
+  margin: 0 0 20px;
+}
+
+.home-audience-bullets {
+  list-style: none;
+  margin: 0 0 24px;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.home-audience-bullets li {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  font-size: 16px;
+  line-height: 1.5;
+}
+
+.home-audience-bullets svg {
+  flex-shrink: 0;
+  margin-top: 4px;
+  color: var(--accent);
+}
+
+.home-audience-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 700;
+  color: var(--color-primary);
+}
+
+/* Why Collabsy — editorial numbered list, not a card grid */
+
+.home-principles {
+  display: flex;
+  flex-direction: column;
+  max-width: 760px;
+  margin: 0 auto;
+}
+
+.home-principle {
+  display: flex;
+  gap: 28px;
+  padding: 32px 0;
+  border-top: 1px solid var(--color-border);
+}
+
+.home-principle:last-child {
+  border-bottom: 1px solid var(--color-border);
+}
+
+.home-principle-number {
+  font-family: var(--font-display);
+  font-size: 24px;
+  color: var(--color-text-hint);
+  flex-shrink: 0;
+  width: 40px;
+}
+
+.home-principle-title {
+  font-size: 21px;
+  margin: 0 0 8px;
+}
+
+.home-principle-body {
+  font-size: 16px;
+  color: var(--color-text-secondary);
+  line-height: 1.6;
+  margin: 0;
+  max-width: 520px;
+}
+
+/* Final CTA */
+
+.home-final-cta {
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+}
+
+.home-final-glow {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(480px 320px at 50% 100%, rgba(249, 115, 22, 0.3), transparent 70%);
+  pointer-events: none;
+}
+
+.home-final-inner {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+}
+
+.home-final-title {
+  font-size: clamp(30px, 4.5vw, 46px);
+  color: white;
+  margin: 0;
+}

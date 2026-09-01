@@ -1,0 +1,41 @@
+.legal-container {
+  max-width: 760px;
+}
+
+.legal-title {
+  font-size: 34px;
+  margin: 0 0 4px;
+}
+
+.legal-date {
+  color: var(--color-text-secondary);
+  font-size: 14.5px;
+  margin: 0 0 28px;
+}
+
+.legal-h2 {
+  font-size: 21px;
+  margin: 32px 0 12px;
+}
+
+.legal-p {
+  font-size: 16.5px;
+  line-height: 1.7;
+  margin: 0 0 14px;
+}
+
+.legal-bullets {
+  margin: 0 0 14px;
+  padding-left: 20px;
+}
+
+.legal-bullets li {
+  font-size: 16.5px;
+  line-height: 1.7;
+  margin-bottom: 8px;
+}
+
+.legal-link {
+  color: var(--color-primary);
+  font-weight: 600;
+}
