@@ -36,6 +36,7 @@ import '../features/brand/screens/brand_messages_screen.dart';
 import '../features/chat/screens/chat_conversation_screen.dart';
 import '../features/creator/campaigns/brand_public_profile_screen.dart';
 import '../features/creator/campaigns/creator_campaign_detail_screen.dart';
+import '../features/creator/onboarding/creator_additional_details_screen.dart';
 import '../features/creator/onboarding/creator_details_screen.dart';
 import '../features/creator/onboarding/creator_instagram_connect_screen.dart';
 import '../features/creator/onboarding/creator_verification_pending_screen.dart';
@@ -126,12 +127,27 @@ Future<String?> _resolvePostAuthRedirect({
     }
   }
   if (profile.role == UserRole.creator) {
+    final creatorProfile = await creatorProfileRepository
+        .fetchCreatorProfile(user.uid);
+    // Gender/collaboration-preference didn't exist as required fields
+    // when this creator's `onboardingCompleted` flag was first set, so
+    // this is the same free retroactive catch as the onboarding gate
+    // above — every pre-existing Creator account gets sent through this
+    // once, before anything else, the next time they open the app. A
+    // brand-new signup never sees it: CreatorDetailsScreen already
+    // collects both up front, ahead of onboardingCompleted flipping true.
+    final needsAdditionalDetails =
+        creatorProfile?.gender == null ||
+        creatorProfile?.collaborationPreference == null;
+    if (needsAdditionalDetails) {
+      return location == AppRoutes.creatorAdditionalDetails
+          ? null
+          : AppRoutes.creatorAdditionalDetails;
+    }
     // Onboarding is done, but the dashboard is still gated on admin
     // approval — same reasoning as the Brand gate above, and the
     // same free retroactive catch for every pre-existing Creator
     // account.
-    final creatorProfile = await creatorProfileRepository
-        .fetchCreatorProfile(user.uid);
     final verified =
         creatorProfile?.verificationStatus == VerificationStatus.approved;
     if (!verified) {
@@ -395,6 +411,10 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: AppRoutes.creatorInstagramConnect,
         builder: (context, state) => const CreatorInstagramConnectScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.creatorAdditionalDetails,
+        builder: (context, state) => const CreatorAdditionalDetailsScreen(),
       ),
       GoRoute(
         path: AppRoutes.creatorVerificationPending,

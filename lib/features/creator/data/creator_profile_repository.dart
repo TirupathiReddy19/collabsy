@@ -1,6 +1,8 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 import '../../../shared/models/verification_status.dart';
+import '../models/collaboration_preference.dart';
+import '../models/creator_gender.dart';
 import '../models/creator_profile.dart';
 
 /// The only place in the `creator` feature that talks to the
@@ -61,6 +63,8 @@ class CreatorProfileRepository {
     List<String>? languages,
     String? state,
     String? city,
+    CreatorGender? gender,
+    CollaborationPreference? collaborationPreference,
   }) async {
     await _creatorProfiles.doc(userId).set({
       if (bio != null) 'bio': bio,
@@ -68,6 +72,9 @@ class CreatorProfileRepository {
       if (languages != null) 'languages': languages,
       if (state != null) 'state': state,
       if (city != null) 'city': city,
+      if (gender != null) 'gender': gender.toDbValue(),
+      if (collaborationPreference != null)
+        'collaborationPreference': collaborationPreference.toDbValue(),
       'updatedAt': FieldValue.serverTimestamp(),
     }, SetOptions(merge: true));
   }

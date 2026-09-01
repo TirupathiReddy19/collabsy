@@ -15,9 +15,17 @@ typedef TopCrashIssue = ({
   DateTime lastSeenAt,
 });
 
+typedef TopDevice = ({
+  String platform,
+  String model,
+  int eventCount,
+  int affectedInstalls,
+});
+
 typedef CrashAnalytics = ({
   List<DailyCrashCount> trend,
   List<TopCrashIssue> topIssues,
+  List<TopDevice> topDevices,
 });
 
 /// Calls the `getCrashAnalytics` Cloud Function, which queries Crashlytics'
@@ -59,5 +67,17 @@ Future<CrashAnalytics> crashAnalytics(Ref ref, int days) async {
       )
       .toList();
 
-  return (trend: trend, topIssues: topIssues);
+  final topDevices = (data['topDevices'] as List<Object?>)
+      .cast<Map<Object?, Object?>>()
+      .map(
+        (e) => (
+          platform: e['platform'] as String,
+          model: e['model'] as String,
+          eventCount: (e['eventCount'] as num).toInt(),
+          affectedInstalls: (e['affectedInstalls'] as num).toInt(),
+        ),
+      )
+      .toList();
+
+  return (trend: trend, topIssues: topIssues, topDevices: topDevices);
 }

@@ -30,6 +30,11 @@ _CreatorProfile _$CreatorProfileFromJson(Map<String, dynamic> json) =>
             json['verificationStatus'],
           ) ??
           VerificationStatus.pending,
+      gender: $enumDecodeNullable(_$CreatorGenderEnumMap, json['gender']),
+      collaborationPreference: $enumDecodeNullable(
+        _$CollaborationPreferenceEnumMap,
+        json['collaborationPreference'],
+      ),
     );
 
 Map<String, dynamic> _$CreatorProfileToJson(_CreatorProfile instance) =>
@@ -44,10 +49,24 @@ Map<String, dynamic> _$CreatorProfileToJson(_CreatorProfile instance) =>
       'city': instance.city,
       'verificationStatus':
           _$VerificationStatusEnumMap[instance.verificationStatus]!,
+      'gender': _$CreatorGenderEnumMap[instance.gender],
+      'collaborationPreference':
+          _$CollaborationPreferenceEnumMap[instance.collaborationPreference],
     };
 
 const _$VerificationStatusEnumMap = {
   VerificationStatus.pending: 'pending',
   VerificationStatus.approved: 'approved',
   VerificationStatus.rejected: 'rejected',
+};
+
+const _$CreatorGenderEnumMap = {
+  CreatorGender.male: 'male',
+  CreatorGender.female: 'female',
+};
+
+const _$CollaborationPreferenceEnumMap = {
+  CollaborationPreference.paid: 'paid',
+  CollaborationPreference.barter: 'barter',
+  CollaborationPreference.both: 'both',
 };

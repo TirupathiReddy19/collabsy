@@ -105,6 +105,47 @@ async function fetchTopIssues(platform, days) {
         return [];
     }
 }
+/** Which make/model of device each fatal crash actually happened on — the
+ * `device` RECORD (manufacturer, model, architecture) confirmed directly
+ * against this table's live BigQuery schema. `manufacturer` is dropped
+ * from the label when `model` already starts with it (e.g. Android's own
+ * "Google Pixel 6" model strings), so devices aren't double-labelled. */
+async function fetchDeviceBreakdown(platform, days) {
+    const table = `${DATASET}.${TABLES[platform]}`;
+    const query = `
+    SELECT
+      device.manufacturer AS manufacturer,
+      device.model AS model,
+      COUNT(*) AS event_count,
+      COUNT(DISTINCT installation_uuid) AS affected_installs
+    FROM \`${table}\`
+    WHERE error_type = 'FATAL'
+      AND event_timestamp >= TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL @days DAY)
+    GROUP BY manufacturer, model
+    ORDER BY event_count DESC
+    LIMIT 10
+  `;
+    try {
+        const [rows] = await bigquery.query({ query, params: { days } });
+        return rows.map((r) => {
+            const manufacturer = (r.manufacturer || "").trim();
+            const model = (r.model || "Unknown device").trim();
+            const label = manufacturer && !model.toLowerCase().startsWith(manufacturer.toLowerCase())
+                ? `${manufacturer} ${model}`
+                : model;
+            return {
+                platform,
+                model: label,
+                eventCount: Number(r.event_count),
+                affectedInstalls: Number(r.affected_installs),
+            };
+        });
+    }
+    catch (error) {
+        firebase_functions_1.logger.warn(`Device breakdown query failed for ${platform}`, error);
+        return [];
+    }
+}
 /** Callable from the admin portal's dedicated Crash Analytics page — gated
  * on its own `/crash-analytics` nav permission, granted independently of
  * `/analytics` via Role Management. */
@@ -112,16 +153,21 @@ exports.getCrashAnalytics = (0, https_1.onCall)(async (request) => {
     await (0, adminAuth_1.requireAdminOrPermission)(request, "/crash-analytics");
     const requestedDays = request.data?.days;
     const days = Math.min(Math.max(requestedDays ?? 14, 1), 90);
-    const [androidTrend, iosTrend, androidIssues, iosIssues] = await Promise.all([
+    const [androidTrend, iosTrend, androidIssues, iosIssues, androidDevices, iosDevices,] = await Promise.all([
         fetchDailyTrend("ANDROID", days),
         fetchDailyTrend("IOS", days),
         fetchTopIssues("ANDROID", days),
         fetchTopIssues("IOS", days),
+        fetchDeviceBreakdown("ANDROID", days),
+        fetchDeviceBreakdown("IOS", days),
     ]);
     return {
         trend: [...androidTrend, ...iosTrend],
         topIssues: [...androidIssues, ...iosIssues]
             .sort((a, b) => b.eventCount - a.eventCount)
             .slice(0, 20),
+        topDevices: [...androidDevices, ...iosDevices]
+            .sort((a, b) => b.eventCount - a.eventCount)
+            .slice(0, 10),
     };
 });

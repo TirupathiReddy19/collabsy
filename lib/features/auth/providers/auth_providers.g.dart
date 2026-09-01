@@ -481,7 +481,7 @@ final class AuthControllerProvider
   AuthController create() => AuthController();
 }
 
-String _$authControllerHash() => r'cb453c426bad89234117aac8387c32a91bd9c4b0';
+String _$authControllerHash() => r'1ef54fa09113f4c56aa5989bb6df2b1c1824ee1a';
 
 /// Drives the auth screens' sign-up/sign-in/verify/Google/sign-out actions
 /// and exposes their loading/error state.

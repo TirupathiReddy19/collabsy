@@ -22,7 +22,10 @@ import '../../auth/providers/auth_providers.dart';
 import '../../auth/shared/change_email_sheet.dart';
 import '../../auth/shared/change_phone_sheet.dart';
 import '../../settings/providers/instagram_providers.dart';
+import '../models/collaboration_preference.dart';
+import '../models/creator_gender.dart';
 import '../models/creator_profile.dart';
+import '../onboarding/widgets/gender_collaboration_fields.dart';
 import '../providers/creator_profile_providers.dart';
 
 class CreatorProfileScreen extends ConsumerStatefulWidget {
@@ -39,15 +42,20 @@ class _CreatorProfileScreenState extends ConsumerState<CreatorProfileScreen> {
   final Set<String> _selectedCategories = {};
   final Set<String> _selectedLanguages = {};
   String? _selectedState;
+  CreatorGender? _selectedGender;
+  CollaborationPreference? _selectedCollabPreference;
   bool _initialized = false;
   bool _isEditingBio = false;
   bool _isEditingLocation = false;
+  bool _isEditingPreferences = false;
 
   String _savedBio = '';
   Set<String> _savedCategories = {};
   Set<String> _savedLanguages = {};
   String? _savedState;
   String _savedCity = '';
+  CreatorGender? _savedGender;
+  CollaborationPreference? _savedCollabPreference;
 
   @override
   void initState() {
@@ -77,7 +85,9 @@ class _CreatorProfileScreenState extends ConsumerState<CreatorProfileScreen> {
         !setEquals(_selectedCategories, _savedCategories) ||
         !setEquals(_selectedLanguages, _savedLanguages) ||
         _selectedState != _savedState ||
-        _cityController.text.trim() != _savedCity;
+        _cityController.text.trim() != _savedCity ||
+        _selectedGender != _savedGender ||
+        _selectedCollabPreference != _savedCollabPreference;
   }
 
   void _initializeFromProfile(CreatorProfile? profile) {
@@ -88,11 +98,15 @@ class _CreatorProfileScreenState extends ConsumerState<CreatorProfileScreen> {
     _savedLanguages = Set.of(profile.languages);
     _savedState = profile.state;
     _savedCity = profile.city ?? '';
+    _savedGender = profile.gender;
+    _savedCollabPreference = profile.collaborationPreference;
     _bioController.text = _savedBio;
     _cityController.text = _savedCity;
     _selectedCategories.addAll(_savedCategories);
     _selectedLanguages.addAll(_savedLanguages);
     _selectedState = _savedState;
+    _selectedGender = _savedGender;
+    _selectedCollabPreference = _savedCollabPreference;
   }
 
   Future<void> _save() async {
@@ -104,6 +118,8 @@ class _CreatorProfileScreenState extends ConsumerState<CreatorProfileScreen> {
           languages: _selectedLanguages.toList(),
           stateName: _selectedState,
           city: _cityController.text.trim(),
+          gender: _selectedGender,
+          collaborationPreference: _selectedCollabPreference,
         );
     if (!mounted) return;
     if (ref.read(creatorProfileControllerProvider).hasError) {
@@ -119,8 +135,11 @@ class _CreatorProfileScreenState extends ConsumerState<CreatorProfileScreen> {
       _savedLanguages = Set.of(_selectedLanguages);
       _savedState = _selectedState;
       _savedCity = _cityController.text.trim();
+      _savedGender = _selectedGender;
+      _savedCollabPreference = _selectedCollabPreference;
       _isEditingBio = false;
       _isEditingLocation = false;
+      _isEditingPreferences = false;
     });
     AppSnackbar.showSuccess(context, 'Profile updated.');
   }
@@ -444,6 +463,57 @@ class _CreatorProfileScreenState extends ConsumerState<CreatorProfileScreen> {
                                   ),
                           );
                         }).toList(),
+                      ),
+                  ],
+                ),
+              ),
+              StaggeredFadeIn(
+                delay: const Duration(milliseconds: 400),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const SizedBox(height: 16),
+                    Row(
+                      children: [
+                        Text('Preferences', style: AppTextStyles.labelLarge),
+                        const Spacer(),
+                        IconButton(
+                          icon: const Icon(Icons.edit_outlined, size: 20),
+                          onPressed: isLoading
+                              ? null
+                              : () => setState(
+                                  () => _isEditingPreferences =
+                                      !_isEditingPreferences,
+                                ),
+                        ),
+                      ],
+                    ),
+                    if (_isEditingPreferences)
+                      GenderCollaborationFields(
+                        selectedGender: _selectedGender,
+                        selectedPreference: _selectedCollabPreference,
+                        enabled: !isLoading,
+                        onGenderChanged: (value) =>
+                            setState(() => _selectedGender = value),
+                        onPreferenceChanged: (value) =>
+                            setState(() => _selectedCollabPreference = value),
+                      )
+                    else
+                      Builder(
+                        builder: (context) {
+                          final parts = [
+                            _selectedGender?.label,
+                            _selectedCollabPreference?.label,
+                          ].whereType<String>().toList();
+                          return Text(
+                            parts.isEmpty ? 'Not set' : parts.join(' · '),
+                            style: AppTextStyles.bodyMedium.copyWith(
+                              color: parts.isEmpty
+                                  ? AppColors.textSecondary
+                                  : AppColors.textPrimary,
+                            ),
+                          );
+                        },
                       ),
                     if (_isDirty) ...[
                       const SizedBox(height: 24),

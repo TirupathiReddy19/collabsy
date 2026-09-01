@@ -340,6 +340,34 @@ class _AdminCreatorDetailScreenState
                   ),
                   const SizedBox(height: 20),
                   StaggeredFadeIn(
+                    delay: const Duration(milliseconds: 210),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('Preferences', style: AppTextStyles.titleSmall),
+                        const SizedBox(height: 8),
+                        _Card(
+                          children: [
+                            AdminDetailRow(
+                              icon: Icons.person_outline,
+                              label: 'Gender',
+                              value: profile?.gender?.label ?? 'Not set',
+                            ),
+                            AdminDetailRow(
+                              icon: Icons.handshake_outlined,
+                              label: 'Collaborations',
+                              value:
+                                  profile?.collaborationPreference?.label ??
+                                  'Not set',
+                              isLast: true,
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                  StaggeredFadeIn(
                     delay: const Duration(milliseconds: 240),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,

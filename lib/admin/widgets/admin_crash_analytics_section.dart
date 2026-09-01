@@ -171,6 +171,12 @@ class _Loaded extends StatelessWidget {
             );
           },
         ),
+        if (crash.topDevices.isNotEmpty) ...[
+          const SizedBox(height: 24),
+          Text('Top devices affected', style: AppTextStyles.titleSmall),
+          const SizedBox(height: 8),
+          AdminCard(child: _DeviceList(devices: crash.topDevices)),
+        ],
         const SizedBox(height: 24),
         Text('Top crash issues', style: AppTextStyles.titleSmall),
         const SizedBox(height: 8),
@@ -592,6 +598,93 @@ class _PlatformSplit extends StatelessWidget {
                       ],
                     );
                   },
+                ),
+              ],
+            ),
+          ),
+      ],
+    );
+  }
+}
+
+/// Which device make/models fatal crashes are actually landing on — pulled
+/// from Crashlytics' `device.manufacturer`/`device.model` fields, so an
+/// admin can tell "everyone on one weird OEM skin" apart from "spread
+/// evenly across devices" at a glance.
+class _DeviceList extends StatelessWidget {
+  const _DeviceList({required this.devices});
+
+  final List<TopDevice> devices;
+
+  @override
+  Widget build(BuildContext context) {
+    final maxCount = devices.fold(0, (a, d) => a > d.eventCount ? a : d.eventCount);
+    return Column(
+      children: [
+        for (final (index, device) in devices.indexed)
+          Padding(
+            padding: EdgeInsets.only(bottom: index == devices.length - 1 ? 0 : 14),
+            child: Row(
+              children: [
+                Icon(
+                  device.platform == 'ANDROID' ? Icons.android : Icons.apple,
+                  size: 16,
+                  color: device.platform == 'ANDROID' ? _androidColor : _iosColor,
+                ),
+                const SizedBox(width: 10),
+                SizedBox(
+                  width: 180,
+                  child: Text(
+                    device.model,
+                    style: AppTextStyles.bodySmall.copyWith(
+                      fontWeight: FontWeight.w600,
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+                Expanded(
+                  child: LayoutBuilder(
+                    builder: (context, constraints) {
+                      final fraction = maxCount == 0
+                          ? 0.0
+                          : device.eventCount / maxCount;
+                      return Stack(
+                        children: [
+                          Container(
+                            height: 8,
+                            decoration: BoxDecoration(
+                              color: AdminColors.background(context),
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                          ),
+                          AdminAnimatedBar(
+                            width: constraints.maxWidth * fraction,
+                            height: 8,
+                            color: device.platform == 'ANDROID'
+                                ? _androidColor
+                                : _iosColor,
+                            borderRadius: BorderRadius.circular(4),
+                            delay: Duration(
+                              milliseconds: (index * 60).clamp(0, 500),
+                            ),
+                          ),
+                        ],
+                      );
+                    },
+                  ),
+                ),
+                const SizedBox(width: 12),
+                SizedBox(
+                  width: 110,
+                  child: Text(
+                    '${device.eventCount} event${device.eventCount == 1 ? '' : 's'} '
+                    '· ${device.affectedInstalls} install'
+                    '${device.affectedInstalls == 1 ? '' : 's'}',
+                    style: AppTextStyles.bodySmall.copyWith(
+                      color: AdminColors.textSecondary(context),
+                    ),
+                    textAlign: TextAlign.right,
+                  ),
                 ),
               ],
             ),

@@ -86,7 +86,7 @@ final class CrashAnalyticsProvider
   }
 }
 
-String _$crashAnalyticsHash() => r'52bb8c8e7428487fd46a790c34bdc379ea584148';
+String _$crashAnalyticsHash() => r'ffb4c2e9e005cb5b0138d2dd099c0324a48aad95';
 
 /// Calls the `getCrashAnalytics` Cloud Function, which queries Crashlytics'
 /// BigQuery export directly — there's no Firestore copy of this data, so

@@ -14,6 +14,9 @@ import '../../../core/widgets/searchable_dropdown_field.dart';
 import '../../auth/providers/auth_providers.dart';
 import '../../auth/shared/auth_button.dart';
 import '../../auth/shared/auth_header.dart';
+import '../models/collaboration_preference.dart';
+import '../models/creator_gender.dart';
+import 'widgets/gender_collaboration_fields.dart';
 
 /// First of two post-signup steps for Creators (see [AppRoutes.creatorDetails]
 /// / [AppRoutes.creatorInstagramConnect]) — collects languages + location,
@@ -33,6 +36,8 @@ class _CreatorDetailsScreenState extends ConsumerState<CreatorDetailsScreen> {
   final Set<String> _selectedLanguages = {};
   final Set<String> _selectedCategories = {};
   String? _selectedState;
+  CreatorGender? _selectedGender;
+  CollaborationPreference? _selectedCollabPreference;
 
   @override
   void dispose() {
@@ -50,6 +55,17 @@ class _CreatorDetailsScreenState extends ConsumerState<CreatorDetailsScreen> {
       AppSnackbar.showError(context, 'Select your state');
       return;
     }
+    if (_selectedGender == null) {
+      AppSnackbar.showError(context, 'Select your gender');
+      return;
+    }
+    if (_selectedCollabPreference == null) {
+      AppSnackbar.showError(
+        context,
+        "Select what collaborations you're open to",
+      );
+      return;
+    }
     if (!_formKey.currentState!.validate()) return;
 
     await ref
@@ -59,6 +75,8 @@ class _CreatorDetailsScreenState extends ConsumerState<CreatorDetailsScreen> {
           categories: _selectedCategories.toList(),
           stateName: _selectedState!,
           city: _cityController.text.trim(),
+          gender: _selectedGender!,
+          collaborationPreference: _selectedCollabPreference!,
         );
     if (!mounted) return;
 
@@ -186,6 +204,16 @@ class _CreatorDetailsScreenState extends ConsumerState<CreatorDetailsScreen> {
                       ? 'Enter your city'
                       : null,
                   onSubmitted: (_) => _continue(),
+                ),
+                const SizedBox(height: 24),
+                GenderCollaborationFields(
+                  selectedGender: _selectedGender,
+                  selectedPreference: _selectedCollabPreference,
+                  enabled: !isLoading,
+                  onGenderChanged: (value) =>
+                      setState(() => _selectedGender = value),
+                  onPreferenceChanged: (value) =>
+                      setState(() => _selectedCollabPreference = value),
                 ),
                 const SizedBox(height: 24),
                 AuthButton(

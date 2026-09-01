@@ -16,6 +16,8 @@ class AppRoutes {
 
   static const creatorDetails = '/creator/onboarding/details';
   static const creatorInstagramConnect = '/creator/onboarding/instagram';
+  static const creatorAdditionalDetails =
+      '/creator/onboarding/additional-details';
   static const creatorVerificationPending = '/creator/onboarding/review';
 
   static const brandDetails = '/brand/onboarding/details';

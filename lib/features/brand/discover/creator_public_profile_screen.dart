@@ -206,6 +206,31 @@ class CreatorPublicProfileScreen extends ConsumerWidget {
                   const SizedBox(height: 16),
                   Text(profile.bio!, style: AppTextStyles.bodyLarge),
                 ],
+                if (profile.gender != null ||
+                    profile.collaborationPreference != null) ...[
+                  const SizedBox(height: 12),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: [
+                      if (profile.gender != null)
+                        Chip(
+                          avatar: const Icon(Icons.person_outline, size: 16),
+                          label: Text(profile.gender!.label),
+                        ),
+                      if (profile.collaborationPreference != null)
+                        Chip(
+                          avatar: const Icon(
+                            Icons.handshake_outlined,
+                            size: 16,
+                          ),
+                          label: Text(
+                            profile.collaborationPreference!.shortLabel,
+                          ),
+                        ),
+                    ],
+                  ),
+                ],
                 instagramAsync.when(
                   data: (account) =>
                       account?.status == InstagramConnectionStatus.connected

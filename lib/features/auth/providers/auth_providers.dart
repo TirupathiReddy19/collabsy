@@ -5,6 +5,8 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../../../core/services/firebase_service.dart';
 import '../../../shared/models/user_role.dart';
+import '../../creator/models/collaboration_preference.dart';
+import '../../creator/models/creator_gender.dart';
 import '../data/auth_repository.dart';
 import '../models/app_user_profile.dart';
 import '../models/otp_verification_args.dart';
@@ -339,6 +341,8 @@ class AuthController extends _$AuthController {
     required List<String> categories,
     required String stateName,
     required String city,
+    required CreatorGender gender,
+    required CollaborationPreference collaborationPreference,
   }) async {
     state = const AsyncLoading();
     state = await AsyncValue.guard(() async {
@@ -361,6 +365,8 @@ class AuthController extends _$AuthController {
         categories: categories,
         stateName: stateName,
         city: city,
+        gender: gender,
+        collaborationPreference: collaborationPreference,
       );
     });
   }

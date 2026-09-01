@@ -3,6 +3,8 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 import '../../../core/services/firebase_service.dart';
 import '../../auth/providers/auth_providers.dart';
 import '../data/creator_profile_repository.dart';
+import '../models/collaboration_preference.dart';
+import '../models/creator_gender.dart';
 import '../models/creator_profile.dart';
 
 part 'creator_profile_providers.g.dart';
@@ -95,6 +97,8 @@ class CreatorProfileController extends _$CreatorProfileController {
     List<String>? languages,
     String? stateName,
     String? city,
+    CreatorGender? gender,
+    CollaborationPreference? collaborationPreference,
   }) async {
     state = const AsyncLoading();
     state = await AsyncValue.guard(() async {
@@ -111,6 +115,8 @@ class CreatorProfileController extends _$CreatorProfileController {
             languages: languages,
             state: stateName,
             city: city,
+            gender: gender,
+            collaborationPreference: collaborationPreference,
           );
       ref.invalidate(ownCreatorProfileProvider);
     });

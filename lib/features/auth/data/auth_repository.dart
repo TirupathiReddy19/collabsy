@@ -14,6 +14,8 @@ import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 
 import '../../../core/utils/validators.dart';
 import '../../../shared/models/user_role.dart';
+import '../../creator/models/collaboration_preference.dart';
+import '../../creator/models/creator_gender.dart';
 import '../models/app_user_profile.dart';
 
 /// The only place in the `auth` feature that talks to Firebase directly.
@@ -370,6 +372,8 @@ class AuthRepository {
     required List<String> categories,
     required String stateName,
     required String city,
+    required CreatorGender gender,
+    required CollaborationPreference collaborationPreference,
   }) async {
     await _firestore.collection('creatorProfiles').doc(userId).set({
       'displayName': displayName,
@@ -378,6 +382,8 @@ class AuthRepository {
       'country': 'India',
       'state': stateName,
       'city': city,
+      'gender': gender.toDbValue(),
+      'collaborationPreference': collaborationPreference.toDbValue(),
       'updatedAt': FieldValue.serverTimestamp(),
     }, SetOptions(merge: true));
   }

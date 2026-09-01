@@ -15,7 +15,7 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$CreatorProfile {
 
- String get id; String? get displayName; String? get bio; List<String> get categories; List<String> get languages; String get country; String? get state; String? get city; VerificationStatus get verificationStatus;
+ String get id; String? get displayName; String? get bio; List<String> get categories; List<String> get languages; String get country; String? get state; String? get city; VerificationStatus get verificationStatus; CreatorGender? get gender; CollaborationPreference? get collaborationPreference;
 /// Create a copy of CreatorProfile
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -28,16 +28,16 @@ $CreatorProfileCopyWith<CreatorProfile> get copyWith => _$CreatorProfileCopyWith
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is CreatorProfile&&(identical(other.id, id) || other.id == id)&&(identical(other.displayName, displayName) || other.displayName == displayName)&&(identical(other.bio, bio) || other.bio == bio)&&const DeepCollectionEquality().equals(other.categories, categories)&&const DeepCollectionEquality().equals(other.languages, languages)&&(identical(other.country, country) || other.country == country)&&(identical(other.state, state) || other.state == state)&&(identical(other.city, city) || other.city == city)&&(identical(other.verificationStatus, verificationStatus) || other.verificationStatus == verificationStatus));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is CreatorProfile&&(identical(other.id, id) || other.id == id)&&(identical(other.displayName, displayName) || other.displayName == displayName)&&(identical(other.bio, bio) || other.bio == bio)&&const DeepCollectionEquality().equals(other.categories, categories)&&const DeepCollectionEquality().equals(other.languages, languages)&&(identical(other.country, country) || other.country == country)&&(identical(other.state, state) || other.state == state)&&(identical(other.city, city) || other.city == city)&&(identical(other.verificationStatus, verificationStatus) || other.verificationStatus == verificationStatus)&&(identical(other.gender, gender) || other.gender == gender)&&(identical(other.collaborationPreference, collaborationPreference) || other.collaborationPreference == collaborationPreference));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,displayName,bio,const DeepCollectionEquality().hash(categories),const DeepCollectionEquality().hash(languages),country,state,city,verificationStatus);
+int get hashCode => Object.hash(runtimeType,id,displayName,bio,const DeepCollectionEquality().hash(categories),const DeepCollectionEquality().hash(languages),country,state,city,verificationStatus,gender,collaborationPreference);
 
 @override
 String toString() {
-  return 'CreatorProfile(id: $id, displayName: $displayName, bio: $bio, categories: $categories, languages: $languages, country: $country, state: $state, city: $city, verificationStatus: $verificationStatus)';
+  return 'CreatorProfile(id: $id, displayName: $displayName, bio: $bio, categories: $categories, languages: $languages, country: $country, state: $state, city: $city, verificationStatus: $verificationStatus, gender: $gender, collaborationPreference: $collaborationPreference)';
 }
 
 
@@ -48,7 +48,7 @@ abstract mixin class $CreatorProfileCopyWith<$Res>  {
   factory $CreatorProfileCopyWith(CreatorProfile value, $Res Function(CreatorProfile) _then) = _$CreatorProfileCopyWithImpl;
 @useResult
 $Res call({
- String id, String? displayName, String? bio, List<String> categories, List<String> languages, String country, String? state, String? city, VerificationStatus verificationStatus
+ String id, String? displayName, String? bio, List<String> categories, List<String> languages, String country, String? state, String? city, VerificationStatus verificationStatus, CreatorGender? gender, CollaborationPreference? collaborationPreference
 });
 
 
@@ -65,7 +65,7 @@ class _$CreatorProfileCopyWithImpl<$Res>
 
 /// Create a copy of CreatorProfile
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? displayName = freezed,Object? bio = freezed,Object? categories = null,Object? languages = null,Object? country = null,Object? state = freezed,Object? city = freezed,Object? verificationStatus = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? displayName = freezed,Object? bio = freezed,Object? categories = null,Object? languages = null,Object? country = null,Object? state = freezed,Object? city = freezed,Object? verificationStatus = null,Object? gender = freezed,Object? collaborationPreference = freezed,}) {
   return _then(_self.copyWith(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,displayName: freezed == displayName ? _self.displayName : displayName // ignore: cast_nullable_to_non_nullable
@@ -76,7 +76,9 @@ as List<String>,country: null == country ? _self.country : country // ignore: ca
 as String,state: freezed == state ? _self.state : state // ignore: cast_nullable_to_non_nullable
 as String?,city: freezed == city ? _self.city : city // ignore: cast_nullable_to_non_nullable
 as String?,verificationStatus: null == verificationStatus ? _self.verificationStatus : verificationStatus // ignore: cast_nullable_to_non_nullable
-as VerificationStatus,
+as VerificationStatus,gender: freezed == gender ? _self.gender : gender // ignore: cast_nullable_to_non_nullable
+as CreatorGender?,collaborationPreference: freezed == collaborationPreference ? _self.collaborationPreference : collaborationPreference // ignore: cast_nullable_to_non_nullable
+as CollaborationPreference?,
   ));
 }
 
@@ -161,10 +163,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String? displayName,  String? bio,  List<String> categories,  List<String> languages,  String country,  String? state,  String? city,  VerificationStatus verificationStatus)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String? displayName,  String? bio,  List<String> categories,  List<String> languages,  String country,  String? state,  String? city,  VerificationStatus verificationStatus,  CreatorGender? gender,  CollaborationPreference? collaborationPreference)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _CreatorProfile() when $default != null:
-return $default(_that.id,_that.displayName,_that.bio,_that.categories,_that.languages,_that.country,_that.state,_that.city,_that.verificationStatus);case _:
+return $default(_that.id,_that.displayName,_that.bio,_that.categories,_that.languages,_that.country,_that.state,_that.city,_that.verificationStatus,_that.gender,_that.collaborationPreference);case _:
   return orElse();
 
 }
@@ -182,10 +184,10 @@ return $default(_that.id,_that.displayName,_that.bio,_that.categories,_that.lang
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String? displayName,  String? bio,  List<String> categories,  List<String> languages,  String country,  String? state,  String? city,  VerificationStatus verificationStatus)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String? displayName,  String? bio,  List<String> categories,  List<String> languages,  String country,  String? state,  String? city,  VerificationStatus verificationStatus,  CreatorGender? gender,  CollaborationPreference? collaborationPreference)  $default,) {final _that = this;
 switch (_that) {
 case _CreatorProfile():
-return $default(_that.id,_that.displayName,_that.bio,_that.categories,_that.languages,_that.country,_that.state,_that.city,_that.verificationStatus);case _:
+return $default(_that.id,_that.displayName,_that.bio,_that.categories,_that.languages,_that.country,_that.state,_that.city,_that.verificationStatus,_that.gender,_that.collaborationPreference);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -202,10 +204,10 @@ return $default(_that.id,_that.displayName,_that.bio,_that.categories,_that.lang
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String? displayName,  String? bio,  List<String> categories,  List<String> languages,  String country,  String? state,  String? city,  VerificationStatus verificationStatus)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String? displayName,  String? bio,  List<String> categories,  List<String> languages,  String country,  String? state,  String? city,  VerificationStatus verificationStatus,  CreatorGender? gender,  CollaborationPreference? collaborationPreference)?  $default,) {final _that = this;
 switch (_that) {
 case _CreatorProfile() when $default != null:
-return $default(_that.id,_that.displayName,_that.bio,_that.categories,_that.languages,_that.country,_that.state,_that.city,_that.verificationStatus);case _:
+return $default(_that.id,_that.displayName,_that.bio,_that.categories,_that.languages,_that.country,_that.state,_that.city,_that.verificationStatus,_that.gender,_that.collaborationPreference);case _:
   return null;
 
 }
@@ -217,7 +219,7 @@ return $default(_that.id,_that.displayName,_that.bio,_that.categories,_that.lang
 @JsonSerializable()
 
 class _CreatorProfile implements CreatorProfile {
-  const _CreatorProfile({required this.id, this.displayName, this.bio, final  List<String> categories = const [], final  List<String> languages = const [], this.country = 'India', this.state, this.city, this.verificationStatus = VerificationStatus.pending}): _categories = categories,_languages = languages;
+  const _CreatorProfile({required this.id, this.displayName, this.bio, final  List<String> categories = const [], final  List<String> languages = const [], this.country = 'India', this.state, this.city, this.verificationStatus = VerificationStatus.pending, this.gender, this.collaborationPreference}): _categories = categories,_languages = languages;
   factory _CreatorProfile.fromJson(Map<String, dynamic> json) => _$CreatorProfileFromJson(json);
 
 @override final  String id;
@@ -241,6 +243,8 @@ class _CreatorProfile implements CreatorProfile {
 @override final  String? state;
 @override final  String? city;
 @override@JsonKey() final  VerificationStatus verificationStatus;
+@override final  CreatorGender? gender;
+@override final  CollaborationPreference? collaborationPreference;
 
 /// Create a copy of CreatorProfile
 /// with the given fields replaced by the non-null parameter values.
@@ -255,16 +259,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _CreatorProfile&&(identical(other.id, id) || other.id == id)&&(identical(other.displayName, displayName) || other.displayName == displayName)&&(identical(other.bio, bio) || other.bio == bio)&&const DeepCollectionEquality().equals(other._categories, _categories)&&const DeepCollectionEquality().equals(other._languages, _languages)&&(identical(other.country, country) || other.country == country)&&(identical(other.state, state) || other.state == state)&&(identical(other.city, city) || other.city == city)&&(identical(other.verificationStatus, verificationStatus) || other.verificationStatus == verificationStatus));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _CreatorProfile&&(identical(other.id, id) || other.id == id)&&(identical(other.displayName, displayName) || other.displayName == displayName)&&(identical(other.bio, bio) || other.bio == bio)&&const DeepCollectionEquality().equals(other._categories, _categories)&&const DeepCollectionEquality().equals(other._languages, _languages)&&(identical(other.country, country) || other.country == country)&&(identical(other.state, state) || other.state == state)&&(identical(other.city, city) || other.city == city)&&(identical(other.verificationStatus, verificationStatus) || other.verificationStatus == verificationStatus)&&(identical(other.gender, gender) || other.gender == gender)&&(identical(other.collaborationPreference, collaborationPreference) || other.collaborationPreference == collaborationPreference));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,displayName,bio,const DeepCollectionEquality().hash(_categories),const DeepCollectionEquality().hash(_languages),country,state,city,verificationStatus);
+int get hashCode => Object.hash(runtimeType,id,displayName,bio,const DeepCollectionEquality().hash(_categories),const DeepCollectionEquality().hash(_languages),country,state,city,verificationStatus,gender,collaborationPreference);
 
 @override
 String toString() {
-  return 'CreatorProfile(id: $id, displayName: $displayName, bio: $bio, categories: $categories, languages: $languages, country: $country, state: $state, city: $city, verificationStatus: $verificationStatus)';
+  return 'CreatorProfile(id: $id, displayName: $displayName, bio: $bio, categories: $categories, languages: $languages, country: $country, state: $state, city: $city, verificationStatus: $verificationStatus, gender: $gender, collaborationPreference: $collaborationPreference)';
 }
 
 
@@ -275,7 +279,7 @@ abstract mixin class _$CreatorProfileCopyWith<$Res> implements $CreatorProfileCo
   factory _$CreatorProfileCopyWith(_CreatorProfile value, $Res Function(_CreatorProfile) _then) = __$CreatorProfileCopyWithImpl;
 @override @useResult
 $Res call({
- String id, String? displayName, String? bio, List<String> categories, List<String> languages, String country, String? state, String? city, VerificationStatus verificationStatus
+ String id, String? displayName, String? bio, List<String> categories, List<String> languages, String country, String? state, String? city, VerificationStatus verificationStatus, CreatorGender? gender, CollaborationPreference? collaborationPreference
 });
 
 
@@ -292,7 +296,7 @@ class __$CreatorProfileCopyWithImpl<$Res>
 
 /// Create a copy of CreatorProfile
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? displayName = freezed,Object? bio = freezed,Object? categories = null,Object? languages = null,Object? country = null,Object? state = freezed,Object? city = freezed,Object? verificationStatus = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? displayName = freezed,Object? bio = freezed,Object? categories = null,Object? languages = null,Object? country = null,Object? state = freezed,Object? city = freezed,Object? verificationStatus = null,Object? gender = freezed,Object? collaborationPreference = freezed,}) {
   return _then(_CreatorProfile(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,displayName: freezed == displayName ? _self.displayName : displayName // ignore: cast_nullable_to_non_nullable
@@ -303,7 +307,9 @@ as List<String>,country: null == country ? _self.country : country // ignore: ca
 as String,state: freezed == state ? _self.state : state // ignore: cast_nullable_to_non_nullable
 as String?,city: freezed == city ? _self.city : city // ignore: cast_nullable_to_non_nullable
 as String?,verificationStatus: null == verificationStatus ? _self.verificationStatus : verificationStatus // ignore: cast_nullable_to_non_nullable
-as VerificationStatus,
+as VerificationStatus,gender: freezed == gender ? _self.gender : gender // ignore: cast_nullable_to_non_nullable
+as CreatorGender?,collaborationPreference: freezed == collaborationPreference ? _self.collaborationPreference : collaborationPreference // ignore: cast_nullable_to_non_nullable
+as CollaborationPreference?,
   ));
 }
 
