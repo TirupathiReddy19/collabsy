@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { gsap } from '../lib/gsap'
 import { useScrollReveal } from '../lib/useScrollReveal'
 import { HeroCanvas } from '../three/HeroCanvas'
+import { LazyCanvas } from '../three/LazyCanvas'
 import { SectionHeading } from '../components/SectionHeading'
 import { WaitlistButton } from '../components/WaitlistButton'
 import './Home.css'
@@ -126,6 +127,7 @@ export function Home() {
       </section>
 
       <section className="section">
+        <LazyCanvas loader={() => import('../three/JourneyCanvasScene')} />
         <div className="container">
           <SectionHeading
             eyebrow="How it works"
@@ -192,6 +194,7 @@ export function Home() {
       </section>
 
       <section className="section section-dark home-final-cta">
+        <LazyCanvas loader={() => import('../three/ConvergenceCanvasScene')} />
         <div className="home-final-glow" aria-hidden="true" />
         <div className="container home-final-inner">
           <h2 className="display-heading home-final-title">Ready to get started?</h2>

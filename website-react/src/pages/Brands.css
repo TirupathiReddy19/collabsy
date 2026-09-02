@@ -70,9 +70,16 @@
   width: 200px;
   padding: 28px 16px;
   border-radius: 18px;
-  background: rgba(255, 255, 255, 0.04);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  /* Opaque enough that the convergence scene behind this section reads as
+     atmosphere in the gaps between cards, never competing with the text
+     inside one — a card sitting right over the bright core previously
+     became unreadable. */
+  background: rgba(11, 11, 13, 0.82);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  border: 1px solid rgba(255, 255, 255, 0.14);
   position: relative;
+  z-index: 1;
 }
 
 .engine-input-label {
@@ -123,4 +130,9 @@
   font-weight: 600;
   color: var(--color-primary);
   white-space: nowrap;
+  position: relative;
+  z-index: 1;
+  /* Keeps this readable regardless of where the convergence scene's
+     bright core happens to sit behind it. */
+  text-shadow: 0 2px 16px rgba(11, 11, 13, 0.9), 0 0 4px rgba(11, 11, 13, 0.9);
 }

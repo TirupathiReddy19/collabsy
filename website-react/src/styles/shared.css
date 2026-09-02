@@ -144,6 +144,13 @@
   background: var(--color-primary-light);
   text-align: center;
   padding: 96px 0 72px;
+  position: relative;
+  overflow: hidden;
+}
+
+.page-hero .container {
+  position: relative;
+  z-index: 1;
 }
 
 @media (max-width: 900px) {

@@ -1,5 +1,6 @@
 import { useScrollReveal } from '../lib/useScrollReveal'
 import { SectionHeading } from '../components/SectionHeading'
+import { LazyCanvas } from '../three/LazyCanvas'
 
 const VALUES = [
   {
@@ -30,6 +31,7 @@ export function About() {
   return (
     <>
       <section className="page-hero">
+        <LazyCanvas loader={() => import('../three/JourneyCanvasScene')} />
         <div className="container">
           <h1 className="page-hero-title display-heading">Why we built Collabsy</h1>
         </div>

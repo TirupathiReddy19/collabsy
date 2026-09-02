@@ -2,6 +2,7 @@ import { useScrollReveal } from '../lib/useScrollReveal'
 import { SectionHeading } from '../components/SectionHeading'
 import { Bullet } from '../components/Bullet'
 import { WaitlistButton } from '../components/WaitlistButton'
+import { LazyCanvas } from '../three/LazyCanvas'
 import './Creators.css'
 
 const STEPS = [
@@ -33,6 +34,7 @@ export function Creators() {
   return (
     <>
       <section className="page-hero">
+        <LazyCanvas loader={() => import('../three/ConvergenceCanvasSceneViolet')} />
         <div className="container">
           <h1 className="page-hero-title display-heading">
             Turn your influence into
@@ -84,7 +86,8 @@ export function Creators() {
       </section>
 
       <section className="section" style={{ background: 'var(--color-background)' }}>
-        <div className="container">
+        <LazyCanvas loader={() => import('../three/JourneyCanvasScene')} />
+        <div className="container" style={{ position: 'relative', zIndex: 1 }}>
           <SectionHeading eyebrow="How it works" title="Four steps to your next collaboration" />
           <div className="step-grid" ref={stepsRef}>
             {STEPS.map((s) => (
@@ -100,8 +103,9 @@ export function Creators() {
         </div>
       </section>
 
-      <section className="section section-dark" style={{ textAlign: 'center' }}>
-        <div className="container">
+      <section className="section section-dark" style={{ textAlign: 'center', position: 'relative', overflow: 'hidden' }}>
+        <LazyCanvas loader={() => import('../three/ConvergenceCanvasSceneViolet')} />
+        <div className="container" style={{ position: 'relative', zIndex: 1 }}>
           <h2 className="display-heading" style={{ color: 'white', fontSize: 'clamp(28px,4vw,42px)' }}>
             Ready to find your next brand partner?
           </h2>

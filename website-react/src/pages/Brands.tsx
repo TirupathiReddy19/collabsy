@@ -4,6 +4,7 @@ import { SectionHeading } from '../components/SectionHeading'
 import { Bullet } from '../components/Bullet'
 import { WaitlistButton } from '../components/WaitlistButton'
 import { CampaignRequestForm } from '../components/CampaignRequestForm'
+import { LazyCanvas } from '../three/LazyCanvas'
 import './Brands.css'
 
 const SERVICES = [
@@ -75,6 +76,7 @@ export function Brands() {
   return (
     <>
       <section className="page-hero">
+        <LazyCanvas loader={() => import('../three/ConvergenceCanvasScene')} />
         <div className="container">
           <h1 className="page-hero-title display-heading">Get sales, not just views</h1>
           <p className="page-hero-sub body-lead">
@@ -117,7 +119,8 @@ export function Brands() {
       </section>
 
       <section className="section brands-engine">
-        <div className="container">
+        <LazyCanvas loader={() => import('../three/ConvergenceCanvasScene')} />
+        <div className="container" style={{ position: 'relative', zIndex: 1 }}>
           <SectionHeading
             eyebrow="Our approach"
             title="The campaign engine behind every managed plan"
@@ -160,7 +163,8 @@ export function Brands() {
       </section>
 
       <section className="section">
-        <div className="container">
+        <LazyCanvas loader={() => import('../three/JourneyCanvasScene')} />
+        <div className="container" style={{ position: 'relative', zIndex: 1 }}>
           <SectionHeading eyebrow="How it works" title="Our proven 4-step process" />
           <div className="step-grid" ref={stepRef}>
             {MANAGED_STEPS.map((s) => (
