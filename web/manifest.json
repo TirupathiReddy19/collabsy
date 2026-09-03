@@ -1,11 +1,11 @@
 {
-    "name": "collabsy",
-    "short_name": "collabsy",
+    "name": "Collabsy",
+    "short_name": "Collabsy",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#F97316",
     "theme_color": "#F97316",
-    "description": "A new Flutter project.",
+    "description": "Collabsy connects D2C brands with micro-influencers for campaigns that convert.",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [

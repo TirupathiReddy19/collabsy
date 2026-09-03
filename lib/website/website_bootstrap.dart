@@ -26,10 +26,17 @@ class _WebsiteBootstrapState extends State<WebsiteBootstrap> {
       future: _initFuture,
       builder: (context, snapshot) {
         if (snapshot.hasError) {
+          // Deliberately `builder:`, not `home:` — a `home` (or `routes` /
+          // `onGenerateRoute`) makes MaterialApp stand up its own Navigator,
+          // which on web immediately writes browser history for its own
+          // implicit "/" route. That clobbers the real address bar URL
+          // (e.g. /contact) before the real WebsiteApp/GoRouter below ever
+          // mounts to read it, silently redirecting every deep link to
+          // Home. `builder`-only skips the Navigator entirely.
           return MaterialApp(
             debugShowCheckedModeBanner: false,
             theme: AppTheme.lightTheme,
-            home: Scaffold(
+            builder: (context, child) => Scaffold(
               body: Center(
                 child: Padding(
                   padding: const EdgeInsets.all(24),
@@ -44,10 +51,12 @@ class _WebsiteBootstrapState extends State<WebsiteBootstrap> {
           );
         }
         if (snapshot.connectionState != ConnectionState.done) {
+          // See the comment above — `builder:`, not `home:`, for the same
+          // reason.
           return MaterialApp(
             debugShowCheckedModeBanner: false,
             theme: AppTheme.lightTheme,
-            home: const Scaffold(
+            builder: (context, child) => const Scaffold(
               body: Center(child: CircularProgressIndicator()),
             ),
           );

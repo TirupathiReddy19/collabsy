@@ -18,7 +18,14 @@ import 'widgets/website_shell.dart';
 /// (including on /privacy and /terms) stays consistent site-wide.
 final websiteRouterProvider = Provider<GoRouter>((ref) {
   return GoRouter(
-    initialLocation: '/',
+    // Deliberately no `initialLocation` — on web, GoRouter falls back to
+    // reading the real browser address bar (via `Uri.base`) as the first
+    // route only when this is left unset. Explicitly setting it to '/'
+    // (even though that's already the default) overrides the actual URL
+    // on every cold load, which was silently redirecting every deep link
+    // (/contact, /brands, /privacy, /delete-account, ...) to Home —
+    // including the Play Store/Apple-required standalone
+    // /delete-account link.
     routes: [
       ShellRoute(
         builder: (context, state, child) => WebsiteShell(child: child),
