@@ -6,6 +6,8 @@ workflows:
     integrations:
       app_store_connect: codemagic_api_key
     environment:
+      groups:
+        - ios_signing
       vars:
         BUNDLE_ID: "online.collabsy.app"
         APP_STORE_APPLE_ID: 6808197823
