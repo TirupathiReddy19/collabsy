@@ -5,6 +5,10 @@ import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_radius.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_text_styles.dart';
+import '../widgets/hero_backdrop.dart';
+import '../widgets/hover_lift.dart';
+import '../widgets/scroll_reveal_fade.dart';
+import '../widgets/step_icon.dart';
 import '../widgets/website_section.dart';
 import '../widgets/website_section_heading.dart';
 
@@ -44,16 +48,23 @@ class WebsiteAboutScreen extends StatelessWidget {
 
     return Column(
       children: [
-        WebsiteSection(
-          backgroundColor: AppColors.primaryLight,
-          child: Column(
+        ColoredBox(
+          color: AppColors.primaryLight,
+          child: Stack(
             children: [
-              Text(
-                'Why we built Collabsy',
-                textAlign: TextAlign.center,
-                style: isWide
-                    ? AppTextStyles.displayLarge.copyWith(fontSize: 44)
-                    : AppTextStyles.displayLarge,
+              const HeroBackdrop(),
+              WebsiteSection(
+                child: Column(
+                  children: [
+                    Text(
+                      'Why we built Collabsy',
+                      textAlign: TextAlign.center,
+                      style: isWide
+                          ? AppTextStyles.displayLarge.copyWith(fontSize: 44)
+                          : AppTextStyles.displayLarge,
+                    ),
+                  ],
+                ),
               ),
             ],
           ),
@@ -96,36 +107,44 @@ class WebsiteAboutScreen extends StatelessWidget {
           backgroundColor: AppColors.background,
           child: Column(
             children: [
-              const WebsiteSectionHeading(title: 'What we optimize for'),
+              ScrollRevealFade(
+                child: const WebsiteSectionHeading(title: 'What we optimize for'),
+              ),
               const SizedBox(height: AppSpacing.xl),
               Wrap(
                 spacing: 24,
                 runSpacing: 24,
                 children: [
-                  for (final (icon, title, body) in _values)
-                    SizedBox(
-                      width: 320,
-                      child: Container(
-                        padding: const EdgeInsets.all(AppSpacing.lg),
-                        decoration: BoxDecoration(
-                          color: AppColors.surface,
-                          borderRadius: BorderRadius.circular(AppRadius.xl),
-                          border: Border.all(color: AppColors.border),
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Icon(icon, color: AppColors.primary, size: 26),
-                            const SizedBox(height: 12),
-                            Text(title, style: AppTextStyles.titleLarge),
-                            const SizedBox(height: 6),
-                            Text(
-                              body,
-                              style: AppTextStyles.bodyMedium.copyWith(
-                                color: AppColors.textSecondary,
-                              ),
+                  for (final (index, (icon, title, body)) in _values.indexed)
+                    ScrollRevealFade(
+                      delay: Duration(milliseconds: index * 80),
+                      child: SizedBox(
+                        width: 320,
+                        child: HoverLift(
+                          borderRadius: AppRadius.xl,
+                          child: Container(
+                            padding: const EdgeInsets.all(AppSpacing.lg),
+                            decoration: BoxDecoration(
+                              color: AppColors.surface,
+                              borderRadius: BorderRadius.circular(AppRadius.xl),
+                              border: Border.all(color: AppColors.border),
                             ),
-                          ],
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                StepIcon(icon: icon),
+                                const SizedBox(height: 12),
+                                Text(title, style: AppTextStyles.titleLarge),
+                                const SizedBox(height: 6),
+                                Text(
+                                  body,
+                                  style: AppTextStyles.bodyMedium.copyWith(
+                                    color: AppColors.textSecondary,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
                         ),
                       ),
                     ),

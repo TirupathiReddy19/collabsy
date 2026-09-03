@@ -5,6 +5,9 @@ import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_radius.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_text_styles.dart';
+import '../widgets/hero_backdrop.dart';
+import '../widgets/hover_lift.dart';
+import '../widgets/scroll_reveal_fade.dart';
 import '../widgets/waitlist_cta_button.dart';
 import '../widgets/website_bullet_item.dart';
 import '../widgets/website_section.dart';
@@ -46,33 +49,40 @@ class WebsiteCreatorsScreen extends StatelessWidget {
 
     return Column(
       children: [
-        WebsiteSection(
-          backgroundColor: AppColors.primaryLight,
-          child: Column(
+        ColoredBox(
+          color: AppColors.primaryLight,
+          child: Stack(
             children: [
-              Text(
-                'Turn your influence into\nreal brand partnerships',
-                textAlign: TextAlign.center,
-                style: isWide
-                    ? AppTextStyles.displayLarge.copyWith(fontSize: 44)
-                    : AppTextStyles.displayLarge,
-              ),
-              const SizedBox(height: AppSpacing.md),
-              ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 600),
-                child: Text(
-                  'Collabsy connects you with D2C brands looking for '
-                  'creators like you — discover campaigns, apply, and work '
-                  'directly with brands you actually want to collaborate '
-                  'with.',
-                  textAlign: TextAlign.center,
-                  style: AppTextStyles.bodyLarge.copyWith(
-                    color: AppColors.textSecondary,
-                  ),
+              const HeroBackdrop(),
+              WebsiteSection(
+                child: Column(
+                  children: [
+                    Text(
+                      'Turn your influence into\nreal brand partnerships',
+                      textAlign: TextAlign.center,
+                      style: isWide
+                          ? AppTextStyles.displayLarge.copyWith(fontSize: 44)
+                          : AppTextStyles.displayLarge,
+                    ),
+                    const SizedBox(height: AppSpacing.md),
+                    ConstrainedBox(
+                      constraints: const BoxConstraints(maxWidth: 600),
+                      child: Text(
+                        'Collabsy connects you with D2C brands looking for '
+                        'creators like you — discover campaigns, apply, and '
+                        'work directly with brands you actually want to '
+                        'collaborate with.',
+                        textAlign: TextAlign.center,
+                        style: AppTextStyles.bodyLarge.copyWith(
+                          color: AppColors.textSecondary,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: AppSpacing.lg),
+                    const SizedBox(width: 260, child: WaitlistCtaButton()),
+                  ],
                 ),
               ),
-              const SizedBox(height: AppSpacing.lg),
-              const SizedBox(width: 260, child: WaitlistCtaButton()),
             ],
           ),
         ),
@@ -116,7 +126,9 @@ class WebsiteCreatorsScreen extends StatelessWidget {
               ),
               SizedBox(
                 width: 460,
-                child: Container(
+                child: HoverLift(
+                  borderRadius: AppRadius.xxl,
+                  child: Container(
                   padding: const EdgeInsets.all(AppSpacing.lg),
                   decoration: BoxDecoration(
                     color: AppColors.creator.withValues(alpha: 0.06),
@@ -150,6 +162,7 @@ class WebsiteCreatorsScreen extends StatelessWidget {
                       ),
                     ],
                   ),
+                  ),
                 ),
               ),
             ],
@@ -159,37 +172,42 @@ class WebsiteCreatorsScreen extends StatelessWidget {
           backgroundColor: AppColors.background,
           child: Column(
             children: [
-              const WebsiteSectionHeading(
-                eyebrow: 'How it works',
-                title: 'Four steps to your next collaboration',
+              ScrollRevealFade(
+                child: const WebsiteSectionHeading(
+                  eyebrow: 'How it works',
+                  title: 'Four steps to your next collaboration',
+                ),
               ),
               const SizedBox(height: AppSpacing.xl),
               Wrap(
                 spacing: 24,
                 runSpacing: 24,
                 children: [
-                  for (final (number, title, body) in _creatorSteps)
-                    SizedBox(
-                      width: 240,
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            number,
-                            style: AppTextStyles.displayMedium.copyWith(
-                              color: AppColors.creator.withValues(alpha: 0.35),
+                  for (final (index, (number, title, body)) in _creatorSteps.indexed)
+                    ScrollRevealFade(
+                      delay: Duration(milliseconds: index * 80),
+                      child: SizedBox(
+                        width: 240,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              number,
+                              style: AppTextStyles.displayMedium.copyWith(
+                                color: AppColors.creator.withValues(alpha: 0.35),
+                              ),
                             ),
-                          ),
-                          const SizedBox(height: 4),
-                          Text(title, style: AppTextStyles.titleLarge),
-                          const SizedBox(height: 6),
-                          Text(
-                            body,
-                            style: AppTextStyles.bodyMedium.copyWith(
-                              color: AppColors.textSecondary,
+                            const SizedBox(height: 4),
+                            Text(title, style: AppTextStyles.titleLarge),
+                            const SizedBox(height: 6),
+                            Text(
+                              body,
+                              style: AppTextStyles.bodyMedium.copyWith(
+                                color: AppColors.textSecondary,
+                              ),
                             ),
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
                     ),
                 ],

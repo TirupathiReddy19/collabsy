@@ -6,6 +6,10 @@ import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_radius.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_text_styles.dart';
+import '../widgets/hero_backdrop.dart';
+import '../widgets/hover_lift.dart';
+import '../widgets/scroll_reveal_fade.dart';
+import '../widgets/step_icon.dart';
 import '../widgets/waitlist_cta_button.dart';
 import '../widgets/website_bullet_item.dart';
 import '../widgets/website_section.dart';
@@ -49,12 +53,14 @@ class WebsiteHomeScreen extends StatelessWidget {
         WebsiteSection(
           child: Column(
             children: [
-              const WebsiteSectionHeading(
-                eyebrow: 'How it works',
-                title: 'From first message to finished campaign',
-                subtitle:
-                    'The same four steps, whichever side of the table '
-                    "you're on.",
+              ScrollRevealFade(
+                child: const WebsiteSectionHeading(
+                  eyebrow: 'How it works',
+                  title: 'From first message to finished campaign',
+                  subtitle:
+                      'The same four steps, whichever side of the table '
+                      "you're on.",
+                ),
               ),
               const SizedBox(height: AppSpacing.xl),
               const _HowItWorksGrid(),
@@ -68,22 +74,28 @@ class WebsiteHomeScreen extends StatelessWidget {
         WebsiteSection(
           child: Column(
             children: [
-              Text(
-                'Why Collabsy',
-                textAlign: TextAlign.center,
-                style: AppTextStyles.displayMedium,
-              ),
-              const SizedBox(height: AppSpacing.sm),
-              ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 640),
-                child: Text(
-                  "We're just getting started, so instead of borrowed "
-                  "logos and made-up numbers, here's what actually guides "
-                  'how we build this.',
-                  textAlign: TextAlign.center,
-                  style: AppTextStyles.bodyLarge.copyWith(
-                    color: AppColors.textSecondary,
-                  ),
+              ScrollRevealFade(
+                child: Column(
+                  children: [
+                    Text(
+                      'Why Collabsy',
+                      textAlign: TextAlign.center,
+                      style: AppTextStyles.displayMedium,
+                    ),
+                    const SizedBox(height: AppSpacing.sm),
+                    ConstrainedBox(
+                      constraints: const BoxConstraints(maxWidth: 640),
+                      child: Text(
+                        "We're just getting started, so instead of "
+                        'borrowed logos and made-up numbers, here\'s what '
+                        'actually guides how we build this.',
+                        textAlign: TextAlign.center,
+                        style: AppTextStyles.bodyLarge.copyWith(
+                          color: AppColors.textSecondary,
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ),
               const SizedBox(height: AppSpacing.xl),
@@ -93,25 +105,29 @@ class WebsiteHomeScreen extends StatelessWidget {
         ),
         WebsiteSection(
           backgroundColor: AppColors.textPrimary,
-          child: Column(
-            children: [
-              Text(
-                'Ready to get started?',
-                textAlign: TextAlign.center,
-                style: AppTextStyles.displayMedium.copyWith(
-                  color: Colors.white,
+          child: ScrollRevealFade(
+            child: Column(
+              children: [
+                Text(
+                  'Ready to get started?',
+                  textAlign: TextAlign.center,
+                  style: AppTextStyles.displayMedium.copyWith(
+                    color: Colors.white,
+                  ),
                 ),
-              ),
-              const SizedBox(height: AppSpacing.sm),
-              Text(
-                'Creators and Brands both start the same way — join the '
-                'waitlist and we\'ll bring you in as we roll out.',
-                textAlign: TextAlign.center,
-                style: AppTextStyles.bodyLarge.copyWith(color: Colors.white70),
-              ),
-              const SizedBox(height: AppSpacing.lg),
-              const SizedBox(width: 280, child: WaitlistCtaButton()),
-            ],
+                const SizedBox(height: AppSpacing.sm),
+                Text(
+                  'Creators and Brands both start the same way — join the '
+                  'waitlist and we\'ll bring you in as we roll out.',
+                  textAlign: TextAlign.center,
+                  style: AppTextStyles.bodyLarge.copyWith(
+                    color: Colors.white70,
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.lg),
+                const SizedBox(width: 280, child: WaitlistCtaButton()),
+              ],
+            ),
           ),
         ),
       ],
@@ -126,69 +142,78 @@ class _Hero extends StatelessWidget {
   Widget build(BuildContext context) {
     final isWide = MediaQuery.sizeOf(context).width >= AppBreakpoints.tablet;
 
-    return WebsiteSection(
-      child: Column(
-        children: [
-          Text(
-            'Where Creators and Brands\nactually get work done',
-            textAlign: TextAlign.center,
-            style: isWide
-                ? AppTextStyles.displayLarge.copyWith(
-                    fontSize: 48,
-                    height: 1.15,
-                  )
-                : AppTextStyles.displayLarge,
-          ),
-          const SizedBox(height: AppSpacing.md),
-          ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 620),
-            child: Text(
-              'Collabsy connects D2C brands with micro-influencers for '
-              'campaigns that convert — discover, apply, chat, and '
-              'collaborate, all in one place.',
-              textAlign: TextAlign.center,
-              style: AppTextStyles.bodyLarge.copyWith(
-                color: AppColors.textSecondary,
-              ),
-            ),
-          ),
-          const SizedBox(height: AppSpacing.xl),
-          Wrap(
-            alignment: WrapAlignment.center,
-            spacing: 16,
-            runSpacing: 12,
+    return Stack(
+      children: [
+        const HeroBackdrop(),
+        WebsiteSection(
+          child: Column(
             children: [
-              SizedBox(
-                width: 220,
-                child: FilledButton(
-                  onPressed: () => context.go('/creators'),
-                  style: FilledButton.styleFrom(
-                    backgroundColor: AppColors.primary,
-                    minimumSize: const Size(0, 56),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(AppRadius.lg),
-                    ),
+              Text(
+                'Where Creators and Brands\nactually get work done',
+                textAlign: TextAlign.center,
+                style: isWide
+                    ? AppTextStyles.displayLarge.copyWith(
+                        fontSize: 52,
+                        height: 1.08,
+                        letterSpacing: -1.2,
+                      )
+                    : AppTextStyles.displayLarge.copyWith(
+                        height: 1.1,
+                        letterSpacing: -0.5,
+                      ),
+              ),
+              const SizedBox(height: AppSpacing.md),
+              ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 620),
+                child: Text(
+                  'Collabsy connects D2C brands with micro-influencers for '
+                  'campaigns that convert — discover, apply, chat, and '
+                  'collaborate, all in one place.',
+                  textAlign: TextAlign.center,
+                  style: AppTextStyles.bodyLarge.copyWith(
+                    color: AppColors.textSecondary,
                   ),
-                  child: const Text('For Creators'),
                 ),
               ),
-              SizedBox(
-                width: 220,
-                child: OutlinedButton(
-                  onPressed: () => context.go('/brands'),
-                  style: OutlinedButton.styleFrom(
-                    minimumSize: const Size(0, 56),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(AppRadius.lg),
+              const SizedBox(height: AppSpacing.xl),
+              Wrap(
+                alignment: WrapAlignment.center,
+                spacing: 16,
+                runSpacing: 12,
+                children: [
+                  SizedBox(
+                    width: 220,
+                    child: FilledButton(
+                      onPressed: () => context.go('/creators'),
+                      style: FilledButton.styleFrom(
+                        backgroundColor: AppColors.primary,
+                        minimumSize: const Size(0, 56),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(AppRadius.lg),
+                        ),
+                      ),
+                      child: const Text('For Creators'),
                     ),
                   ),
-                  child: const Text('For Brands'),
-                ),
+                  SizedBox(
+                    width: 220,
+                    child: OutlinedButton(
+                      onPressed: () => context.go('/brands'),
+                      style: OutlinedButton.styleFrom(
+                        minimumSize: const Size(0, 56),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(AppRadius.lg),
+                        ),
+                      ),
+                      child: const Text('For Brands'),
+                    ),
+                  ),
+                ],
               ),
             ],
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 }
@@ -202,36 +227,38 @@ class _HowItWorksGrid extends StatelessWidget {
       spacing: 24,
       runSpacing: 24,
       children: [
-        for (final (icon, title, body) in _howItWorks)
-          SizedBox(
-            width: 240,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Container(
-                  width: 48,
-                  height: 48,
-                  decoration: const BoxDecoration(
-                    color: AppColors.primaryLight,
-                    shape: BoxShape.circle,
+        for (final (index, (icon, title, body)) in _howItWorks.indexed)
+          ScrollRevealFade(
+            delay: Duration(milliseconds: index * 80),
+            child: SizedBox(
+              width: 240,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _StepIcon(icon: icon),
+                  const SizedBox(height: 14),
+                  Text(title, style: AppTextStyles.titleLarge),
+                  const SizedBox(height: 6),
+                  Text(
+                    body,
+                    style: AppTextStyles.bodyMedium.copyWith(
+                      color: AppColors.textSecondary,
+                    ),
                   ),
-                  child: Icon(icon, color: AppColors.primary, size: 22),
-                ),
-                const SizedBox(height: 14),
-                Text(title, style: AppTextStyles.titleLarge),
-                const SizedBox(height: 6),
-                Text(
-                  body,
-                  style: AppTextStyles.bodyMedium.copyWith(
-                    color: AppColors.textSecondary,
-                  ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
       ],
     );
   }
+}
+
+/// Kept as a thin alias so the rest of this file's `_StepIcon(icon: ...)`
+/// call sites don't need touching — the real widget now lives in
+/// `widgets/step_icon.dart` so Brands/Creators/About can reuse it too.
+class _StepIcon extends StepIcon {
+  const _StepIcon({required super.icon});
 }
 
 class _AudienceSplit extends StatelessWidget {
@@ -245,30 +272,35 @@ class _AudienceSplit extends StatelessWidget {
       children: [
         SizedBox(
           width: 460,
-          child: _AudienceCard(
-            title: 'For Creators',
-            color: AppColors.creator,
-            bullets: const [
-              'Discover paid campaigns from real D2C brands',
-              'Apply in a tap, chat with brands directly',
-              'Get verified and build a trustworthy profile',
-            ],
-            ctaLabel: 'Explore for Creators',
-            onTap: () => context.go('/creators'),
+          child: ScrollRevealFade(
+            child: _AudienceCard(
+              title: 'For Creators',
+              color: AppColors.creator,
+              bullets: const [
+                'Discover paid campaigns from real D2C brands',
+                'Apply in a tap, chat with brands directly',
+                'Get verified and build a trustworthy profile',
+              ],
+              ctaLabel: 'Explore for Creators',
+              onTap: () => context.go('/creators'),
+            ),
           ),
         ),
         SizedBox(
           width: 460,
-          child: _AudienceCard(
-            title: 'For Brands',
-            color: AppColors.brand,
-            bullets: const [
-              'Browse verified micro-influencers (10K–50K followers)',
-              'Post a campaign or apply for a managed one',
-              'Review applications and message creators directly',
-            ],
-            ctaLabel: 'Explore for Brands',
-            onTap: () => context.go('/brands'),
+          child: ScrollRevealFade(
+            delay: const Duration(milliseconds: 80),
+            child: _AudienceCard(
+              title: 'For Brands',
+              color: AppColors.brand,
+              bullets: const [
+                'Browse verified micro-influencers (10K–50K followers)',
+                'Post a campaign or apply for a managed one',
+                'Review applications and message creators directly',
+              ],
+              ctaLabel: 'Explore for Brands',
+              onTap: () => context.go('/brands'),
+            ),
           ),
         ),
       ],
@@ -293,36 +325,39 @@ class _AudienceCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(AppSpacing.lg),
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(AppRadius.xxl),
-        border: Border.all(color: AppColors.border),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(title, style: AppTextStyles.heading1.copyWith(color: color)),
-          const SizedBox(height: AppSpacing.md),
-          for (final bullet in bullets) WebsiteBulletItem(bullet),
-          const SizedBox(height: AppSpacing.sm),
-          TextButton(
-            onPressed: onTap,
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(ctaLabel, style: AppTextStyles.link),
-                const SizedBox(width: 4),
-                const Icon(
-                  Icons.arrow_forward_rounded,
-                  size: 16,
-                  color: AppColors.primary,
-                ),
-              ],
+    return HoverLift(
+      borderRadius: AppRadius.xxl,
+      child: Container(
+        padding: const EdgeInsets.all(AppSpacing.lg),
+        decoration: BoxDecoration(
+          color: AppColors.surface,
+          borderRadius: BorderRadius.circular(AppRadius.xxl),
+          border: Border.all(color: AppColors.border),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(title, style: AppTextStyles.heading1.copyWith(color: color)),
+            const SizedBox(height: AppSpacing.md),
+            for (final bullet in bullets) WebsiteBulletItem(bullet),
+            const SizedBox(height: AppSpacing.sm),
+            TextButton(
+              onPressed: onTap,
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(ctaLabel, style: AppTextStyles.link),
+                  const SizedBox(width: 4),
+                  const Icon(
+                    Icons.arrow_forward_rounded,
+                    size: 16,
+                    color: AppColors.primary,
+                  ),
+                ],
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -359,35 +394,30 @@ class _PrinciplesGrid extends StatelessWidget {
       runSpacing: 24,
       alignment: WrapAlignment.center,
       children: [
-        for (final (icon, title, body) in _principles)
-          SizedBox(
-            width: 300,
-            child: Column(
-              children: [
-                Container(
-                  width: 48,
-                  height: 48,
-                  decoration: const BoxDecoration(
-                    color: AppColors.primaryLight,
-                    shape: BoxShape.circle,
+        for (final (index, (icon, title, body)) in _principles.indexed)
+          ScrollRevealFade(
+            delay: Duration(milliseconds: index * 80),
+            child: SizedBox(
+              width: 300,
+              child: Column(
+                children: [
+                  _StepIcon(icon: icon),
+                  const SizedBox(height: 14),
+                  Text(
+                    title,
+                    textAlign: TextAlign.center,
+                    style: AppTextStyles.titleLarge,
                   ),
-                  child: Icon(icon, color: AppColors.primary, size: 22),
-                ),
-                const SizedBox(height: 14),
-                Text(
-                  title,
-                  textAlign: TextAlign.center,
-                  style: AppTextStyles.titleLarge,
-                ),
-                const SizedBox(height: 6),
-                Text(
-                  body,
-                  textAlign: TextAlign.center,
-                  style: AppTextStyles.bodyMedium.copyWith(
-                    color: AppColors.textSecondary,
+                  const SizedBox(height: 6),
+                  Text(
+                    body,
+                    textAlign: TextAlign.center,
+                    style: AppTextStyles.bodyMedium.copyWith(
+                      color: AppColors.textSecondary,
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
       ],

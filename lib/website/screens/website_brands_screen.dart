@@ -6,6 +6,10 @@ import '../../core/theme/app_radius.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_text_styles.dart';
 import '../widgets/campaign_request_form.dart';
+import '../widgets/hero_backdrop.dart';
+import '../widgets/hover_lift.dart';
+import '../widgets/scroll_reveal_fade.dart';
+import '../widgets/step_icon.dart';
 import '../widgets/waitlist_cta_button.dart';
 import '../widgets/website_bullet_item.dart';
 import '../widgets/website_section.dart';
@@ -92,8 +96,12 @@ class WebsiteBrandsScreen extends StatelessWidget {
 
     return Column(
       children: [
-        WebsiteSection(
-          backgroundColor: AppColors.primaryLight,
+        ColoredBox(
+          color: AppColors.primaryLight,
+          child: Stack(
+            children: [
+              const HeroBackdrop(),
+              WebsiteSection(
           child: Column(
             children: [
               Text(
@@ -117,12 +125,17 @@ class WebsiteBrandsScreen extends StatelessWidget {
               ),
             ],
           ),
+              ),
+            ],
+          ),
         ),
         WebsiteSection(
           child: Column(
             children: [
-              const WebsiteSectionHeading(
-                title: 'Two ways to work with Collabsy',
+              ScrollRevealFade(
+                child: const WebsiteSectionHeading(
+                  title: 'Two ways to work with Collabsy',
+                ),
               ),
               const SizedBox(height: AppSpacing.xl),
               Wrap(
@@ -130,11 +143,25 @@ class WebsiteBrandsScreen extends StatelessWidget {
                 runSpacing: 32,
                 crossAxisAlignment: WrapCrossAlignment.start,
                 children: [
-                  const SizedBox(width: 460, child: _SelfServeCard()),
                   SizedBox(
                     width: 460,
-                    child: _ManagedCard(
-                      onGetPlan: () => _scrollToForm(context),
+                    child: ScrollRevealFade(
+                      child: const HoverLift(
+                        borderRadius: AppRadius.xxl,
+                        child: _SelfServeCard(),
+                      ),
+                    ),
+                  ),
+                  SizedBox(
+                    width: 460,
+                    child: ScrollRevealFade(
+                      delay: const Duration(milliseconds: 80),
+                      child: HoverLift(
+                        borderRadius: AppRadius.xxl,
+                        child: _ManagedCard(
+                          onGetPlan: () => _scrollToForm(context),
+                        ),
+                      ),
                     ),
                   ),
                 ],
@@ -146,42 +173,50 @@ class WebsiteBrandsScreen extends StatelessWidget {
           backgroundColor: AppColors.background,
           child: Column(
             children: [
-              const WebsiteSectionHeading(
-                eyebrow: 'Managed campaigns',
-                title: 'What our team handles for you',
-                subtitle:
-                    'Comprehensive influencer marketing solutions designed '
-                    'to drive sales and ROI for D2C brands.',
+              ScrollRevealFade(
+                child: const WebsiteSectionHeading(
+                  eyebrow: 'Managed campaigns',
+                  title: 'What our team handles for you',
+                  subtitle:
+                      'Comprehensive influencer marketing solutions designed '
+                      'to drive sales and ROI for D2C brands.',
+                ),
               ),
               const SizedBox(height: AppSpacing.xl),
               Wrap(
                 spacing: 24,
                 runSpacing: 24,
                 children: [
-                  for (final (icon, title, body) in _services)
-                    SizedBox(
-                      width: 320,
-                      child: Container(
-                        padding: const EdgeInsets.all(AppSpacing.lg),
-                        decoration: BoxDecoration(
-                          color: AppColors.surface,
-                          borderRadius: BorderRadius.circular(AppRadius.xl),
-                          border: Border.all(color: AppColors.border),
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Icon(icon, color: AppColors.primary, size: 26),
-                            const SizedBox(height: 12),
-                            Text(title, style: AppTextStyles.titleLarge),
-                            const SizedBox(height: 6),
-                            Text(
-                              body,
-                              style: AppTextStyles.bodyMedium.copyWith(
-                                color: AppColors.textSecondary,
-                              ),
+                  for (final (index, (icon, title, body)) in _services.indexed)
+                    ScrollRevealFade(
+                      delay: Duration(milliseconds: index * 60),
+                      child: SizedBox(
+                        width: 320,
+                        child: HoverLift(
+                          borderRadius: AppRadius.xl,
+                          child: Container(
+                            padding: const EdgeInsets.all(AppSpacing.lg),
+                            decoration: BoxDecoration(
+                              color: AppColors.surface,
+                              borderRadius: BorderRadius.circular(AppRadius.xl),
+                              border: Border.all(color: AppColors.border),
                             ),
-                          ],
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                StepIcon(icon: icon),
+                                const SizedBox(height: 12),
+                                Text(title, style: AppTextStyles.titleLarge),
+                                const SizedBox(height: 6),
+                                Text(
+                                  body,
+                                  style: AppTextStyles.bodyMedium.copyWith(
+                                    color: AppColors.textSecondary,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
                         ),
                       ),
                     ),
@@ -193,17 +228,21 @@ class WebsiteBrandsScreen extends StatelessWidget {
         WebsiteSection(
           child: Column(
             children: [
-              const WebsiteSectionHeading(
-                eyebrow: 'How it works',
-                title: 'Our proven 4-step process',
+              ScrollRevealFade(
+                child: const WebsiteSectionHeading(
+                  eyebrow: 'How it works',
+                  title: 'Our proven 4-step process',
+                ),
               ),
               const SizedBox(height: AppSpacing.xl),
               Wrap(
                 spacing: 24,
                 runSpacing: 24,
                 children: [
-                  for (final (number, title, body) in _managedSteps)
-                    SizedBox(
+                  for (final (index, (number, title, body)) in _managedSteps.indexed)
+                    ScrollRevealFade(
+                      delay: Duration(milliseconds: index * 80),
+                      child: SizedBox(
                       width: 240,
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -224,6 +263,7 @@ class WebsiteBrandsScreen extends StatelessWidget {
                             ),
                           ),
                         ],
+                      ),
                       ),
                     ),
                 ],
