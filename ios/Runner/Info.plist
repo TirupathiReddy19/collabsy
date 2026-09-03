@@ -36,6 +36,21 @@
 				<string>com.googleusercontent.apps.132008349319-kk9pu32l6aboj3pc9eaco1cd2hn1r8i6</string>
 			</array>
 		</dict>
+		<dict>
+			<!--
+			Required for Firebase Phone Auth's reCAPTCHA-verification
+			fallback (used whenever silent APNs verification isn't
+			available/fails) - it opens a Safari view and needs a URL
+			scheme matching the app's own bundle ID to redirect back in.
+			Without this, sending an OTP fails outright on iOS.
+			-->
+			<key>CFBundleTypeRole</key>
+			<string>Editor</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
+			</array>
+		</dict>
 	</array>
 	<key>ITSAppUsesNonExemptEncryption</key>
 	<false/>
