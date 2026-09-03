@@ -38,8 +38,14 @@ workflows:
             --certificate-key "$CERTIFICATE_PRIVATE_KEY" \
             --create \
             --delete-stale-profiles
-      - name: Use system default keychain
-        script: keychain use-login
+      # errSecInternalComponent while re-signing vendored frameworks (grpc,
+      # absl, etc.) is a known symptom of keychain ACL/partition-list quirks
+      # on the shared macOS login keychain on fresh CI instances. A
+      # dedicated keychain that codemagic-cli-tools fully owns end-to-end
+      # (creates, unlocks, sets the codesign partition list on) is the more
+      # reliable path here than reusing the login keychain.
+      - name: Set up a dedicated signing keychain
+        script: keychain initialize
       - name: Add certificates to keychain
         script: keychain add-certificates
       - name: Set up code signing settings on Xcode project
