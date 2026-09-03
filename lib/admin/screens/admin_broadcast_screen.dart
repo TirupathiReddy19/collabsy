@@ -141,9 +141,7 @@ String _audienceDescription(Announcement announcement) {
       return 'To: ${announcement.targetCreatorName ?? 'one creator'}';
     case 'category':
       final categories = announcement.targetCategories ?? const [];
-      return categories.isEmpty
-          ? 'Niche'
-          : 'Niche: ${categories.join(', ')}';
+      return categories.isEmpty ? 'Niche' : 'Niche: ${categories.join(', ')}';
     case 'followerRange':
       final min = announcement.targetMinFollowers;
       final max = announcement.targetMaxFollowers;
@@ -749,36 +747,12 @@ class _AdminBroadcastScreenState extends ConsumerState<AdminBroadcastScreen> {
                           if (_targetType == 'brand') ...[
                             const SizedBox(height: 12),
                             if (_selectedBrand != null)
-                              Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 12,
-                                  vertical: 8,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: AppColors.primaryLight,
-                                  borderRadius: BorderRadius.circular(
-                                    AppRadius.md,
-                                  ),
-                                ),
-                                child: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    Text(
-                                      _brandLabel(_selectedBrand!),
-                                      style: AppTextStyles.bodyMedium.copyWith(
-                                        fontWeight: FontWeight.w600,
-                                      ),
-                                    ),
-                                    const SizedBox(width: 8),
-                                    InkWell(
-                                      onTap: () => setState(() {
-                                        _selectedBrand = null;
-                                        _brandSearchController.clear();
-                                      }),
-                                      child: const Icon(Icons.close, size: 16),
-                                    ),
-                                  ],
-                                ),
+                              _SelectedBrandChip(
+                                brand: _selectedBrand!,
+                                onRemove: () => setState(() {
+                                  _selectedBrand = null;
+                                  _brandSearchController.clear();
+                                }),
                               )
                             else ...[
                               AppTextField(
@@ -788,10 +762,8 @@ class _AdminBroadcastScreenState extends ConsumerState<AdminBroadcastScreen> {
                                 onChanged: (_) => setState(() {}),
                               ),
                               for (final result in brandSearchResults)
-                                ListTile(
-                                  dense: true,
-                                  contentPadding: EdgeInsets.zero,
-                                  title: Text(_brandLabel(result)),
+                                _BrandSearchResultTile(
+                                  brand: result,
                                   onTap: () => setState(() {
                                     _selectedBrand = result;
                                     _brandSearchController.clear();
@@ -881,6 +853,73 @@ class _AdminBroadcastScreenState extends ConsumerState<AdminBroadcastScreen> {
           ),
         ),
       ],
+    );
+  }
+}
+
+/// The signed-in contact's name for a brand, e.g. "Jane Doe" — looked up
+/// from `users/{uid}.displayName`, which is deliberately NOT the same as
+/// `BrandProfile.companyName` (see that model's doc comment). Used so the
+/// admin can tell brands with similar/identical company names apart, and
+/// see who they're actually about to message, before sending.
+class _BrandSearchResultTile extends ConsumerWidget {
+  const _BrandSearchResultTile({required this.brand, required this.onTap});
+
+  final BrandProfile brand;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final contactName = ref
+        .watch(appUserProfileByIdProvider(brand.id))
+        .value
+        ?.displayName;
+    return ListTile(
+      dense: true,
+      contentPadding: EdgeInsets.zero,
+      title: Text(_brandLabel(brand)),
+      subtitle: contactName != null && contactName.isNotEmpty
+          ? Text(contactName)
+          : null,
+      onTap: onTap,
+    );
+  }
+}
+
+class _SelectedBrandChip extends ConsumerWidget {
+  const _SelectedBrandChip({required this.brand, required this.onRemove});
+
+  final BrandProfile brand;
+  final VoidCallback onRemove;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final contactName = ref
+        .watch(appUserProfileByIdProvider(brand.id))
+        .value
+        ?.displayName;
+    final label = contactName != null && contactName.isNotEmpty
+        ? '${_brandLabel(brand)} · $contactName'
+        : _brandLabel(brand);
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: BoxDecoration(
+        color: AppColors.primaryLight,
+        borderRadius: BorderRadius.circular(AppRadius.md),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            label,
+            style: AppTextStyles.bodyMedium.copyWith(
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const SizedBox(width: 8),
+          InkWell(onTap: onRemove, child: const Icon(Icons.close, size: 16)),
+        ],
+      ),
     );
   }
 }
