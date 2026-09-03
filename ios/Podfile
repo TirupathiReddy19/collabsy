@@ -28,12 +28,16 @@ require File.expand_path(File.join('packages', 'flutter_tools', 'bin', 'podhelpe
 flutter_ios_podfile_setup
 
 target 'Runner' do
-  # :linkage => :static is required for firebase_auth's phone-auth
-  # reCAPTCHA verification component - dynamic frameworks (the default)
-  # fail at runtime with [firebase_auth/recaptcha-sdk-not-linked] The
-  # reCAPTCHA SDK is not linked to your app, even though CocoaPods
-  # resolves and links the pod at build time without error.
   use_frameworks! :linkage => :static
+
+  # Firebase Auth's phone-verification reCAPTCHA flow only defines the
+  # RecaptchaInterop *protocol* itself (pulled in transitively via
+  # Firebase/Auth) - the actual implementation is deliberately a separate
+  # pod so apps that don't use phone auth don't pay for it. Without it,
+  # FirebaseAuth finds no class conforming to the protocol at runtime and
+  # throws [firebase_auth/recaptcha-sdk-not-linked], even though the build
+  # itself succeeds with no missing-dependency error.
+  pod 'RecaptchaEnterprise'
 
   flutter_install_all_ios_pods File.dirname(File.realpath(__FILE__))
   target 'RunnerTests' do
