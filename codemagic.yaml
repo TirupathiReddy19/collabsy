@@ -19,18 +19,21 @@ workflows:
         - pattern: "ios-*"
       cancel_previous_builds: true
     scripts:
-      # The ios_signing shorthand only *finds* existing certs/profiles, it
-      # doesn't create a missing profile - hence the earlier "No matching
-      # profiles found" failure even with a real certificate on file. The
-      # certificate itself is now uploaded to Codemagic's Code signing
-      # identities store (generated manually via CSR, since --create-ing a
-      # brand new one here previously hit "Cannot save Signing
-      # Certificates without certificate private key"), so this should now
-      # find that certificate and only need to create the profile.
+      # The certificate itself already exists on Apple's servers (created
+      # manually via a CSR after --create-ing one here hit "Cannot save
+      # Signing Certificates without certificate private key"), so
+      # fetch-signing-files finds it through the API - but it still has no
+      # matching private key unless we hand it one explicitly.
+      # CERTIFICATE_PRIVATE_KEY is a secure environment variable (Settings
+      # -> Environment variables) holding that certificate's PEM private
+      # key; Codemagic's own "Code signing identities" store isn't read by
+      # this raw CLI command, only by the ios_signing shorthand, which
+      # doesn't create missing profiles - hence going the explicit route.
       - name: Fetch signing files
         script: |
           app-store-connect fetch-signing-files "$BUNDLE_ID" \
             --type IOS_APP_STORE \
+            --certificate-key "$CERTIFICATE_PRIVATE_KEY" \
             --create
       - name: Use system default keychain
         script: keychain use-login
