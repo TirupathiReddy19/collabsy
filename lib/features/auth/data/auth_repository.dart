@@ -7,6 +7,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:cloud_functions/cloud_functions.dart';
 import 'package:crypto/crypto.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/foundation.dart';
 import 'package:google_sign_in/google_sign_in.dart';
@@ -145,8 +146,18 @@ class AuthRepository {
         // The UI only ever shows a generic "Couldn't send the code" message
         // — this is the one place the actual reason (wrong test-number
         // format, quota, reCAPTCHA/Play Integrity failure, etc.) is visible
-        // at all, so it's worth printing for whoever's running `flutter run`.
+        // at all, so it's worth printing for whoever's running `flutter run`,
+        // and recording as a non-fatal for release builds (TestFlight, Play
+        // production) where nobody has a debugger attached.
         debugPrint('Phone auth verificationFailed: [${e.code}] ${e.message}');
+        if (!kDebugMode) {
+          FirebaseCrashlytics.instance.recordError(
+            e,
+            StackTrace.current,
+            reason: 'Phone auth verificationFailed: [${e.code}] ${e.message}',
+            fatal: false,
+          );
+        }
         if (!completer.isCompleted) completer.completeError(e);
       },
       codeSent: (verificationId, resendToken) {
