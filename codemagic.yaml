@@ -48,13 +48,38 @@ workflows:
         script: flutter pub get
       - name: Install CocoaPods dependencies
         script: find . -name "Podfile" -maxdepth 2 -execdir pod install \;
-      - name: Flutter build ipa
+      # Bypassing `flutter build ipa` for the archive step: its JSON diagnostics
+      # collapse a codesign failure down to "Command CodeSign failed with a
+      # nonzero exit code" with zero detail. Flutter's own embedded Xcode Run
+      # Script build phase still does everything `flutter build ios` would
+      # (flutter assemble, etc.), so a direct xcodebuild call works the same,
+      # just with the real, unfiltered output - piped to a log file via `tee`
+      # so it survives even if the build fails (also enable pipefail so a
+      # failing xcodebuild still fails the script instead of `tee`'s exit
+      # code masking it).
+      - name: Xcode archive
         script: |
-          flutter build ipa --release --verbose \
-            -t lib/main.dart \
-            --export-options-plist=/Users/builder/export_options.plist
+          set -e -o pipefail
+          xcodebuild archive \
+            -workspace ios/Runner.xcworkspace \
+            -scheme Runner \
+            -configuration Release \
+            -archivePath build/ios/archive/Runner.xcarchive \
+            -destination "generic/platform=iOS" \
+            2>&1 | tee /tmp/xcodebuild_archive.log
+      - name: Xcode export ipa
+        script: |
+          set -e -o pipefail
+          mkdir -p build/ios/ipa
+          xcodebuild -exportArchive \
+            -archivePath build/ios/archive/Runner.xcarchive \
+            -exportPath build/ios/ipa \
+            -exportOptionsPlist /Users/builder/export_options.plist \
+            2>&1 | tee /tmp/xcodebuild_export.log
     artifacts:
       - build/ios/ipa/*.ipa
+      - /tmp/xcodebuild_archive.log
+      - /tmp/xcodebuild_export.log
       - /tmp/xcodebuild_logs/*.log
     publishing:
       app_store_connect:
