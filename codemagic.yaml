@@ -82,11 +82,22 @@ workflows:
             -exportPath build/ios/ipa \
             -exportOptionsPlist /Users/builder/export_options.plist \
             2>&1 | tee /tmp/xcodebuild_export.log
+      # There's no Crashlytics dSYM-upload Xcode build phase configured on
+      # this project, so nothing symbolicates crash/non-fatal reports on
+      # Firebase automatically yet. Packaging the archive's dSYMs as a
+      # downloadable artifact so they can be dragged into the Crashlytics
+      # dSYMs tab manually in the meantime.
+      - name: Zip dSYMs for Crashlytics
+        script: |
+          set -e -o pipefail
+          cd build/ios/archive/Runner.xcarchive/dSYMs
+          zip -r /tmp/Runner-dSYMs.zip .
     artifacts:
       - build/ios/ipa/*.ipa
       - /tmp/xcodebuild_archive.log
       - /tmp/xcodebuild_export.log
       - /tmp/xcodebuild_logs/*.log
+      - /tmp/Runner-dSYMs.zip
     publishing:
       app_store_connect:
         auth: integration
