@@ -252,32 +252,52 @@ class AuthRepository {
       sha256.convert(utf8.encode(input)).toString();
 
   Future<void> signInWithApple() async {
-    final rawNonce = _generateNonce();
-    final appleCredential = await SignInWithApple.getAppleIDCredential(
-      scopes: [
-        AppleIDAuthorizationScopes.email,
-        AppleIDAuthorizationScopes.fullName,
-      ],
-      nonce: _sha256ofString(rawNonce),
-    );
-    final oauthCredential = OAuthProvider(
-      'apple.com',
-    ).credential(idToken: appleCredential.identityToken, rawNonce: rawNonce);
-    await _auth.signInWithCredential(oauthCredential);
+    try {
+      final rawNonce = _generateNonce();
+      final appleCredential = await SignInWithApple.getAppleIDCredential(
+        scopes: [
+          AppleIDAuthorizationScopes.email,
+          AppleIDAuthorizationScopes.fullName,
+        ],
+        nonce: _sha256ofString(rawNonce),
+      );
+      final oauthCredential = OAuthProvider('apple.com').credential(
+        idToken: appleCredential.identityToken,
+        rawNonce: rawNonce,
+      );
+      await _auth.signInWithCredential(oauthCredential);
 
-    // Apple only ever sends the user's name on the very first authorization
-    // for this app — unlike Google, Firebase doesn't auto-populate
-    // `user.displayName` from it, so `ensureProfileDocument` (called right
-    // after this by the controller) would otherwise snapshot a null name
-    // forever. Only set it if nothing's there yet, matching how Google's
-    // own federated displayName is treated as already-final.
-    final fullName = [
-      appleCredential.givenName,
-      appleCredential.familyName,
-    ].whereType<String>().join(' ').trim();
-    if (fullName.isNotEmpty && _auth.currentUser?.displayName == null) {
-      await _auth.currentUser?.updateDisplayName(fullName);
-      await _auth.currentUser?.reload();
+      // Apple only ever sends the user's name on the very first authorization
+      // for this app — unlike Google, Firebase doesn't auto-populate
+      // `user.displayName` from it, so `ensureProfileDocument` (called right
+      // after this by the controller) would otherwise snapshot a null name
+      // forever. Only set it if nothing's there yet, matching how Google's
+      // own federated displayName is treated as already-final.
+      final fullName = [
+        appleCredential.givenName,
+        appleCredential.familyName,
+      ].whereType<String>().join(' ').trim();
+      if (fullName.isNotEmpty && _auth.currentUser?.displayName == null) {
+        await _auth.currentUser?.updateDisplayName(fullName);
+        await _auth.currentUser?.reload();
+      }
+    } catch (error, stackTrace) {
+      // The UI only ever shows a generic "Apple sign-in failed" message -
+      // same blind spot the phone-auth OTP failure had. Could be a
+      // SignInWithAppleAuthorizationException (native side, e.g. the user
+      // cancelled) or a FirebaseAuthException (e.g. the Apple provider
+      // isn't enabled in Firebase Console) - logging whichever it is as a
+      // non-fatal so the real cause is visible on a release build.
+      debugPrint('Apple sign-in failed: [${error.runtimeType}] $error');
+      if (!kDebugMode) {
+        FirebaseCrashlytics.instance.recordError(
+          error,
+          stackTrace,
+          reason: 'Apple sign-in failed: [${error.runtimeType}] $error',
+          fatal: false,
+        );
+      }
+      rethrow;
     }
   }
 
