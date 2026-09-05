@@ -82,11 +82,22 @@ workflows:
             -exportPath build/ios/ipa \
             -exportOptionsPlist /Users/builder/export_options.plist \
             2>&1 | tee /tmp/xcodebuild_export.log
-      # There's no Crashlytics dSYM-upload Xcode build phase configured on
-      # this project, so nothing symbolicates crash/non-fatal reports on
-      # Firebase automatically yet. Packaging the archive's dSYMs as a
-      # downloadable artifact so they can be dragged into the Crashlytics
-      # dSYMs tab manually in the meantime.
+      # Automatic dSYM upload, so future builds never need the manual
+      # drag-and-drop into Crashlytics again. FirebaseCrashlytics ships a
+      # CLI tool for exactly this (normally wired as an Xcode build phase,
+      # which this project never had - see the "Zip dSYMs" fallback step
+      # below). Not using `set -e` here deliberately: if the exact flags
+      # ever drift with a Firebase SDK update, this should warn, not take
+      # down the whole release - the zip artifact below is the fallback.
+      - name: Upload dSYMs to Crashlytics automatically
+        script: |
+          ios/Pods/FirebaseCrashlytics/run \
+            -gsp ios/Runner/GoogleService-Info.plist \
+            -p ios \
+            build/ios/archive/Runner.xcarchive/dSYMs \
+            || echo "Automatic dSYM upload failed - fall back to the Runner-dSYMs.zip artifact"
+      # Kept as a manual fallback in case the automatic step above ever
+      # breaks - drag this into the Crashlytics dSYMs tab.
       - name: Zip dSYMs for Crashlytics
         script: |
           set -e -o pipefail
