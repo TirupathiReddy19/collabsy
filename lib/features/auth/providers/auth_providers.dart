@@ -437,6 +437,18 @@ class AuthController extends _$AuthController {
     });
   }
 
+  Future<void> removeAvatar() async {
+    state = const AsyncLoading();
+    state = await AsyncValue.guard(() async {
+      final user = ref.read(authRepositoryProvider).currentUser;
+      if (user == null) {
+        throw StateError('No active session to remove the avatar for.');
+      }
+      await ref.read(authRepositoryProvider).removeAvatar(userId: user.uid);
+      ref.invalidate(currentProfileProvider);
+    });
+  }
+
   /// Replaces the signed-in user's phone number, once [smsCode] (sent via
   /// [sendPhoneOtp]) has been confirmed.
   Future<void> changePhoneNumber({

@@ -117,9 +117,9 @@ class AuthRepository {
   /// it's for redirecting an unregistered email to signup, not for
   /// pre-checking on every keystroke.
   Future<bool> checkEmailRegistered(String email) async {
-    final result = await _functions.httpsCallable('checkEmailRegistered').call(
-      {'email': email},
-    );
+    final result = await _functions.httpsCallable('checkEmailRegistered').call({
+      'email': email,
+    });
     return result.data['registered'] as bool;
   }
 
@@ -483,6 +483,23 @@ class AuthRepository {
       'avatarUrl': url,
     }, SetOptions(merge: true));
     return url;
+  }
+
+  /// Deletes the uploaded avatar (both the Storage object at the fixed
+  /// `avatars/{userId}` path [uploadAvatar] always writes to, and the
+  /// `avatarUrl` field pointing at it) so the UI falls back to its default
+  /// placeholder icon. Tolerates the Storage object already being gone
+  /// (`object-not-found`) — the Firestore field is the source of truth for
+  /// whether a photo is actually set, so it still gets cleared either way.
+  Future<void> removeAvatar({required String userId}) async {
+    try {
+      await _storage.ref('avatars/$userId').delete();
+    } on FirebaseException catch (error) {
+      if (error.code != 'object-not-found') rethrow;
+    }
+    await _firestore.collection('users').doc(userId).update({
+      'avatarUrl': FieldValue.delete(),
+    });
   }
 
   /// Replaces the signed-in user's phone number — distinct from

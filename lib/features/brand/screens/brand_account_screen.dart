@@ -37,16 +37,28 @@ class _BrandAccountScreenState extends ConsumerState<BrandAccountScreen> {
   bool _isUploadingAvatar = false;
 
   Future<void> _changeAvatar() async {
-    final file = await pickAvatarImage(context);
-    if (file == null || !mounted) return;
+    final currentAvatarUrl = ref.read(currentProfileProvider).value?.avatarUrl;
+    final result = await pickOrRemoveAvatarImage(
+      context,
+      hasExistingPhoto: (currentAvatarUrl ?? '').isNotEmpty,
+    );
+    if (result == null || !mounted) return;
+
     setState(() => _isUploadingAvatar = true);
-    await ref.read(authControllerProvider.notifier).uploadAvatar(file);
+    switch (result) {
+      case AvatarPickResultFile(:final file):
+        await ref.read(authControllerProvider.notifier).uploadAvatar(file);
+      case AvatarPickResultRemove():
+        await ref.read(authControllerProvider.notifier).removeAvatar();
+    }
     if (!mounted) return;
     setState(() => _isUploadingAvatar = false);
     if (ref.read(authControllerProvider).hasError) {
       AppSnackbar.showError(
         context,
-        "Couldn't update your photo. Please try again.",
+        result is AvatarPickResultRemove
+            ? "Couldn't remove your photo. Please try again."
+            : "Couldn't update your photo. Please try again.",
       );
     }
   }
