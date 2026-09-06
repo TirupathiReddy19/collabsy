@@ -5,10 +5,11 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../../../app/routes.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_radius.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_text_styles.dart';
+import '../../../core/utils/chat_time_format.dart';
 import '../../../core/widgets/app_snackbar.dart';
-import '../../../core/widgets/app_text_field.dart';
 import '../../../core/widgets/loading_indicator.dart';
 import '../../../core/widgets/profile_avatar.dart';
 import '../../../core/widgets/staggered_fade_in.dart';
@@ -228,11 +229,17 @@ class _ChatConversationScreenState
             // immediately: the signed-up person's own name leads, with the
             // company name underneath for context.
             final brandPersonName = isCreator
-                ? (ref.watch(appUserProfileByIdProvider(chat.brandId)).value?.displayName ??
+                ? (ref
+                          .watch(appUserProfileByIdProvider(chat.brandId))
+                          .value
+                          ?.displayName ??
                       otherName)
                 : null;
             final brandCompanyName = isCreator
-                ? (ref.watch(brandProfileByIdProvider(chat.brandId)).value?.companyName ??
+                ? (ref
+                          .watch(brandProfileByIdProvider(chat.brandId))
+                          .value
+                          ?.companyName ??
                       otherName)
                 : null;
             return InkWell(
@@ -364,20 +371,99 @@ class _ChatConversationScreenState
                       ),
                     );
                   }
+                  final otherAvatarUrl = chat == null
+                      ? null
+                      : (isCreator
+                            ? ref
+                                  .watch(
+                                    appUserProfileByIdProvider(chat.brandId),
+                                  )
+                                  .value
+                                  ?.avatarUrl
+                            : ref
+                                  .watch(
+                                    instagramAccountForUserProvider(
+                                      chat.creatorId,
+                                    ),
+                                  )
+                                  .value
+                                  ?.profilePictureUrl);
+
                   return ListView.builder(
                     reverse: true,
-                    padding: const EdgeInsets.all(AppSpacing.screenHorizontal),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: AppSpacing.screenHorizontal,
+                      vertical: AppSpacing.sm,
+                    ),
                     itemCount: messages.length,
                     itemBuilder: (context, index) {
-                      final message = messages[messages.length - 1 - index];
+                      final i = messages.length - 1 - index;
+                      final message = messages[i];
+                      final prev = i > 0 ? messages[i - 1] : null;
+                      final next = i < messages.length - 1
+                          ? messages[i + 1]
+                          : null;
                       final mine = message.senderId == myUid;
+
+                      // Instagram-style grouping: consecutive messages from
+                      // the same sender within a few minutes sit tight
+                      // together (no gap, no repeated avatar) instead of
+                      // each looking like a separate exchange.
+                      final sameSenderAsPrev =
+                          prev != null && prev.senderId == message.senderId;
+                      final closeToPrev =
+                          prev?.sentAt != null &&
+                          message.sentAt != null &&
+                          message.sentAt!.difference(prev!.sentAt!) <
+                              const Duration(minutes: 5);
+                      final isFirstInGroup = !(sameSenderAsPrev && closeToPrev);
+
+                      final sameSenderAsNext =
+                          next != null && next.senderId == message.senderId;
+                      final closeToNext =
+                          next?.sentAt != null &&
+                          message.sentAt != null &&
+                          next!.sentAt!.difference(message.sentAt!) <
+                              const Duration(minutes: 5);
+                      final isLastInGroup = !(sameSenderAsNext && closeToNext);
+
+                      final showSeparator =
+                          message.sentAt != null &&
+                          (prev?.sentAt == null ||
+                              message.sentAt!.difference(prev!.sentAt!).abs() >
+                                  const Duration(minutes: 30) ||
+                              message.sentAt!.day != prev.sentAt!.day);
+
                       return StaggeredFadeIn(
                         key: ValueKey(message.id),
-                        child: _MessageBubble(
-                          text: message.text,
-                          campaignId: message.campaignId,
-                          mine: mine,
-                          isCreator: isCreator,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            if (showSeparator)
+                              Padding(
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: AppSpacing.sm,
+                                ),
+                                child: Center(
+                                  child: Text(
+                                    chatSeparatorLabel(message.sentAt!),
+                                    style: AppTextStyles.bodySmall.copyWith(
+                                      color: AppColors.textSecondary,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            _MessageBubble(
+                              text: message.text,
+                              campaignId: message.campaignId,
+                              mine: mine,
+                              isCreator: isCreator,
+                              isFirstInGroup: isFirstInGroup,
+                              isLastInGroup: isLastInGroup,
+                              showAvatar: !mine && isLastInGroup,
+                              avatarUrl: otherAvatarUrl,
+                            ),
+                          ],
                         ),
                       );
                     },
@@ -415,21 +501,69 @@ class _ChatConversationScreenState
               )
             else
               Padding(
-                padding: const EdgeInsets.all(AppSpacing.sm),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: AppSpacing.sm,
+                  vertical: 8,
+                ),
                 child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
+                    // A full pill, filled, borderless composer instead of
+                    // the standard AppTextField (that one's rectangular
+                    // styling comes from the app-wide input theme, meant
+                    // for forms — this is deliberately its own shape, the
+                    // way Instagram's message box is).
                     Expanded(
-                      child: AppTextField(
-                        controller: _textController,
-                        hintText: 'Message...',
-                        textInputAction: TextInputAction.send,
-                        onSubmitted: (_) => _send(),
+                      child: Container(
+                        constraints: const BoxConstraints(minHeight: 44),
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        decoration: const BoxDecoration(
+                          color: AppColors.surfaceVariant,
+                          borderRadius: BorderRadius.all(
+                            Radius.circular(AppRadius.full),
+                          ),
+                        ),
+                        alignment: Alignment.centerLeft,
+                        child: TextField(
+                          controller: _textController,
+                          minLines: 1,
+                          maxLines: 5,
+                          textInputAction: TextInputAction.send,
+                          onSubmitted: (_) => _send(),
+                          style: AppTextStyles.bodyMedium,
+                          decoration: InputDecoration(
+                            hintText: 'Message...',
+                            hintStyle: AppTextStyles.bodyMedium.copyWith(
+                              color: AppColors.textHint,
+                            ),
+                            border: InputBorder.none,
+                            isCollapsed: true,
+                            contentPadding: const EdgeInsets.symmetric(
+                              vertical: 12,
+                            ),
+                          ),
+                        ),
                       ),
                     ),
                     const SizedBox(width: 8),
-                    IconButton(
-                      icon: const Icon(Icons.send, color: AppColors.primary),
-                      onPressed: _send,
+                    ValueListenableBuilder<TextEditingValue>(
+                      valueListenable: _textController,
+                      builder: (context, value, _) {
+                        final hasText = value.text.trim().isNotEmpty;
+                        return AnimatedOpacity(
+                          duration: const Duration(milliseconds: 150),
+                          opacity: hasText ? 1 : 0.4,
+                          child: IconButton.filled(
+                            icon: const Icon(Icons.arrow_upward, size: 20),
+                            style: IconButton.styleFrom(
+                              backgroundColor: AppColors.primary,
+                              foregroundColor: AppColors.white,
+                              minimumSize: const Size(44, 44),
+                            ),
+                            onPressed: hasText ? _send : null,
+                          ),
+                        );
+                      },
                     ),
                   ],
                 ),
@@ -451,6 +585,10 @@ class _MessageBubble extends ConsumerWidget {
     required this.campaignId,
     required this.mine,
     required this.isCreator,
+    required this.isFirstInGroup,
+    required this.isLastInGroup,
+    required this.showAvatar,
+    required this.avatarUrl,
   });
 
   final String text;
@@ -458,51 +596,95 @@ class _MessageBubble extends ConsumerWidget {
   final bool mine;
   final bool isCreator;
 
+  /// Whether this is the top bubble of a run of consecutive messages from
+  /// the same sender — controls the extra gap above and which corner
+  /// stays sharp, Instagram-style.
+  final bool isFirstInGroup;
+
+  /// Same idea for the bottom of the run — also gates whether the little
+  /// avatar renders at all (only once per run, next to the last bubble).
+  final bool isLastInGroup;
+  final bool showAvatar;
+  final String? avatarUrl;
+
+  static const double _avatarSlot = 28;
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final textColor = mine ? AppColors.white : AppColors.textPrimary;
-    return Align(
-      alignment: mine ? Alignment.centerRight : Alignment.centerLeft,
-      child: Container(
-        margin: const EdgeInsets.symmetric(vertical: 4),
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-        constraints: BoxConstraints(
-          maxWidth: MediaQuery.of(context).size.width * 0.78,
-        ),
-        decoration: BoxDecoration(
-          color: mine ? AppColors.primary : AppColors.surface,
-          borderRadius: BorderRadius.circular(16),
-          border: mine ? null : Border.all(color: AppColors.border),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              text,
-              style: AppTextStyles.bodyMedium.copyWith(color: textColor),
-            ),
-            if (campaignId != null) ...[
-              const SizedBox(height: 10),
-              // Always a white card regardless of bubble color — keeps the
-              // embedded campaign details readable and visually distinct
-              // instead of blending into a solid-orange "mine" bubble.
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(AppSpacing.card),
-                decoration: BoxDecoration(
-                  color: AppColors.surface,
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: AppColors.border),
-                ),
-                child: _CampaignLink(
-                  campaignId: campaignId!,
-                  isCreator: isCreator,
-                ),
+    const baseRadius = Radius.circular(18);
+    const tightRadius = Radius.circular(4);
+    final borderRadius = BorderRadius.only(
+      topLeft: !mine && !isFirstInGroup ? tightRadius : baseRadius,
+      bottomLeft: !mine && !isLastInGroup ? tightRadius : baseRadius,
+      topRight: mine && !isFirstInGroup ? tightRadius : baseRadius,
+      bottomRight: mine && !isLastInGroup ? tightRadius : baseRadius,
+    );
+
+    final bubble = Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+      constraints: BoxConstraints(
+        maxWidth:
+            MediaQuery.of(context).size.width * 0.78 - (mine ? 0 : _avatarSlot),
+      ),
+      decoration: BoxDecoration(
+        color: mine ? AppColors.primary : AppColors.surfaceVariant,
+        borderRadius: borderRadius,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            text,
+            style: AppTextStyles.bodyMedium.copyWith(color: textColor),
+          ),
+          if (campaignId != null) ...[
+            const SizedBox(height: 10),
+            // Always a white card regardless of bubble color — keeps the
+            // embedded campaign details readable and visually distinct
+            // instead of blending into a solid-orange "mine" bubble.
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(AppSpacing.card),
+              decoration: BoxDecoration(
+                color: AppColors.surface,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: AppColors.border),
               ),
-            ],
+              child: _CampaignLink(
+                campaignId: campaignId!,
+                isCreator: isCreator,
+              ),
+            ),
           ],
-        ),
+        ],
+      ),
+    );
+
+    final avatarSlot = SizedBox(
+      width: _avatarSlot,
+      height: _avatarSlot,
+      child: showAvatar
+          ? ProfileAvatar(
+              avatarUrl: avatarUrl,
+              fallbackIcon: isCreator ? Icons.storefront : Icons.person,
+              radius: _avatarSlot / 2,
+            )
+          : null,
+    );
+
+    return Padding(
+      padding: EdgeInsets.only(top: isFirstInGroup ? 10 : 2, bottom: 2),
+      child: Align(
+        alignment: mine ? Alignment.centerRight : Alignment.centerLeft,
+        child: mine
+            ? bubble
+            : Row(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [avatarSlot, const SizedBox(width: 6), bubble],
+              ),
       ),
     );
   }

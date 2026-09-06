@@ -18,6 +18,7 @@ import '../../announcements/providers/announcements_providers.dart';
 import '../../auth/providers/auth_providers.dart';
 import '../../brand/providers/brand_profile_providers.dart';
 import '../../creator/providers/creator_profile_providers.dart';
+import '../../../core/utils/chat_time_format.dart';
 import '../../settings/providers/instagram_providers.dart';
 import '../models/chat.dart';
 import '../models/chat_status.dart';
@@ -185,11 +186,12 @@ class _ChatSubList extends ConsumerWidget {
               a.lastMessageAt ?? DateTime(0),
             ),
           );
-        return ListView.separated(
-          padding: const EdgeInsets.all(AppSpacing.screenHorizontal),
+        // Instagram's own DM list has no cards/dividers between rows — just
+        // consistent padding and a plain background, so that's the look
+        // here too (a plain ListView.builder rather than .separated).
+        return ListView.builder(
+          padding: const EdgeInsets.symmetric(vertical: AppSpacing.xs),
           itemCount: sorted.length,
-          separatorBuilder: (context, index) =>
-              const SizedBox(height: AppSpacing.sm),
           itemBuilder: (context, index) {
             return StaggeredFadeIn(
               key: ValueKey(sorted[index].id),
@@ -253,15 +255,23 @@ class _ChatListTile extends ConsumerWidget {
     // immediately: the signed-up person's own name leads, company name goes
     // under it alongside the last-message preview.
     final brandPersonName = isCreator
-        ? (ref.watch(appUserProfileByIdProvider(chat.brandId)).value?.displayName ??
+        ? (ref
+                  .watch(appUserProfileByIdProvider(chat.brandId))
+                  .value
+                  ?.displayName ??
               otherName)
         : null;
     final brandCompanyName = isCreator
-        ? (ref.watch(brandProfileByIdProvider(chat.brandId)).value?.companyName ??
+        ? (ref
+                  .watch(brandProfileByIdProvider(chat.brandId))
+                  .value
+                  ?.companyName ??
               otherName)
         : null;
     final showCompanyLine =
-        isCreator && brandCompanyName != null && brandCompanyName != brandPersonName;
+        isCreator &&
+        brandCompanyName != null &&
+        brandCompanyName != brandPersonName;
     // The other party is a Creator when I'm the Brand (Instagram-synced
     // photo), or a Brand when I'm the Creator (their manual upload, since
     // Brands have no Instagram connection).
@@ -280,76 +290,110 @@ class _ChatListTile extends ConsumerWidget {
                   ?.verificationStatus ==
               VerificationStatus.approved;
 
-    return Card(
-      child: ListTile(
-        leading: GestureDetector(
-          onTap: () => context.push(
-            isCreator
-                ? AppRoutes.brandPublicProfilePath(chat.brandId)
-                : AppRoutes.creatorPublicProfilePath(chat.creatorId),
-          ),
-          child: ProfileAvatar(
-            avatarUrl: avatarUrl,
-            fallbackIcon: isCreator ? Icons.storefront : Icons.person,
-            radius: 20,
-          ),
+    final previewStyle = unread
+        ? AppTextStyles.bodyMedium.copyWith(
+            color: AppColors.textPrimary,
+            fontWeight: FontWeight.w600,
+          )
+        : AppTextStyles.bodyMedium.copyWith(color: AppColors.textSecondary);
+
+    // Edge-to-edge row, no card/border — the Instagram DM list reads as one
+    // continuous list with generous row padding rather than boxed items.
+    return InkWell(
+      onTap: () => context.push(AppRoutes.chatDetailPath(chat.id)),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.screenHorizontal,
+          vertical: 10,
         ),
-        title: Row(
-          mainAxisSize: MainAxisSize.min,
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Flexible(
-              child: Text(
-                isCreator ? (brandPersonName ?? otherName) : otherName,
-                overflow: TextOverflow.ellipsis,
-                style: unread
-                    ? AppTextStyles.titleSmall
-                    : AppTextStyles.bodyLarge,
+            GestureDetector(
+              onTap: () => context.push(
+                isCreator
+                    ? AppRoutes.brandPublicProfilePath(chat.brandId)
+                    : AppRoutes.creatorPublicProfilePath(chat.creatorId),
+              ),
+              child: ProfileAvatar(
+                avatarUrl: avatarUrl,
+                fallbackIcon: isCreator ? Icons.storefront : Icons.person,
+                radius: 28,
               ),
             ),
-            if (isVerified) ...[
-              const SizedBox(width: 4),
-              VerifiedBadge(
-                variant: isCreator
-                    ? VerifiedBadgeVariant.brand
-                    : VerifiedBadgeVariant.creator,
-                size: 14,
-              ),
-            ],
-          ],
-        ),
-        isThreeLine: showCompanyLine && chat.lastMessage != null,
-        subtitle: showCompanyLine
-            ? Column(
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
                 children: [
-                  Text(
-                    brandCompanyName,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: AppTextStyles.bodySmall.copyWith(
-                      color: AppColors.textSecondary,
-                    ),
+                  Row(
+                    children: [
+                      Flexible(
+                        child: Text(
+                          isCreator
+                              ? (brandPersonName ?? otherName)
+                              : otherName,
+                          overflow: TextOverflow.ellipsis,
+                          style: unread
+                              ? AppTextStyles.titleSmall
+                              : AppTextStyles.bodyLarge,
+                        ),
+                      ),
+                      if (isVerified) ...[
+                        const SizedBox(width: 4),
+                        VerifiedBadge(
+                          variant: isCreator
+                              ? VerifiedBadgeVariant.brand
+                              : VerifiedBadgeVariant.creator,
+                          size: 14,
+                        ),
+                      ],
+                      if (chat.lastMessageAt != null) ...[
+                        const Spacer(),
+                        Text(
+                          chatListTimestamp(chat.lastMessageAt!),
+                          style: AppTextStyles.bodySmall.copyWith(
+                            color: AppColors.textSecondary,
+                          ),
+                        ),
+                      ],
+                    ],
                   ),
-                  if (chat.lastMessage != null)
+                  const SizedBox(height: 2),
+                  if (showCompanyLine)
                     Text(
-                      chat.lastMessage!,
+                      brandCompanyName,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
+                      style: AppTextStyles.bodySmall.copyWith(
+                        color: AppColors.textSecondary,
+                      ),
                     ),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          chat.lastMessage ?? 'Say hello!',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: previewStyle,
+                        ),
+                      ),
+                      if (unread) ...[
+                        const SizedBox(width: 8),
+                        const Icon(
+                          Icons.circle,
+                          size: 9,
+                          color: AppColors.primary,
+                        ),
+                      ],
+                    ],
+                  ),
                 ],
-              )
-            : chat.lastMessage == null
-            ? null
-            : Text(
-                chat.lastMessage!,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
               ),
-        trailing: unread
-            ? const Icon(Icons.circle, size: 10, color: AppColors.primary)
-            : null,
-        onTap: () => context.push(AppRoutes.chatDetailPath(chat.id)),
+            ),
+          ],
+        ),
       ),
     );
   }

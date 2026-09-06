@@ -27,6 +27,11 @@ class AppColors {
   static const Color surface = Color(0xFFFFFFFF);
   static const Color card = Color(0xFFFFFFFF);
 
+  /// A step down from [surface] for content that needs to read as
+  /// "filled" without a border — e.g. the other party's chat bubbles,
+  /// Instagram-DM style (plain gray fill, no stroke).
+  static const Color surfaceVariant = Color(0xFFF3F4F6);
+
   // ==========================================================
   // Text Colors
   // ==========================================================
