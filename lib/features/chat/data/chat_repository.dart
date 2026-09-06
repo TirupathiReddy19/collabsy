@@ -298,6 +298,12 @@ class ChatRepository {
     final chatData = (await chatRef.get()).data();
     if (chatData != null) {
       final isCreatorSender = senderId == chatData['creatorId'];
+      // Sending a message obviously means you've "read" the conversation
+      // up to this point — without this, the message you just wrote makes
+      // lastMessageAt newer than your own (stale) lastReadAt, so the chat
+      // list shows *your own* unread dot on the thread you just replied to.
+      updates[isCreatorSender ? 'creatorLastReadAt' : 'brandLastReadAt'] =
+          FieldValue.serverTimestamp();
       if (ChatStatus.fromDbValue(chatData['status'] as String?) ==
           ChatStatus.request) {
         final initiatedBy = chatData['initiatedBy'] as String?;
