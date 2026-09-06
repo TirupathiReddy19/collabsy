@@ -1,3 +1,4 @@
+import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
@@ -25,16 +26,43 @@ class PushNotificationService {
 
   Future<void> initialize(String userId) async {
     try {
-      await _messaging.requestPermission();
+      final settings = await _messaging.requestPermission();
       final token = await _messaging.getToken();
+      debugPrint(
+        'Push notification setup: authorizationStatus='
+        '${settings.authorizationStatus}, token='
+        '${token == null ? "null" : "${token.substring(0, 12)}…"}',
+      );
       if (token != null) {
         await _authRepository.saveFcmToken(userId: userId, token: token);
+      } else if (!kDebugMode) {
+        // No token means the push-sending Cloud Function will silently
+        // find nothing to send to later - worth knowing when/why that
+        // happens (denied permission, APNs not registered yet, etc.)
+        // rather than only discovering it from "the user never got a
+        // push" reports with nothing to go on.
+        FirebaseCrashlytics.instance.recordError(
+          StateError('FCM getToken() returned null'),
+          StackTrace.current,
+          reason:
+              'Push notification setup: no token - authorizationStatus='
+              '${settings.authorizationStatus}',
+          fatal: false,
+        );
       }
       _messaging.onTokenRefresh.listen((newToken) {
         _authRepository.saveFcmToken(userId: userId, token: newToken);
       });
-    } catch (error) {
+    } catch (error, stackTrace) {
       debugPrint('Push notification setup failed: $error');
+      if (!kDebugMode) {
+        FirebaseCrashlytics.instance.recordError(
+          error,
+          stackTrace,
+          reason: 'Push notification setup failed: $error',
+          fatal: false,
+        );
+      }
     }
   }
 }

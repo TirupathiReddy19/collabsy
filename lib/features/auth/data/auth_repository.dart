@@ -261,9 +261,15 @@ class AuthRepository {
         ],
         nonce: _sha256ofString(rawNonce),
       );
+      // accessToken (Apple's own authorizationCode) is required alongside
+      // idToken/rawNonce - omitting it is exactly what produces
+      // [firebase_auth/invalid-credential] Invalid OAuth response from
+      // apple.com, since Firebase's server-side verification against Apple
+      // needs it to complete the exchange.
       final oauthCredential = OAuthProvider('apple.com').credential(
         idToken: appleCredential.identityToken,
         rawNonce: rawNonce,
+        accessToken: appleCredential.authorizationCode,
       );
       await _auth.signInWithCredential(oauthCredential);
 
