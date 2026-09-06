@@ -308,6 +308,27 @@ class AuthRepository {
   }
 
   Future<void> signOut() async {
+    // Clears this device's registered push token from the outgoing
+    // account *before* actually signing out (need currentUser.uid to know
+    // whose doc to touch). Without this, switching accounts on a shared
+    // device (e.g. testing Creator and Brand side by side on one phone)
+    // leaves the old account's push notifications still landing here,
+    // since nothing else ever un-registers a token on sign-out —
+    // PushNotificationService only ever writes a fresh one on sign-in.
+    // Best-effort: a network hiccup here shouldn't block signing out.
+    final signingOutUid = _auth.currentUser?.uid;
+    if (signingOutUid != null) {
+      try {
+        await _firestore.collection('users').doc(signingOutUid).update({
+          'fcmToken': FieldValue.delete(),
+        });
+      } catch (_) {
+        // Ignored — worst case this device's token lingers until the next
+        // successful sign-out, or gets overwritten by whoever signs in
+        // next anyway.
+      }
+    }
+
     // Only touch the Google Sign-In plugin for accounts that actually used
     // it — on Web it requires a configured client ID just to construct,
     // which throws for the password-only accounts (e.g. the Admin portal)
