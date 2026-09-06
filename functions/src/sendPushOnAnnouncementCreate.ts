@@ -126,11 +126,26 @@ export const sendPushOnAnnouncementCreate = onDocumentCreated(
 
     for (const batch of chunk(tokens, FCM_MULTICAST_LIMIT)) {
       try {
-        await getMessaging().sendEachForMulticast({
+        const response = await getMessaging().sendEachForMulticast({
           tokens: batch,
           notification: { title, body },
           data: { referenceType: "announcement", referenceId: "" },
         });
+        // sendEachForMulticast only throws for a total request failure - a
+        // single bad/stale token fails silently inside `responses` unless
+        // logged here explicitly. This was invisible in every test so far:
+        // the function ran cleanly, found tokens, called FCM, and still no
+        // push arrived, with nothing in the logs to explain why.
+        if (response.failureCount > 0) {
+          response.responses.forEach((r, i) => {
+            if (!r.success) {
+              logger.error(
+                `Push failed for token ${batch[i].slice(0, 12)}…`,
+                r.error
+              );
+            }
+          });
+        }
       } catch (error) {
         logger.error("Failed to send broadcast push batch", error);
       }
