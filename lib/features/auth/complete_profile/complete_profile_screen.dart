@@ -220,9 +220,11 @@ class _CompleteProfileScreenState extends ConsumerState<CompleteProfileScreen> {
                     controller: _phoneController,
                     label: 'Phone number',
                     hintText: '98765 43210',
+                    prefixText: '+91 ',
                     keyboardType: TextInputType.phone,
                     textInputAction: TextInputAction.done,
                     enabled: !isLoading,
+                    inputFormatters: Validators.phoneInputFormatters,
                     validator: Validators.phone,
                     onSubmitted: (_) => _continue(),
                   )

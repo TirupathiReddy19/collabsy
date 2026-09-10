@@ -1,3 +1,4 @@
+import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 
 enum IdentifierType { email, phone, unknown }
@@ -71,6 +72,15 @@ class Validators {
     }
     return null;
   }
+
+  /// Input formatters for the 10-digit local part of an Indian mobile
+  /// number. Collabsy only serves India, so the `+91` country code is
+  /// fixed and shown as a field prefix — the input itself is digits only,
+  /// capped at 10.
+  static final List<TextInputFormatter> phoneInputFormatters = [
+    FilteringTextInputFormatter.digitsOnly,
+    LengthLimitingTextInputFormatter(10),
+  ];
 
   /// Normalizes a validated 10-digit Indian number (with or without a
   /// leading `+91`/`0`) into the E.164 format Firebase's phone auth

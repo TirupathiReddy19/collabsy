@@ -209,7 +209,7 @@ class _OtpVerificationViewState extends ConsumerState<OtpVerificationView> {
             children: [
               AuthHeader(
                 title: 'Enter verification code',
-                subtitle: 'We sent a 6-digit code to ${_args.phone}',
+                subtitle: 'We sent a 6-digit code to +91 ${_args.phone}',
               ),
               const SizedBox(height: 32),
               OtpInput(onCompleted: _handleCompleted, enabled: !isLoading),

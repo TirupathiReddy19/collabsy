@@ -28,6 +28,7 @@ class AppTextField extends StatelessWidget {
     this.onSubmitted,
     this.maxLines = 1,
     this.inputFormatters,
+    this.prefixText,
   });
 
   final TextEditingController? controller;
@@ -35,6 +36,10 @@ class AppTextField extends StatelessWidget {
   final String? hintText;
   final String? errorText;
   final Widget? prefixIcon;
+
+  /// Non-editable text shown inside the field before the input — e.g. a
+  /// fixed `+91 ` country code. Not part of the controller's value.
+  final String? prefixText;
   final Widget? suffixIcon;
   final bool obscureText;
   final bool enabled;
@@ -73,6 +78,12 @@ class AppTextField extends StatelessWidget {
             hintText: hintText,
             errorText: errorText,
             prefixIcon: prefixIcon,
+            prefixText: prefixText,
+            prefixStyle: prefixText == null
+                ? null
+                : AppTextStyles.bodyLarge.copyWith(
+                    color: AppColors.textPrimary,
+                  ),
             suffixIcon: suffixIcon,
           ),
         ),
