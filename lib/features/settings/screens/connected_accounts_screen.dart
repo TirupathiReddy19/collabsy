@@ -7,6 +7,7 @@ import '../../../core/theme/app_text_styles.dart';
 import '../../../core/widgets/app_snackbar.dart';
 import '../../../core/widgets/instagram_icon.dart';
 import '../../../core/widgets/loading_indicator.dart';
+import '../../../core/widgets/profile_avatar.dart';
 import '../../../shared/utils/relative_time.dart';
 import '../data/instagram_repository.dart';
 import '../models/instagram_account.dart';
@@ -90,76 +91,162 @@ class ConnectedAccountsScreen extends ConsumerWidget {
             Card(
               child: Padding(
                 padding: const EdgeInsets.all(AppSpacing.card),
-                child: Row(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const InstagramIcon(size: 44),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text('Instagram', style: AppTextStyles.titleSmall),
-                          const SizedBox(height: 2),
-                          Text(
-                            isConnected
-                                ? '@${account?.username ?? ''}'
-                                : needsReconnect
-                                ? 'Connection expired — reconnect'
-                                : 'Not connected',
-                            style: AppTextStyles.bodySmall.copyWith(
-                              color: needsReconnect
-                                  ? AppColors.warning
-                                  : AppColors.textSecondary,
-                            ),
+                    Row(
+                      children: [
+                        if (isConnected &&
+                            (account?.profilePictureUrl?.isNotEmpty ?? false))
+                          ProfileAvatar(
+                            avatarUrl: account!.profilePictureUrl,
+                            fallbackIcon: Icons.person,
+                            radius: 22,
+                          )
+                        else
+                          const InstagramIcon(size: 44),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                isConnected &&
+                                        (account?.name?.isNotEmpty ?? false)
+                                    ? account!.name!
+                                    : 'Instagram',
+                                style: AppTextStyles.titleSmall,
+                              ),
+                              const SizedBox(height: 2),
+                              Text(
+                                isConnected
+                                    ? '@${account?.username ?? ''}'
+                                    : needsReconnect
+                                    ? 'Connection expired — reconnect'
+                                    : 'Not connected',
+                                style: AppTextStyles.bodySmall.copyWith(
+                                  color: needsReconnect
+                                      ? AppColors.warning
+                                      : AppColors.textSecondary,
+                                ),
+                              ),
+                              if (isConnected &&
+                                  account?.lastSyncedAt != null) ...[
+                                const SizedBox(height: 2),
+                                Text(
+                                  'Last synced '
+                                  '${relativeTimeLabel(account!.lastSyncedAt!)}',
+                                  style: AppTextStyles.bodySmall.copyWith(
+                                    color: AppColors.textHint,
+                                  ),
+                                ),
+                              ],
+                            ],
                           ),
-                          if (isConnected && account?.lastSyncedAt != null) ...[
-                            const SizedBox(height: 2),
-                            Text(
-                              'Last synced ${relativeTimeLabel(account!.lastSyncedAt!)}',
-                              style: AppTextStyles.bodySmall.copyWith(
-                                color: AppColors.textHint,
+                        ),
+                        if (isLoading)
+                          const LoadingIndicator(size: 20)
+                        else if (isConnected) ...[
+                          IconButton(
+                            icon: const Icon(Icons.refresh),
+                            tooltip: 'Refresh Instagram data',
+                            onPressed: () => _refresh(context, ref),
+                          ),
+                          OutlinedButton(
+                            style: OutlinedButton.styleFrom(
+                              minimumSize: Size.zero,
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 16,
+                                vertical: 8,
                               ),
                             ),
-                          ],
+                            onPressed: () => _disconnect(context, ref),
+                            child: const Text('Disconnect'),
+                          ),
+                        ] else
+                          OutlinedButton(
+                            style: OutlinedButton.styleFrom(
+                              minimumSize: Size.zero,
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 16,
+                                vertical: 8,
+                              ),
+                            ),
+                            onPressed: () => _connect(context, ref),
+                            child: Text(
+                              needsReconnect ? 'Reconnect' : 'Connect',
+                            ),
+                          ),
+                      ],
+                    ),
+                    if (isConnected) ...[
+                      const SizedBox(height: AppSpacing.md),
+                      const Divider(height: 1),
+                      const SizedBox(height: AppSpacing.md),
+                      Row(
+                        children: [
+                          _InstagramStat(
+                            value: account!.followersCount,
+                            label: 'Followers',
+                          ),
+                          _InstagramStat(
+                            value: account.mediaCount,
+                            label: 'Posts',
+                          ),
+                          _InstagramStat(
+                            value: account.followsCount,
+                            label: 'Following',
+                          ),
                         ],
                       ),
-                    ),
-                    if (isLoading)
-                      const LoadingIndicator(size: 20)
-                    else if (isConnected) ...[
-                      IconButton(
-                        icon: const Icon(Icons.refresh),
-                        onPressed: () => _refresh(context, ref),
-                      ),
-                      OutlinedButton(
-                        style: OutlinedButton.styleFrom(
-                          minimumSize: Size.zero,
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 16,
-                            vertical: 8,
-                          ),
+                      const SizedBox(height: AppSpacing.sm),
+                      Text(
+                        'Brands see this profile info and follower count when '
+                        'reviewing you for a collaboration.',
+                        style: AppTextStyles.bodySmall.copyWith(
+                          color: AppColors.textHint,
                         ),
-                        onPressed: () => _disconnect(context, ref),
-                        child: const Text('Disconnect'),
                       ),
-                    ] else
-                      OutlinedButton(
-                        style: OutlinedButton.styleFrom(
-                          minimumSize: Size.zero,
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 16,
-                            vertical: 8,
-                          ),
-                        ),
-                        onPressed: () => _connect(context, ref),
-                        child: Text(needsReconnect ? 'Reconnect' : 'Connect'),
-                      ),
+                    ],
                   ],
                 ),
               ),
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+/// One count-and-label cell in the connected Instagram account's stats
+/// row (Followers / Posts / Following).
+class _InstagramStat extends StatelessWidget {
+  const _InstagramStat({required this.value, required this.label});
+
+  final int value;
+  final String label;
+
+  String get _formatted {
+    if (value >= 1000000) return '${(value / 1000000).toStringAsFixed(1)}M';
+    if (value >= 1000) return '${(value / 1000).toStringAsFixed(1)}K';
+    return '$value';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Expanded(
+      child: Column(
+        children: [
+          Text(_formatted, style: AppTextStyles.titleMedium),
+          const SizedBox(height: 2),
+          Text(
+            label,
+            style: AppTextStyles.bodySmall.copyWith(
+              color: AppColors.textSecondary,
+            ),
+          ),
+        ],
       ),
     );
   }
