@@ -86,8 +86,8 @@ class CreatorInstagramConnectScreen extends ConsumerWidget {
                     const SizedBox(width: 12),
                     Expanded(
                       child: Text(
-                        'Brands see your real follower count and engagement '
-                        'once Instagram is connected.',
+                        'Brands see your verified Instagram profile and '
+                        'follower count once Instagram is connected.',
                         style: AppTextStyles.bodyMedium.copyWith(
                           color: AppColors.primaryDark,
                         ),
