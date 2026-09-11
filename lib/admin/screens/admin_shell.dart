@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../providers/admin_notification_watcher_provider.dart';
 import '../widgets/admin_sidebar.dart';
 import '../theme/admin_colors.dart';
 
@@ -8,7 +10,7 @@ import '../theme/admin_colors.dart';
 /// the left, routed content on the right. Mirrors the Figma prototype's
 /// `AdminApp` root layout (minus the top exit-strip, which doesn't apply
 /// here since there's no "other portal" to exit back to).
-class AdminShell extends StatelessWidget {
+class AdminShell extends ConsumerWidget {
   const AdminShell({super.key, required this.child});
 
   final Widget child;
@@ -16,7 +18,13 @@ class AdminShell extends StatelessWidget {
   static const _narrowBreakpoint = 900.0;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    // Keeps the desktop-notification watcher alive for as long as any
+    // authenticated admin screen is mounted — the ShellRoute this wraps
+    // covers every route except /login and /no-access, so this starts
+    // right after sign-in and never needs watching again elsewhere.
+    ref.watch(adminNotificationWatcherProvider);
+
     final currentPath = GoRouterState.of(context).matchedLocation;
     final isNarrow = MediaQuery.sizeOf(context).width < _narrowBreakpoint;
 
