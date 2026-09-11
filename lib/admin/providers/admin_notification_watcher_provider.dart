@@ -26,7 +26,10 @@ part 'admin_notification_watcher_provider.g.dart';
 @Riverpod(keepAlive: true)
 Future<void> adminNotificationWatcher(Ref ref) async {
   final prefs = await SharedPreferences.getInstance();
-  await BrowserNotificationService.requestPermission();
+  // Permission is requested from AdminNotificationPermissionBanner's own
+  // button, not here — Chrome only shows the real popup in response to a
+  // user gesture, so asking from this build method would silently do
+  // nothing.
 
   ref.listen(creatorDirectoryProvider, (previous, next) {
     final pending = next.whenOrNull(

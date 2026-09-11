@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../providers/admin_notification_watcher_provider.dart';
+import '../widgets/admin_notification_permission_banner.dart';
 import '../widgets/admin_sidebar.dart';
 import '../theme/admin_colors.dart';
 
@@ -34,7 +35,14 @@ class AdminShell extends ConsumerWidget {
         body: Row(
           children: [
             AdminSidebar(currentPath: currentPath),
-            Expanded(child: child),
+            Expanded(
+              child: Column(
+                children: [
+                  const AdminNotificationPermissionBanner(),
+                  Expanded(child: child),
+                ],
+              ),
+            ),
           ],
         ),
       );
@@ -50,7 +58,12 @@ class AdminShell extends ConsumerWidget {
           onNavigate: () => Navigator.of(context).pop(),
         ),
       ),
-      body: child,
+      body: Column(
+        children: [
+          const AdminNotificationPermissionBanner(),
+          Expanded(child: child),
+        ],
+      ),
     );
   }
 }

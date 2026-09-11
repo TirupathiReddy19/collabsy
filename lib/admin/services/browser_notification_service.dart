@@ -34,9 +34,16 @@ class BrowserNotificationService {
 
   static bool get _isSupported => html.Notification.supported;
 
-  /// Call once the admin is signed in — browsers only show the permission
-  /// prompt in response to a real session, and this is a no-op once the
-  /// user has already answered (granted or denied) on a prior visit.
+  /// Whether the browser hasn't yet been asked (or denied/granted) —
+  /// drives whether `AdminNotificationPermissionBanner` shows its
+  /// "Enable" button.
+  static bool get needsPermissionPrompt =>
+      _isSupported && html.Notification.permission == 'default';
+
+  /// Must be called from a real user gesture (a button's `onPressed`) —
+  /// Chrome only shows the actual permission popup in response to one;
+  /// calling this on page load or from a build method silently does
+  /// nothing. No-op once the user has already answered on a prior visit.
   static Future<void> requestPermission() async {
     if (!_isSupported) return;
     if (html.Notification.permission != 'default') return;
