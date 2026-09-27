@@ -60,6 +60,22 @@ android {
                 // release key to exist locally.
                 signingConfigs.getByName("debug")
             }
+            // Release was shipping every class unminified (Firebase, Play
+            // Services, AndroidX, Kotlin stdlib) — thousands of classes ART
+            // has to verify on a cold start before a baseline profile exists.
+            // Play's build-26 rejection screenshot showed the app stuck on
+            // the native splash; reproduced locally on Google's 16KB
+            // page-size compliance image, the cold start ran 10+s (251
+            // skipped main-thread frames) vs ~1.8s on a standard image —
+            // long enough for an automated reviewer's launch check to catch
+            // it mid-start and flag "does not load". Shrinking the class
+            // count directly cuts that verification work.
+            isMinifyEnabled = true
+            isShrinkResources = true
+            proguardFiles(
+                getDefaultProguardFile("proguard-android-optimize.txt"),
+                "proguard-rules.pro",
+            )
         }
     }
 }
