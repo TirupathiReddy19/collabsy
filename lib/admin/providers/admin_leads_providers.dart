@@ -15,6 +15,7 @@ Lead _leadFromDoc(DocumentSnapshot<Map<String, dynamic>> doc) {
     instagramUrl: data['instagramUrl'] as String? ?? '',
     internId: data['internId'] as String? ?? '',
     internEmail: data['internEmail'] as String? ?? '',
+    contactEmail: data['contactEmail'] as String? ?? '',
     message: data['message'] as String? ?? '',
     comment: data['comment'] as String? ?? 'looking for collabs check your DM.',
     status: data['status'] as String? ?? 'linkGenerated',

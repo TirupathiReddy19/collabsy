@@ -9,11 +9,16 @@
 /// reveal in `intern_home_screen.dart`'s `_SuccessCard`). It's not proof —
 /// nothing can verify a DM was actually sent outside Instagram's own
 /// systems — but it turns silence into a checkable claim.
+///
+/// `contactEmail` is the influencer's public email, if the intern spotted
+/// one in their bio — pulled out of pasted bio text on the client (see
+/// `email_extractor.dart`) and set once at creation. Empty when none.
 typedef Lead = ({
   String handle,
   String instagramUrl,
   String internId,
   String internEmail,
+  String contactEmail,
   String message,
   String comment,
   String status,

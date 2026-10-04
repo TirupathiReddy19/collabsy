@@ -4,6 +4,7 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../core/theme/app_breakpoints.dart';
 import '../../core/theme/app_colors.dart';
@@ -17,6 +18,7 @@ import '../../core/widgets/primary_button.dart';
 import '../../core/widgets/staggered_fade_in.dart';
 import '../../features/auth/providers/auth_providers.dart';
 import '../../shared/models/lead.dart';
+import '../../shared/utils/email_extractor.dart';
 import '../../shared/utils/instagram_handle.dart';
 import '../providers/intern_leads_providers.dart';
 import '../providers/intern_shift_providers.dart';
@@ -214,6 +216,12 @@ class InternHomeScreen extends ConsumerStatefulWidget {
 class _InternHomeScreenState extends ConsumerState<InternHomeScreen>
     with WidgetsBindingObserver {
   final _urlController = TextEditingController();
+  final _bioController = TextEditingController();
+  final _emailController = TextEditingController();
+  // The last email we filled in from the bio — lets us overwrite our own
+  // guess when the pasted bio changes without clobbering one the intern
+  // typed by hand.
+  String _autoFilledEmail = '';
   bool _isGenerating = false;
   bool _justCopiedMessage = false;
   Lead? _duplicateLead;
@@ -237,6 +245,7 @@ class _InternHomeScreenState extends ConsumerState<InternHomeScreen>
     _end = DateTime(today.year, today.month, today.day);
     _start = _end.subtract(const Duration(days: 29));
 
+    _bioController.addListener(_fillEmailFromBio);
     WidgetsBinding.instance.addObserver(this);
     _shiftTicker = Timer.periodic(
       _shiftTickInterval,
@@ -249,7 +258,32 @@ class _InternHomeScreenState extends ConsumerState<InternHomeScreen>
     WidgetsBinding.instance.removeObserver(this);
     _shiftTicker?.cancel();
     _urlController.dispose();
+    _bioController.dispose();
+    _emailController.dispose();
     super.dispose();
+  }
+
+  void _fillEmailFromBio() {
+    final best = pickBestEmail(extractEmails(_bioController.text)) ?? '';
+    final current = _emailController.text.trim();
+    final isOurGuess = current.isEmpty || current == _autoFilledEmail;
+    if (isOurGuess) {
+      _emailController.text = best;
+      _autoFilledEmail = best;
+    }
+    setState(() {});
+  }
+
+  Future<void> _openProfile() async {
+    final handle = normalizeInstagramHandle(_urlController.text);
+    if (handle.isEmpty) {
+      AppSnackbar.showError(context, 'Paste an Instagram link first.');
+      return;
+    }
+    await launchUrl(
+      Uri.https('www.instagram.com', '/$handle/'),
+      mode: LaunchMode.externalApplication,
+    );
   }
 
   @override
@@ -312,6 +346,12 @@ class _InternHomeScreenState extends ConsumerState<InternHomeScreen>
     final handle = normalizeInstagramHandle(raw);
     if (handle.isEmpty) return;
 
+    final contactEmail = _emailController.text.trim().toLowerCase();
+    if (contactEmail.isNotEmpty && !looksLikeEmail(contactEmail)) {
+      AppSnackbar.showError(context, "That email doesn't look right.");
+      return;
+    }
+
     setState(() {
       _isGenerating = true;
       _duplicateLead = null;
@@ -345,6 +385,7 @@ class _InternHomeScreenState extends ConsumerState<InternHomeScreen>
         instagramUrl: raw,
         internId: user.uid,
         internEmail: user.email ?? '',
+        contactEmail: contactEmail,
         message: message,
         comment: comment,
       );
@@ -355,6 +396,7 @@ class _InternHomeScreenState extends ConsumerState<InternHomeScreen>
           instagramUrl: raw,
           internId: user.uid,
           internEmail: user.email ?? '',
+          contactEmail: contactEmail,
           message: message,
           comment: comment,
           status: 'linkGenerated',
@@ -371,6 +413,9 @@ class _InternHomeScreenState extends ConsumerState<InternHomeScreen>
         );
         _urlController.clear();
       });
+      _autoFilledEmail = '';
+      _emailController.clear();
+      _bioController.clear();
     } catch (error) {
       if (!mounted) return;
       AppSnackbar.showError(context, "Couldn't generate a link.");
@@ -449,6 +494,13 @@ class _InternHomeScreenState extends ConsumerState<InternHomeScreen>
             children: [
               _GeneratorCard(
                 urlController: _urlController,
+                bioController: _bioController,
+                emailController: _emailController,
+                emailFromBio:
+                    _emailController.text.trim().isNotEmpty &&
+                    _emailController.text.trim() == _autoFilledEmail,
+                onOpenProfile: _openProfile,
+                onEmailChanged: () => setState(() {}),
                 isGenerating: _isGenerating,
                 onGenerate: _generate,
                 duplicateLead: _duplicateLead,
@@ -827,6 +879,11 @@ class _StatChip extends StatelessWidget {
 class _GeneratorCard extends StatelessWidget {
   const _GeneratorCard({
     required this.urlController,
+    required this.bioController,
+    required this.emailController,
+    required this.emailFromBio,
+    required this.onOpenProfile,
+    required this.onEmailChanged,
     required this.isGenerating,
     required this.onGenerate,
     required this.duplicateLead,
@@ -836,6 +893,11 @@ class _GeneratorCard extends StatelessWidget {
   });
 
   final TextEditingController urlController;
+  final TextEditingController bioController;
+  final TextEditingController emailController;
+  final bool emailFromBio;
+  final VoidCallback onOpenProfile;
+  final VoidCallback onEmailChanged;
   final bool isGenerating;
   final VoidCallback onGenerate;
   final Lead? duplicateLead;
@@ -902,6 +964,37 @@ class _GeneratorCard extends StatelessWidget {
             ),
             enabled: !isGenerating,
             onSubmitted: (_) => onGenerate(),
+          ),
+          Align(
+            alignment: Alignment.centerLeft,
+            child: TextButton.icon(
+              onPressed: isGenerating ? null : onOpenProfile,
+              icon: const Icon(Icons.open_in_new, size: 16),
+              label: const Text('Open profile to copy their bio'),
+            ),
+          ),
+          AppTextField(
+            controller: bioController,
+            label: 'Bio text (optional)',
+            hintText: "Paste their bio here and we'll look for an email",
+            maxLines: 3,
+            enabled: !isGenerating,
+          ),
+          const SizedBox(height: AppSpacing.sm + 2),
+          AppTextField(
+            controller: emailController,
+            label: 'Contact email (optional)',
+            hintText: 'No email found',
+            keyboardType: TextInputType.emailAddress,
+            enabled: !isGenerating,
+            onChanged: (_) => onEmailChanged(),
+          ),
+          const SizedBox(height: AppSpacing.xs),
+          Text(
+            emailFromBio
+                ? 'Found in their bio.'
+                : 'Saw one on their Contact button? Type it in.',
+            style: AppTextStyles.bodySmall,
           ),
           const SizedBox(height: AppSpacing.md),
           PrimaryButton(
@@ -1481,6 +1574,14 @@ class _LeadRowState extends State<_LeadRow> {
                         value: link,
                         onCopy: () => _copy(link, 'Link'),
                       ),
+                      if (lead.contactEmail.isNotEmpty) ...[
+                        const SizedBox(height: AppSpacing.sm),
+                        _CopyableField(
+                          label: 'Contact email',
+                          value: lead.contactEmail,
+                          onCopy: () => _copy(lead.contactEmail, 'Email'),
+                        ),
+                      ],
                       const SizedBox(height: AppSpacing.sm),
                       _CopyableField(
                         label: 'Message',
