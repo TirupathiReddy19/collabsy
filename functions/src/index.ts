@@ -35,6 +35,8 @@ export { sendPushOnAnnouncementCreate } from "./sendPushOnAnnouncementCreate";
 export { getCrashAnalytics } from "./admin/getCrashAnalytics";
 export { onCreatorApproved, onBrandApproved } from "./onboarding/sendWelcomeMessage";
 export { backfillWelcomeMessages } from "./onboarding/backfillWelcomeMessages";
+export { submitCampaignRequest } from "./publicForms/submitCampaignRequest";
+export { submitDeletionRequest } from "./publicForms/submitDeletionRequest";
 
 /**
  * Sends a push notification whenever a `notifications/{id}` document is

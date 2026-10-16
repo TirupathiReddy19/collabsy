@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.sendPushOnNotificationCreate = exports.backfillWelcomeMessages = exports.onBrandApproved = exports.onCreatorApproved = exports.getCrashAnalytics = exports.sendPushOnAnnouncementCreate = exports.onBrandProfileWritten = exports.redirectBrandLead = exports.onOnboardingComplete = exports.redirectLead = exports.reinstateUserAccount = exports.suspendUserAccount = exports.onAuthUserDeleted = exports.expireCampaigns = exports.checkEmailRegistered = exports.deleteAccount = exports.forceLogoutStaffAccount = exports.getStaffLastSignIn = exports.createStaffAccount = exports.backfillCreatedAtFromAuth = exports.instagramOAuthRedirect = exports.refreshConnectedInstagramProfiles = exports.refreshExpiringInstagramTokens = exports.refreshInstagramProfile = exports.disconnectInstagram = exports.exchangeInstagramCode = void 0;
+exports.sendPushOnNotificationCreate = exports.submitDeletionRequest = exports.submitCampaignRequest = exports.backfillWelcomeMessages = exports.onBrandApproved = exports.onCreatorApproved = exports.getCrashAnalytics = exports.sendPushOnAnnouncementCreate = exports.onBrandProfileWritten = exports.redirectBrandLead = exports.onOnboardingComplete = exports.redirectLead = exports.reinstateUserAccount = exports.suspendUserAccount = exports.onAuthUserDeleted = exports.expireCampaigns = exports.checkEmailRegistered = exports.deleteAccount = exports.forceLogoutStaffAccount = exports.getStaffLastSignIn = exports.createStaffAccount = exports.backfillCreatedAtFromAuth = exports.instagramOAuthRedirect = exports.refreshConnectedInstagramProfiles = exports.refreshExpiringInstagramTokens = exports.refreshInstagramProfile = exports.disconnectInstagram = exports.exchangeInstagramCode = void 0;
 const app_1 = require("firebase-admin/app");
 const firestore_1 = require("firebase-admin/firestore");
 const messaging_1 = require("firebase-admin/messaging");
@@ -60,6 +60,10 @@ Object.defineProperty(exports, "onCreatorApproved", { enumerable: true, get: fun
 Object.defineProperty(exports, "onBrandApproved", { enumerable: true, get: function () { return sendWelcomeMessage_1.onBrandApproved; } });
 var backfillWelcomeMessages_1 = require("./onboarding/backfillWelcomeMessages");
 Object.defineProperty(exports, "backfillWelcomeMessages", { enumerable: true, get: function () { return backfillWelcomeMessages_1.backfillWelcomeMessages; } });
+var submitCampaignRequest_1 = require("./publicForms/submitCampaignRequest");
+Object.defineProperty(exports, "submitCampaignRequest", { enumerable: true, get: function () { return submitCampaignRequest_1.submitCampaignRequest; } });
+var submitDeletionRequest_1 = require("./publicForms/submitDeletionRequest");
+Object.defineProperty(exports, "submitDeletionRequest", { enumerable: true, get: function () { return submitDeletionRequest_1.submitDeletionRequest; } });
 /**
  * Sends a push notification whenever a `notifications/{id}` document is
  * created — the client app never talks to FCM's send API directly (it can't;

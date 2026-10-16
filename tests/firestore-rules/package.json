@@ -3,7 +3,8 @@
   "private": true,
   "description": "Security tests for firestore.rules, run against the local Firestore emulator only.",
   "scripts": {
-    "test": "cd ../.. && firebase emulators:exec --only firestore --project demo-collabsy \"node --test tests/firestore-rules/rules.test.js\""
+    "test": "cd ../.. && firebase emulators:exec --only firestore --project demo-collabsy \"node --test tests/firestore-rules/rules.test.js\"",
+    "test:functions": "cd ../.. && firebase emulators:exec --only firestore --project demo-collabsy \"node --test functions/test/rateLimit.emulator.test.js\""
   },
   "devDependencies": {
     "@firebase/rules-unit-testing": "^6.0.0",
