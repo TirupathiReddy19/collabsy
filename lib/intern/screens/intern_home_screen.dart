@@ -22,8 +22,10 @@ import '../../shared/utils/email_extractor.dart';
 import '../../shared/utils/instagram_handle.dart';
 import '../providers/intern_leads_providers.dart';
 import '../providers/intern_shift_providers.dart';
+import '../utils/extension_bridge.dart';
+import '../utils/extension_profile.dart';
 
-const _linkBaseUrl = 'https://collabsy-leads.web.app/l/';
+const _linkBaseUrl = 'https://collabsy.online/l/';
 
 /// A shift is 4 hours with a target of 200 messages sent.
 const _shiftTargetHours = 4;
@@ -64,15 +66,17 @@ const _completeRevealDelay = Duration(seconds: 10);
 const _messageTemplates = [
   "Hi! 👋 I came across your profile and think you'd be a great fit for "
       'brand collaborations on Collabsy — a platform that connects '
-      'influencers like you with brand campaigns. Check it out here: '
-      '{{link}}',
+      'influencers like you with brand campaigns. Download the app from '
+      'the Play Store or App Store here: {{link}}',
   'Hey! I run outreach for Collabsy — we connect creators like you with '
-      'brand collab opportunities. Your content stood out to me. Take a '
-      'look: {{link}}',
+      'brand collab opportunities. Your content stood out to me. Download '
+      'the app from the Play Store or App Store: {{link}}',
   "Hi there! Really like your content — think you'd be a great fit for "
-      'brand partnerships on Collabsy. Check it out here: {{link}}',
+      'brand partnerships on Collabsy. Download it from the Play Store or '
+      'App Store here: {{link}}',
   "Hey 👋 quick one — Collabsy connects creators with brand campaigns, "
-      "and your profile looks like a great fit. Here's the link: {{link}}",
+      'and your profile looks like a great fit. Get the app on the Play '
+      'Store or App Store: {{link}}',
 ];
 
 /// Sent instead of a pick from [_messageTemplates] when following up on a
@@ -83,14 +87,16 @@ const _messageTemplates = [
 const _followUpMessageTemplates = [
   "Hey again! 👋 Just following up in case this got buried — still "
       "think you'd be a great fit for brand collabs on Collabsy. Here's "
-      'that link again: {{link}}',
+      'the Play Store / App Store link again: {{link}}',
   "Hi again! Not sure if my last message got lost — still think you'd "
-      'be a great fit for brand collaborations on Collabsy. Here\'s the '
-      'link: {{link}}',
+      'be a great fit for brand collaborations on Collabsy. You can '
+      'download the app from the Play Store or App Store here: {{link}}',
   "Just circling back on this — brand collabs on Collabsy, still think "
-      "you'd be a great fit. Link again here: {{link}}",
-  'Following up in case you missed it! Would love for you to check out '
-      'Collabsy for brand collab opportunities: {{link}}',
+      "you'd be a great fit. Download the app here (Play Store or App "
+      'Store): {{link}}',
+  'Following up in case you missed it! Would love for you to download '
+      'Collabsy from the Play Store or App Store for brand collab '
+      'opportunities: {{link}}',
 ];
 
 /// The follow-up send flow skips the comment step entirely (unlike the
@@ -222,6 +228,7 @@ class _InternHomeScreenState extends ConsumerState<InternHomeScreen>
   // guess when the pasted bio changes without clobbering one the intern
   // typed by hand.
   String _autoFilledEmail = '';
+  late final ExtensionBridge _extensionBridge;
   bool _isGenerating = false;
   bool _justCopiedMessage = false;
   Lead? _duplicateLead;
@@ -246,6 +253,7 @@ class _InternHomeScreenState extends ConsumerState<InternHomeScreen>
     _start = _end.subtract(const Duration(days: 29));
 
     _bioController.addListener(_fillEmailFromBio);
+    _extensionBridge = ExtensionBridge(_onExtensionProfile)..start();
     WidgetsBinding.instance.addObserver(this);
     _shiftTicker = Timer.periodic(
       _shiftTickInterval,
@@ -257,10 +265,33 @@ class _InternHomeScreenState extends ConsumerState<InternHomeScreen>
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
     _shiftTicker?.cancel();
+    _extensionBridge.dispose();
     _urlController.dispose();
     _bioController.dispose();
     _emailController.dispose();
     super.dispose();
+  }
+
+  void _onExtensionProfile(ExtensionProfile profile) {
+    if (!mounted) return;
+    setState(() {
+      _duplicateLead = null;
+      _generatedLead = null;
+    });
+    _urlController.text = profile.url;
+    // A new profile starts clean — don't carry over the last one's email.
+    _autoFilledEmail = '';
+    _emailController.clear();
+    _bioController.text = profile.bio;
+    _fillEmailFromBio();
+
+    final found = _emailController.text.trim();
+    AppSnackbar.showSuccess(
+      context,
+      found.isEmpty
+          ? 'Loaded @${profile.handle} — no email in the bio.'
+          : 'Loaded @${profile.handle} — found $found.',
+    );
   }
 
   void _fillEmailFromBio() {

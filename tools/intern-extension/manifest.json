@@ -1,0 +1,27 @@
+{
+  "manifest_version": 3,
+  "name": "Collabsy Outreach Helper",
+  "version": "1.0.0",
+  "description": "Sends an Instagram profile's bio to the Collabsy intern tool so the contact email fills in automatically.",
+  "icons": {
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  },
+  "permissions": ["storage"],
+  "host_permissions": ["https://collabsy-leads.web.app/*"],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "content_scripts": [
+    {
+      "matches": ["https://www.instagram.com/*", "https://instagram.com/*"],
+      "js": ["instagram.js"],
+      "run_at": "document_idle"
+    },
+    {
+      "matches": ["https://collabsy-leads.web.app/*"],
+      "js": ["tool.js"],
+      "run_at": "document_start"
+    }
+  ]
+}
