@@ -11,6 +11,18 @@ service cloud.firestore {
         && request.auth.token.email == 'admin@collabsy.online';
     }
 
+    // False once suspendUserAccount has put the `suspended` custom claim on
+    // the caller's ID token (it lands on their next token refresh, which the
+    // function forces by revoking refresh tokens). Gates the platform
+    // actions a suspended account must not keep using: applying, messaging,
+    // running campaigns, deliverables, notifications. Deliberately NOT
+    // applied to Support, the account's own user doc, or reads, so the
+    // suspended screen and the way to contact Support keep working.
+    function notSuspended() {
+      return !('suspended' in request.auth.token)
+        || request.auth.token.suspended != true;
+    }
+
     // A staff account (see staffAccounts/{uid} below) that's active and has
     // been granted the given sidebar section, e.g. '/support'. Mirrors
     // isAdmin()'s role as the real server-side boundary — the admin portal's
@@ -120,36 +132,47 @@ service cloud.firestore {
       // Every new campaign must start under review — the client always
       // sends this, but this rule stops a tampered client from creating an
       // already-active campaign directly, bypassing admin approval.
-      allow create: if request.auth != null
+      allow create: if request.auth != null && notSuspended()
         && request.resource.data.brandId == request.auth.uid
         && request.resource.data.status == 'underReview';
-      // The owning brand can change anything about their own campaign
-      // EXCEPT self-approving/un-rejecting it — moving status to 'active'
-      // out of 'underReview'/'rejected' is the admin's decision alone.
+      // The owning brand can edit its own campaign, but `status` is tightly
+      // controlled: it can be left alone, or moved among the post-approval
+      // states (pause / resume / close / reopen) — exactly what the brand's
+      // status menu offers. A campaign sitting in 'underReview' or
+      // 'rejected' can't have its status changed by the brand at all, and
+      // can't be moved to 'underReview'/'rejected' either. (A rule that
+      // only blocked the direct jump to 'active' let a brand reach it in two
+      // writes via 'paused' or 'draft', skipping admin approval.)
       // Any other authenticated user (a creator viewing it) may only touch
       // the view-tracking fields, so opening a campaign's details can't be
       // used to tamper with it.
       allow update: if isAdmin()
         || isActiveStaffWithPermission('/campaigns/review')
-        || (request.auth != null
+        || (request.auth != null && notSuspended()
             && resource.data.brandId == request.auth.uid
-            && !(request.resource.data.status == 'active'
-                 && (resource.data.status == 'underReview'
-                     || resource.data.status == 'rejected')))
+            && (request.resource.data.status == resource.data.status
+                || (resource.data.status in ['active', 'paused', 'closed', 'expired']
+                    && request.resource.data.status in ['active', 'paused', 'closed'])))
         // View-tracking from a creator opening the detail screen — auth
         // required (this used to have none at all), the count can only
-        // ever go up by exactly 1 per write, and the id being added to
-        // viewedByCreatorIds must be the caller's own, with no existing
-        // entries removed. Without these, anyone could inflate a brand's
-        // view count or inject fake creator ids into their own analytics.
-        || (request.auth != null
+        // ever go up by exactly 1 per write, and viewedByCreatorIds may
+        // only (a) stay the same — a repeat view, since the client uses
+        // arrayUnion — or (b) grow by exactly the caller's own id, the first
+        // time they view it. Checking only that the caller's id was present
+        // let other creators' ids ride along in the same write.
+        || (request.auth != null && notSuspended()
             && request.resource.data.diff(resource.data).affectedKeys()
                 .hasOnly(['viewCount', 'viewedByCreatorIds'])
             && request.resource.data.viewCount == resource.data.get('viewCount', 0) + 1
             && request.resource.data.viewedByCreatorIds.hasAny([request.auth.uid])
             && request.resource.data.viewedByCreatorIds
-                .hasAll(resource.data.get('viewedByCreatorIds', [])));
-      allow delete: if request.auth != null
+                .hasAll(resource.data.get('viewedByCreatorIds', []))
+            && (request.resource.data.viewedByCreatorIds.size()
+                  == resource.data.get('viewedByCreatorIds', []).size()
+                || (request.resource.data.viewedByCreatorIds.size()
+                      == resource.data.get('viewedByCreatorIds', []).size() + 1
+                    && !resource.data.get('viewedByCreatorIds', []).hasAny([request.auth.uid]))));
+      allow delete: if request.auth != null && notSuspended()
         && resource.data.brandId == request.auth.uid;
     }
 
@@ -161,16 +184,24 @@ service cloud.firestore {
         || (request.auth != null
             && (resource.data.creatorId == request.auth.uid
                 || resource.data.brandId == request.auth.uid));
-      allow create: if request.auth != null
+      // The brand named on an application must be the campaign's real owner
+      // (otherwise a creator could drop applications into any brand's
+      // inbox), and nobody may apply to their own campaign (creatorId ==
+      // brandId would make them both parties, able to accept their own
+      // application and run the whole collaboration with themselves).
+      allow create: if request.auth != null && notSuspended()
         && request.resource.data.creatorId == request.auth.uid
-        && request.resource.data.status == 'pending';
+        && request.resource.data.status == 'pending'
+        && request.resource.data.creatorId != request.resource.data.brandId
+        && get(/databases/$(database)/documents/campaigns/$(request.resource.data.campaignId)).data.brandId
+            == request.resource.data.brandId;
       // `status` is the ONLY field either party may ever change here, and
       // only along the one transition each side actually owns — a creator
       // withdrawing their own still-open application, or the owning brand
       // accepting/rejecting a pending one. Without this, either side could
       // write any field to any value, including a creator self-accepting
       // their own application (skipping the brand's review entirely).
-      allow update: if request.auth != null
+      allow update: if request.auth != null && notSuspended()
         && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status'])
         && ((resource.data.creatorId == request.auth.uid
              && request.resource.data.status == 'withdrawn'
@@ -188,7 +219,7 @@ service cloud.firestore {
       allow read: if request.auth != null
         && (resource.data.creatorId == request.auth.uid
             || resource.data.brandId == request.auth.uid);
-      allow create: if request.auth != null
+      allow create: if request.auth != null && notSuspended()
         && request.resource.data.brandId == request.auth.uid
         && request.resource.data.status == 'pending';
       // The creator can only submit their own still-pending deliverable;
@@ -196,7 +227,7 @@ service cloud.firestore {
       // submitted. These two transitions are the only writes either side
       // can make — otherwise a creator could self-approve their own
       // deliverable without the brand ever reviewing it.
-      allow update: if request.auth != null
+      allow update: if request.auth != null && notSuspended()
         && ((resource.data.creatorId == request.auth.uid
              && resource.data.status == 'pending'
              && request.resource.data.status == 'submitted'
@@ -224,7 +255,7 @@ service cloud.firestore {
       // fixed initial `read`/`createdAt`, and admin-only types (profile
       // verification, campaign decisions, support replies) blocked unless
       // the caller is actually admin/staff.
-      allow create: if request.auth != null
+      allow create: if request.auth != null && notSuspended()
         && request.resource.data.keys().hasOnly(
             ['userId', 'type', 'title', 'body', 'referenceType', 'referenceId', 'read', 'createdAt'])
         && request.resource.data.userId is string
@@ -257,7 +288,7 @@ service cloud.firestore {
       allow read: if request.auth != null
         && (resource.data.creatorId == request.auth.uid
             || resource.data.brandId == request.auth.uid);
-      allow create: if request.auth != null
+      allow create: if request.auth != null && notSuspended()
         && (request.resource.data.creatorId == request.auth.uid
             || request.resource.data.brandId == request.auth.uid)
         && !isBlocked(request.resource.data.creatorId, request.resource.data.brandId);
@@ -266,7 +297,7 @@ service cloud.firestore {
       // their own lastReadAt. Without a field allow-list here, a
       // participant could silently reassign creatorId/brandId to a
       // completely different account.
-      allow update: if request.auth != null
+      allow update: if request.auth != null && notSuspended()
         && ((resource.data.creatorId == request.auth.uid
              && request.resource.data.diff(resource.data).affectedKeys()
                  .hasOnly(['status', 'lastMessage', 'lastMessageAt', 'creatorLastReadAt']))
@@ -278,7 +309,7 @@ service cloud.firestore {
         allow read: if request.auth != null
           && (get(/databases/$(database)/documents/chats/$(chatId)).data.creatorId == request.auth.uid
               || get(/databases/$(database)/documents/chats/$(chatId)).data.brandId == request.auth.uid);
-        allow create: if request.auth != null
+        allow create: if request.auth != null && notSuspended()
           && request.resource.data.senderId == request.auth.uid
           && (get(/databases/$(database)/documents/chats/$(chatId)).data.creatorId == request.auth.uid
               || get(/databases/$(database)/documents/chats/$(chatId)).data.brandId == request.auth.uid)
@@ -464,9 +495,25 @@ service cloud.firestore {
     // conversion metric since it's a separate field from `status`.
     match /leads/{handle} {
       allow read: if isAdmin() || isActiveStaffWithPermission('/outreach-leads');
+      // A strict field allow-list on create, so an intern can't pre-fill
+      // conversion fields (clickCount, matchedUid, signedUpAt,
+      // onboardingCompleteAt, internConfirmedSent) with made-up numbers —
+      // those only ever come from Cloud Functions or the update rules
+      // below. `contactEmail` is the influencer's public email the intern
+      // spotted in their bio (see email_extractor.dart).
       allow create: if (isAdmin() || isActiveStaffWithPermission('/outreach-leads'))
         && request.resource.data.internId == request.auth.uid
-        && request.resource.data.status == 'linkGenerated';
+        && request.resource.data.status == 'linkGenerated'
+        && request.resource.data.keys().hasOnly([
+             'instagramHandle', 'instagramUrl', 'internId', 'internEmail',
+             'contactEmail', 'message', 'comment', 'status', 'createdAt',
+             'clickCount', 'internConfirmedSent'])
+        && request.resource.data.get('clickCount', 0) == 0
+        && request.resource.data.get('internConfirmedSent', false) == false
+        && (!('contactEmail' in request.resource.data)
+            || (request.resource.data.contactEmail is string
+                && request.resource.data.contactEmail.size() < 320))
+        && request.resource.data.createdAt == request.time;
       allow update: if (isAdmin() || isActiveStaffWithPermission('/outreach-leads'))
         && resource.data.internId == request.auth.uid
         && (
@@ -528,9 +575,15 @@ service cloud.firestore {
     // own permission since it's a separate intern team/tool.
     match /brandLeads/{slug} {
       allow read: if isAdmin() || isActiveStaffWithPermission('/brand-outreach-leads');
+      // Same allow-list rationale as `leads` above.
       allow create: if (isAdmin() || isActiveStaffWithPermission('/brand-outreach-leads'))
         && request.resource.data.internId == request.auth.uid
-        && request.resource.data.status == 'linkGenerated';
+        && request.resource.data.status == 'linkGenerated'
+        && request.resource.data.keys().hasOnly([
+             'linkedinUrl', 'internId', 'internEmail', 'message', 'status',
+             'createdAt', 'clickCount'])
+        && request.resource.data.get('clickCount', 0) == 0
+        && request.resource.data.createdAt == request.time;
       allow update, delete: if false;
     }
 
