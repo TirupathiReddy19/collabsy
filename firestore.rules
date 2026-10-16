@@ -381,42 +381,30 @@ service cloud.firestore {
     // the actual deletion still goes through the same `deleteAccount`
     // Cloud Function as the in-app flow, triggered manually once staff
     // verify the request.
+    //
+    // Created ONLY by the `submitDeletionRequest` Cloud Function (Admin SDK,
+    // which bypasses these rules): it validates the input and rate-limits
+    // each visitor. An anonymous client create used to be allowed here, and
+    // nothing stopped a script from flooding the queue.
     match /accountDeletionRequests/{requestId} {
       allow read: if isAdmin() || isActiveStaffWithPermission('/deletion-requests');
-      allow create: if request.resource.data.keys().hasOnly(['identifier', 'reason', 'status', 'createdAt'])
-        && request.resource.data.status == 'pending'
-        && request.resource.data.identifier is string
-        && request.resource.data.identifier.size() > 0
-        && request.resource.data.identifier.size() < 200
-        && (!('reason' in request.resource.data) || request.resource.data.reason is string)
-        && (!('reason' in request.resource.data) || request.resource.data.reason.size() < 1000)
-        && request.resource.data.createdAt == request.time;
+      allow create: if false;
       allow update: if isAdmin() || isActiveStaffWithPermission('/deletion-requests');
       allow delete: if false;
     }
 
     // Submitted from the public, unauthenticated marketing website's
     // Brands page ("managed campaign" lead form) — same shape/rationale as
-    // `accountDeletionRequests` above: a strict field allow-list, capped
-    // lengths, a fixed initial status, deliberately not readable by
+    // `accountDeletionRequests` above, deliberately not readable by
     // whoever submitted it. Only admin/staff with the `/campaign-requests`
     // permission ever see these.
+    //
+    // Created ONLY by the `submitCampaignRequest` Cloud Function (Admin SDK),
+    // which applies the same field allow-list and length limits plus a
+    // per-visitor rate limit; no client may create these directly.
     match /campaignRequests/{requestId} {
       allow read: if isAdmin() || isActiveStaffWithPermission('/campaign-requests');
-      allow create: if request.resource.data.keys().hasOnly(
-          ['companyName', 'contactName', 'workEmail', 'phone', 'budgetRange', 'campaignBrief', 'status', 'createdAt'])
-        && request.resource.data.status == 'new'
-        && request.resource.data.companyName is string
-        && request.resource.data.companyName.size() > 0 && request.resource.data.companyName.size() < 200
-        && request.resource.data.contactName is string
-        && request.resource.data.contactName.size() > 0 && request.resource.data.contactName.size() < 200
-        && request.resource.data.workEmail is string
-        && request.resource.data.workEmail.size() > 0 && request.resource.data.workEmail.size() < 320
-        && (!('phone' in request.resource.data) || (request.resource.data.phone is string && request.resource.data.phone.size() < 40))
-        && request.resource.data.budgetRange in ['under_50k', '50k_2l', '2l_10l', '10l_plus', 'not_sure']
-        && request.resource.data.campaignBrief is string
-        && request.resource.data.campaignBrief.size() > 0 && request.resource.data.campaignBrief.size() < 3000
-        && request.resource.data.createdAt == request.time;
+      allow create: if false;
       allow update: if (isAdmin() || isActiveStaffWithPermission('/campaign-requests'))
         && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status']);
       allow delete: if false;

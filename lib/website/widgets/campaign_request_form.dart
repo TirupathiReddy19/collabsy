@@ -9,12 +9,13 @@ import '../../core/widgets/app_snackbar.dart';
 import '../../core/widgets/app_text_field.dart';
 import '../../core/widgets/primary_button.dart';
 import '../providers/campaign_request_providers.dart';
+import '../utils/request_error_message.dart';
 
 final _emailPattern = RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$');
 
-/// The Brands page's "let us run it for you" lead form — submits straight
-/// to Firestore via [CampaignRequestController], no email confirmation
-/// loop, just an in-page success state.
+/// The Brands page's "let us run it for you" lead form — submits through the
+/// `submitCampaignRequest` Cloud Function via [CampaignRequestController], no
+/// email confirmation loop, just an in-page success state.
 class CampaignRequestForm extends ConsumerStatefulWidget {
   const CampaignRequestForm({super.key});
 
@@ -60,10 +61,7 @@ class _CampaignRequestFormState extends ConsumerState<CampaignRequestForm> {
     if (!mounted) return;
     final state = ref.read(campaignRequestControllerProvider);
     if (state.hasError) {
-      AppSnackbar.showError(
-        context,
-        "Couldn't send your request. Please try again.",
-      );
+      AppSnackbar.showError(context, requestErrorMessage(state.error));
       return;
     }
     setState(() => _submitted = true);

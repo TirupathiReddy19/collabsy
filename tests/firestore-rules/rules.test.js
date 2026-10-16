@@ -170,29 +170,47 @@ describe('signed-out visitors', () => {
     await fails(setDoc(doc(db, 'users/hacker'), { role: 'creator' }));
   });
 
-  it('can submit a well-formed account deletion request, and nothing else', async () => {
-    const db = anon();
+  // The public website forms go through the submitDeletionRequest /
+  // submitCampaignRequest Cloud Functions (validation + rate limiting, Admin
+  // SDK). No client may create these documents directly, even a perfectly
+  // well-formed one, so a script can't bypass the limits by calling
+  // Firestore itself.
+  it('cannot create an account deletion request directly, even a well-formed one', async () => {
     const valid = {
       identifier: 'user@example.com', reason: 'leaving', status: 'pending',
       createdAt: serverTimestamp(),
     };
-    await ok(setDoc(doc(db, 'accountDeletionRequests/r1'), valid));
-    await fails(getDoc(doc(db, 'accountDeletionRequests/r1')));
-    await fails(setDoc(doc(db, 'accountDeletionRequests/r2'), { ...valid, extra: 'x' }));
-    await fails(setDoc(doc(db, 'accountDeletionRequests/r3'), { ...valid, status: 'done' }));
-    await fails(setDoc(doc(db, 'accountDeletionRequests/r4'), { ...valid, identifier: 'x'.repeat(300) }));
+    await fails(setDoc(doc(anon(), 'accountDeletionRequests/r1'), valid));
+    await fails(setDoc(doc(as('creatorA'), 'accountDeletionRequests/r2'), valid));
+    await fails(getDoc(doc(anon(), 'accountDeletionRequests/r1')));
   });
 
-  it('can submit a well-formed campaign request but not set its status', async () => {
-    const db = anon();
+  it('cannot create a campaign request directly, even a well-formed one', async () => {
     const valid = {
       companyName: 'Acme', contactName: 'Priya', workEmail: 'p@acme.com',
       budgetRange: 'under_50k', campaignBrief: 'Launch', status: 'new',
       createdAt: serverTimestamp(),
     };
-    await ok(setDoc(doc(db, 'campaignRequests/c1'), valid));
-    await fails(setDoc(doc(db, 'campaignRequests/c2'), { ...valid, status: 'approved' }));
-    await fails(getDoc(doc(db, 'campaignRequests/c1')));
+    await fails(setDoc(doc(anon(), 'campaignRequests/c1'), valid));
+    await fails(setDoc(doc(as('brandA'), 'campaignRequests/c2'), valid));
+    await fails(getDoc(doc(anon(), 'campaignRequests/c1')));
+  });
+
+  it('cannot touch the rate-limit counters', async () => {
+    await fails(setDoc(doc(anon(), 'rateLimits/campaignRequest_all'), { count: 0 }));
+    await fails(getDoc(doc(as('creatorA'), 'rateLimits/campaignRequest_all')));
+    await fails(setDoc(doc(admin(), 'rateLimits/campaignRequest_all'), { count: 0 }));
+  });
+
+  it('staff can still read and triage the queues', async () => {
+    await testEnv.withSecurityRulesDisabled(async (ctx) => {
+      await setDoc(doc(ctx.firestore(), 'campaignRequests/cq'), { status: 'new', companyName: 'A' });
+      await setDoc(doc(ctx.firestore(), 'accountDeletionRequests/dq'), { status: 'pending', identifier: 'x' });
+    });
+    await ok(getDoc(doc(admin(), 'campaignRequests/cq')));
+    await ok(updateDoc(doc(admin(), 'campaignRequests/cq'), { status: 'contacted' }));
+    await ok(getDoc(doc(admin(), 'accountDeletionRequests/dq')));
+    await ok(updateDoc(doc(admin(), 'accountDeletionRequests/dq'), { status: 'done' }));
   });
 });
 

@@ -9,6 +9,7 @@ import '../../core/widgets/app_snackbar.dart';
 import '../../core/widgets/app_text_field.dart';
 import '../../core/widgets/primary_button.dart';
 import '../providers/delete_account_request_providers.dart';
+import '../utils/request_error_message.dart';
 import '../widgets/website_section.dart';
 
 /// Doesn't require the app installed — this is the page Play Console's
@@ -53,10 +54,7 @@ class _WebsiteDeleteAccountScreenState
     if (!mounted) return;
     final state = ref.read(deleteAccountRequestControllerProvider);
     if (state.hasError) {
-      AppSnackbar.showError(
-        context,
-        "Couldn't send your request. Please try again.",
-      );
+      AppSnackbar.showError(context, requestErrorMessage(state.error));
       return;
     }
     setState(() => _submitted = true);

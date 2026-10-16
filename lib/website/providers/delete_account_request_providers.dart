@@ -1,16 +1,15 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../../core/services/firebase_service.dart';
 
 part 'delete_account_request_providers.g.dart';
 
-/// Submits the website's "Request account deletion" form straight to
-/// Firestore — the same `accountDeletionRequests` collection (and rule
-/// shape) the old standalone `web-legal/delete-account/` page used, so no
-/// rules or Admin-portal changes were needed to move this here. See
-/// `lib/admin/providers/admin_deletion_requests_providers.dart` for where
-/// staff review these.
+/// Submits the website's "Request account deletion" form through the
+/// `submitDeletionRequest` Cloud Function, which validates it and limits how
+/// often one visitor can send it. The `accountDeletionRequests` doc it
+/// produces is the same one the old direct Firestore write made, so staff
+/// still review it the same way — see
+/// `lib/admin/providers/admin_deletion_requests_providers.dart`.
 @Riverpod(keepAlive: true)
 class DeleteAccountRequestController extends _$DeleteAccountRequestController {
   @override
@@ -23,13 +22,11 @@ class DeleteAccountRequestController extends _$DeleteAccountRequestController {
     state = const AsyncLoading();
     state = await AsyncValue.guard(() async {
       await ref
-          .read(firestoreProvider)
-          .collection('accountDeletionRequests')
-          .add({
+          .read(firebaseFunctionsProvider)
+          .httpsCallable('submitDeletionRequest')
+          .call({
             'identifier': identifier.trim(),
             if (reason.trim().isNotEmpty) 'reason': reason.trim(),
-            'status': 'pending',
-            'createdAt': FieldValue.serverTimestamp(),
           });
     });
   }
