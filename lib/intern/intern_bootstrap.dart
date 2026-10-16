@@ -1,6 +1,7 @@
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 
+import '../core/config/emulator_config.dart';
 import '../core/theme/app_theme.dart';
 import '../firebase_options.dart';
 import 'intern_app.dart';
@@ -17,7 +18,10 @@ class InternBootstrap extends StatefulWidget {
 class _InternBootstrapState extends State<InternBootstrap> {
   late final Future<FirebaseApp> _initFuture = Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
-  );
+  ).then((app) {
+    connectToFirebaseEmulatorsIfEnabled();
+    return app;
+  });
 
   @override
   Widget build(BuildContext context) {

@@ -151,6 +151,18 @@ async function fetchDeviceBreakdown(platform, days) {
  * `/analytics` via Role Management. */
 exports.getCrashAnalytics = (0, https_1.onCall)(async (request) => {
     await (0, adminAuth_1.requireAdminOrPermission)(request, "/crash-analytics");
+    // Unlike every other function here, this one talks to BigQuery with the
+    // raw `@google-cloud/bigquery` client, not through firebase-admin — so it
+    // is NOT redirected to an emulator by FIRESTORE_EMULATOR_HOST /
+    // FIREBASE_AUTH_EMULATOR_HOST the way Firestore/Auth calls are. Running
+    // this under `firebase emulators:start` (e.g. the staging setup in
+    // `staging/`) would otherwise reach the real BigQuery dataset using
+    // whatever real Google credentials happen to be on the machine. There is
+    // no BigQuery emulator, so the safe behavior here is reporting "no data"
+    // rather than quietly going out to production.
+    if (process.env.FUNCTIONS_EMULATOR === "true") {
+        return { trend: [], topIssues: [], topDevices: [] };
+    }
     const requestedDays = request.data?.days;
     const days = Math.min(Math.max(requestedDays ?? 14, 1), 90);
     const [androidTrend, iosTrend, androidIssues, iosIssues, androidDevices, iosDevices,] = await Promise.all([

@@ -1,0 +1,17 @@
+{
+  "name": "collabsy-staging",
+  "private": true,
+  "description": "Local-only staging environment: Firebase Emulator Suite + seeded fake data, for safely pointing a scanner at the website, admin portal and outreach tools without touching production.",
+  "scripts": {
+    "start": "cd .. && firebase emulators:start --config firebase.staging.json --project demo-collabsy",
+    "seed": "cross-env FIRESTORE_EMULATOR_HOST=localhost:8080 FIREBASE_AUTH_EMULATOR_HOST=localhost:9099 node seed.js",
+    "build": "node build.js"
+  },
+  "dependencies": {
+    "firebase-admin": "^12.6.0"
+  },
+  "devDependencies": {
+    "cross-env": "^7.0.3",
+    "firebase-tools": "^14.27.0"
+  }
+}
