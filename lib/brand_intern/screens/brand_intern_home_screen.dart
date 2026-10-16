@@ -16,13 +16,13 @@ import '../../shared/models/brand_lead.dart';
 import '../../shared/utils/linkedin_url.dart';
 import '../providers/brand_intern_leads_providers.dart';
 
-const _linkBaseUrl = 'https://collabsy-brand-leads.web.app/bl/';
+const _linkBaseUrl = 'https://collabsy.online/bl/';
 
 const _defaultMessageTemplate =
     "Hi! 👋 I came across your profile and think your brand would be a "
     'great fit for Collabsy — a platform that connects brands with '
-    'creators for influencer campaigns. Check it out here: '
-    '{{link}}';
+    'creators for influencer campaigns. Download the app from the Play '
+    'Store or App Store here: {{link}}';
 
 const _months = [
   'Jan',
@@ -190,8 +190,14 @@ class _BrandInternHomeScreenState extends ConsumerState<BrandInternHomeScreen> {
       if (user == null) return;
 
       final config = await ref.read(brandOutreachConfigProvider.future);
+      // A saved-but-blank template (the admin form writes '' when its box is
+      // left empty) must fall back to the default too, otherwise interns get
+      // an empty message with no link in it.
+      final customTemplate = config?['messageTemplate'] as String?;
       final template =
-          config?['messageTemplate'] as String? ?? _defaultMessageTemplate;
+          (customTemplate != null && customTemplate.trim().isNotEmpty)
+          ? customTemplate
+          : _defaultMessageTemplate;
       final link = '$_linkBaseUrl$handle';
       final message = template.replaceAll('{{link}}', link);
 
