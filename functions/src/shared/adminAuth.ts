@@ -1,7 +1,24 @@
 import { getFirestore } from "firebase-admin/firestore";
 import { CallableRequest, HttpsError } from "firebase-functions/v2/https";
 
-const ADMIN_EMAIL = "admin@collabsy.online";
+export const ADMIN_EMAIL = "admin@collabsy.online";
+
+/**
+ * True only for the super admin, mirroring firestore.rules' isAdmin().
+ * TODO(E1): also require `email_verified === true` once the admin account's
+ * email is verified in Firebase Auth. Adding it earlier locked the admin
+ * portal out (2026-10-11), so it was reverted.
+ */
+export function isAdminRequest(request: CallableRequest): boolean {
+  return request.auth?.token?.email === ADMIN_EMAIL;
+}
+
+/** Throws `permission-denied` unless the caller is the super admin. */
+export function requireAdmin(request: CallableRequest): void {
+  if (!isAdminRequest(request)) {
+    throw new HttpsError("permission-denied", "Admin only.");
+  }
+}
 
 /**
  * Mirrors firestore.rules' isAdmin()/isActiveStaffWithPermission(navPath) —
@@ -15,12 +32,11 @@ export async function requireAdminOrPermission(
   request: CallableRequest,
   navPath: string
 ): Promise<void> {
-  const email = request.auth?.token?.email;
   const uid = request.auth?.uid;
   if (!uid) {
     throw new HttpsError("unauthenticated", "Sign in required.");
   }
-  if (email === ADMIN_EMAIL) return;
+  if (isAdminRequest(request)) return;
 
   const staffDoc = await getFirestore().collection("staffAccounts").doc(uid).get();
   const staff = staffDoc.data();

@@ -5,6 +5,7 @@ const firestore_1 = require("firebase-admin/firestore");
 const https_1 = require("firebase-functions/v2/https");
 const firebase_functions_1 = require("firebase-functions");
 const brandLeadsHelpers_1 = require("./brandLeadsHelpers");
+const clickTracking_1 = require("../shared/clickTracking");
 const redirectPages_1 = require("../shared/redirectPages");
 /**
  * The public link every generated brand-outreach message points to
@@ -27,11 +28,17 @@ exports.redirectBrandLead = (0, https_1.onRequest)(async (req, res) => {
             const leadDoc = await leadRef.get();
             if (leadDoc.exists) {
                 const data = leadDoc.data();
-                await leadRef.set({
-                    clickCount: firestore_1.FieldValue.increment(1),
-                    clickedAt: data?.clickedAt ?? firestore_1.Timestamp.now(),
-                    status: data?.status === "linkGenerated" ? "clicked" : data?.status,
-                }, { merge: true });
+                const lastClickMs = data?.lastClickAt?.toMillis();
+                // Previews, crawlers and rapid repeats are served the page but not
+                // counted, so the number an admin sees reflects real visits.
+                if ((0, clickTracking_1.shouldRecordClick)(req, lastClickMs)) {
+                    await leadRef.set({
+                        clickCount: firestore_1.FieldValue.increment(1),
+                        clickedAt: data?.clickedAt ?? firestore_1.Timestamp.now(),
+                        lastClickAt: firestore_1.Timestamp.now(),
+                        status: data?.status === "linkGenerated" ? "clicked" : data?.status,
+                    }, { merge: true });
+                }
             }
         }
         catch (error) {

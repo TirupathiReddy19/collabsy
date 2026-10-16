@@ -1,4 +1,4 @@
-import { Timestamp } from "firebase-admin/firestore";
+import { Timestamp, getFirestore } from "firebase-admin/firestore";
 import { HttpsError, onCall } from "firebase-functions/v2/https";
 
 import { instagramAppId, instagramAppSecret, instagramRedirectUri } from "./config";
@@ -40,13 +40,34 @@ export const exchangeInstagramCode = onCall(
         appSecret: instagramAppSecret.value(),
         shortLivedToken: shortLived.access_token,
       });
-      await saveTokens(uid, longLived);
 
       const profile = await fetchProfile(longLived.access_token);
+
+      // One Instagram account can back only one Collabsy account, otherwise a
+      // single creator's followers could vouch for several fake profiles.
+      // Checked before anything is stored. An account that was explicitly
+      // disconnected has released its claim; connected/expired/revoked ones
+      // still hold it until the owner disconnects or deletes the account.
+      const holders = await getFirestore()
+        .collection("instagram_accounts")
+        .where("instagramUserId", "==", profile.id)
+        .get();
+      const heldByAnother = holders.docs.some(
+        (doc) => doc.id !== uid && doc.data().status !== "disconnected"
+      );
+      if (heldByAnother) {
+        throw new HttpsError(
+          "already-exists",
+          "This Instagram account is already linked to another Collabsy account."
+        );
+      }
+
+      await saveTokens(uid, longLived);
       await saveProfile(uid, profile, { connectedAt: Timestamp.now() });
 
       return { success: true };
     } catch (error) {
+      if (error instanceof HttpsError) throw error;
       if (error instanceof InstagramApiError) {
         throw new HttpsError("failed-precondition", error.message, {
           reason: "token-invalid",

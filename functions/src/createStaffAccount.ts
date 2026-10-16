@@ -2,7 +2,7 @@ import { getAuth } from "firebase-admin/auth";
 import { Timestamp, getFirestore } from "firebase-admin/firestore";
 import { HttpsError, onCall } from "firebase-functions/v2/https";
 
-const ADMIN_EMAIL = "admin@collabsy.online";
+import { ADMIN_EMAIL, requireAdmin } from "./shared/adminAuth";
 
 interface CreateStaffAccountRequest {
   email: string;
@@ -23,10 +23,7 @@ interface CreateStaffAccountRequest {
  * boundary itself.
  */
 export const createStaffAccount = onCall(async (request) => {
-  const email = request.auth?.token?.email;
-  if (email !== ADMIN_EMAIL) {
-    throw new HttpsError("permission-denied", "Admin only.");
-  }
+  requireAdmin(request);
 
   const data = request.data as CreateStaffAccountRequest;
   if (!data?.email || !data?.password || !data?.roleName) {

@@ -6,7 +6,13 @@ const firestore_1 = require("firebase-admin/firestore");
 const messaging_1 = require("firebase-admin/messaging");
 const firestore_2 = require("firebase-functions/v2/firestore");
 const firebase_functions_1 = require("firebase-functions");
+const v2_1 = require("firebase-functions/v2");
 (0, app_1.initializeApp)();
+// Caps how many instances any one function can scale out to, so a flood of
+// requests to a public endpoint (checkEmailRegistered, the /l and /bl
+// redirects) can't fan out into an unbounded bill. Individual functions can
+// still override this. Raise it if launch traffic ever hits the ceiling.
+(0, v2_1.setGlobalOptions)({ maxInstances: 25 });
 var exchangeInstagramCode_1 = require("./instagram/exchangeInstagramCode");
 Object.defineProperty(exports, "exchangeInstagramCode", { enumerable: true, get: function () { return exchangeInstagramCode_1.exchangeInstagramCode; } });
 var disconnectInstagram_1 = require("./instagram/disconnectInstagram");

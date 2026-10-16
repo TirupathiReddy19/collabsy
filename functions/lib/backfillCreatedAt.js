@@ -4,7 +4,7 @@ exports.backfillCreatedAtFromAuth = void 0;
 const auth_1 = require("firebase-admin/auth");
 const firestore_1 = require("firebase-admin/firestore");
 const https_1 = require("firebase-functions/v2/https");
-const ADMIN_EMAIL = "admin@collabsy.online";
+const adminAuth_1 = require("./shared/adminAuth");
 /**
  * One-time admin action: (re)sets `users/{uid}.createdAt` from Firebase
  * Auth's own (real, immutable) `metadata.creationTime` for every account —
@@ -16,10 +16,7 @@ const ADMIN_EMAIL = "admin@collabsy.online";
  * client SDK can only ever see the signed-in user's own.
  */
 exports.backfillCreatedAtFromAuth = (0, https_1.onCall)(async (request) => {
-    const email = request.auth?.token?.email;
-    if (email !== ADMIN_EMAIL) {
-        throw new https_1.HttpsError("permission-denied", "Admin only.");
-    }
+    (0, adminAuth_1.requireAdmin)(request);
     const firestore = (0, firestore_1.getFirestore)();
     let updated = 0;
     let pageToken;

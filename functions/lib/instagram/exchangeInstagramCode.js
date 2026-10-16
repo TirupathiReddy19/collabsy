@@ -31,12 +31,27 @@ exports.exchangeInstagramCode = (0, https_1.onCall)({ secrets: [config_1.instagr
             appSecret: config_1.instagramAppSecret.value(),
             shortLivedToken: shortLived.access_token,
         });
-        await (0, firestoreHelpers_1.saveTokens)(uid, longLived);
         const profile = await (0, instagramApiService_1.fetchProfile)(longLived.access_token);
+        // One Instagram account can back only one Collabsy account, otherwise a
+        // single creator's followers could vouch for several fake profiles.
+        // Checked before anything is stored. An account that was explicitly
+        // disconnected has released its claim; connected/expired/revoked ones
+        // still hold it until the owner disconnects or deletes the account.
+        const holders = await (0, firestore_1.getFirestore)()
+            .collection("instagram_accounts")
+            .where("instagramUserId", "==", profile.id)
+            .get();
+        const heldByAnother = holders.docs.some((doc) => doc.id !== uid && doc.data().status !== "disconnected");
+        if (heldByAnother) {
+            throw new https_1.HttpsError("already-exists", "This Instagram account is already linked to another Collabsy account.");
+        }
+        await (0, firestoreHelpers_1.saveTokens)(uid, longLived);
         await (0, firestoreHelpers_1.saveProfile)(uid, profile, { connectedAt: firestore_1.Timestamp.now() });
         return { success: true };
     }
     catch (error) {
+        if (error instanceof https_1.HttpsError)
+            throw error;
         if (error instanceof instagramApiService_1.InstagramApiError) {
             throw new https_1.HttpsError("failed-precondition", error.message, {
                 reason: "token-invalid",

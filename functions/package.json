@@ -2,7 +2,7 @@
   "name": "functions",
   "description": "Cloud Functions for Collabsy — sends an FCM push whenever a `notifications` document is created.",
   "engines": {
-    "node": "20"
+    "node": "22"
   },
   "main": "lib/index.js",
   "scripts": {

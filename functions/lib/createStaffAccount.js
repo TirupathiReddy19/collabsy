@@ -4,7 +4,7 @@ exports.createStaffAccount = void 0;
 const auth_1 = require("firebase-admin/auth");
 const firestore_1 = require("firebase-admin/firestore");
 const https_1 = require("firebase-functions/v2/https");
-const ADMIN_EMAIL = "admin@collabsy.online";
+const adminAuth_1 = require("./shared/adminAuth");
 /**
  * Creates a new admin-portal staff account — the client SDK can't create a
  * new Firebase Auth user without signing out the currently-authenticated
@@ -17,10 +17,7 @@ const ADMIN_EMAIL = "admin@collabsy.online";
  * boundary itself.
  */
 exports.createStaffAccount = (0, https_1.onCall)(async (request) => {
-    const email = request.auth?.token?.email;
-    if (email !== ADMIN_EMAIL) {
-        throw new https_1.HttpsError("permission-denied", "Admin only.");
-    }
+    (0, adminAuth_1.requireAdmin)(request);
     const data = request.data;
     if (!data?.email || !data?.password || !data?.roleName) {
         throw new https_1.HttpsError("invalid-argument", "email, password, and roleName are required.");
@@ -35,7 +32,7 @@ exports.createStaffAccount = (0, https_1.onCall)(async (request) => {
         permissions: data.permissions ?? {},
         active: true,
         createdAt: firestore_1.Timestamp.now(),
-        createdBy: ADMIN_EMAIL,
+        createdBy: adminAuth_1.ADMIN_EMAIL,
     });
     return { uid: userRecord.uid };
 });

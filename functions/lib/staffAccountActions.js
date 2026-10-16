@@ -4,7 +4,7 @@ exports.forceLogoutStaffAccount = exports.getStaffLastSignIn = void 0;
 const auth_1 = require("firebase-admin/auth");
 const firestore_1 = require("firebase-admin/firestore");
 const https_1 = require("firebase-functions/v2/https");
-const ADMIN_EMAIL = "admin@collabsy.online";
+const adminAuth_1 = require("./shared/adminAuth");
 /**
  * Reads each staff account's real last-sign-in time from Firebase Auth —
  * the client SDK can only ever see the signed-in user's own
@@ -15,10 +15,7 @@ const ADMIN_EMAIL = "admin@collabsy.online";
  * there's nothing to go stale.
  */
 exports.getStaffLastSignIn = (0, https_1.onCall)(async (request) => {
-    const email = request.auth?.token?.email;
-    if (email !== ADMIN_EMAIL) {
-        throw new https_1.HttpsError("permission-denied", "Admin only.");
-    }
+    (0, adminAuth_1.requireAdmin)(request);
     const uids = request.data?.uids ?? [];
     if (uids.length === 0)
         return {};
@@ -47,10 +44,7 @@ exports.getStaffLastSignIn = (0, https_1.onCall)(async (request) => {
  * revoke rather than depending on a follow-up client-side write.
  */
 exports.forceLogoutStaffAccount = (0, https_1.onCall)(async (request) => {
-    const email = request.auth?.token?.email;
-    if (email !== ADMIN_EMAIL) {
-        throw new https_1.HttpsError("permission-denied", "Admin only.");
-    }
+    (0, adminAuth_1.requireAdmin)(request);
     const uid = request.data?.uid;
     if (!uid) {
         throw new https_1.HttpsError("invalid-argument", "uid is required.");

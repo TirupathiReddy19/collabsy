@@ -3,8 +3,15 @@ import { getFirestore } from "firebase-admin/firestore";
 import { getMessaging } from "firebase-admin/messaging";
 import { onDocumentCreated } from "firebase-functions/v2/firestore";
 import { logger } from "firebase-functions";
+import { setGlobalOptions } from "firebase-functions/v2";
 
 initializeApp();
+
+// Caps how many instances any one function can scale out to, so a flood of
+// requests to a public endpoint (checkEmailRegistered, the /l and /bl
+// redirects) can't fan out into an unbounded bill. Individual functions can
+// still override this. Raise it if launch traffic ever hits the ceiling.
+setGlobalOptions({ maxInstances: 25 });
 
 export { exchangeInstagramCode } from "./instagram/exchangeInstagramCode";
 export { disconnectInstagram } from "./instagram/disconnectInstagram";

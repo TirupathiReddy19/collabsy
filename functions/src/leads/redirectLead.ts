@@ -3,6 +3,7 @@ import { onRequest } from "firebase-functions/v2/https";
 import { logger } from "firebase-functions";
 
 import { normalizeInstagramHandle } from "./leadsHelpers";
+import { shouldRecordClick } from "../shared/clickTracking";
 import {
   comingSoonPage,
   desktopLandingPage,
@@ -30,14 +31,20 @@ export const redirectLead = onRequest(async (req, res) => {
       const leadDoc = await leadRef.get();
       if (leadDoc.exists) {
         const data = leadDoc.data();
-        await leadRef.set(
-          {
-            clickCount: FieldValue.increment(1),
-            clickedAt: data?.clickedAt ?? Timestamp.now(),
-            status: data?.status === "linkGenerated" ? "clicked" : data?.status,
-          },
-          { merge: true }
-        );
+        const lastClickMs = (data?.lastClickAt as Timestamp | undefined)?.toMillis();
+        // Previews, crawlers and rapid repeats are served the page but not
+        // counted, so the number an admin sees reflects real visits.
+        if (shouldRecordClick(req, lastClickMs)) {
+          await leadRef.set(
+            {
+              clickCount: FieldValue.increment(1),
+              clickedAt: data?.clickedAt ?? Timestamp.now(),
+              lastClickAt: Timestamp.now(),
+              status: data?.status === "linkGenerated" ? "clicked" : data?.status,
+            },
+            { merge: true }
+          );
+        }
       }
     } catch (error) {
       logger.error("Failed to record lead click", error);

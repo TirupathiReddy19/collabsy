@@ -1,8 +1,8 @@
 import { getAuth } from "firebase-admin/auth";
 import { Timestamp, getFirestore } from "firebase-admin/firestore";
-import { HttpsError, onCall } from "firebase-functions/v2/https";
+import { onCall } from "firebase-functions/v2/https";
 
-const ADMIN_EMAIL = "admin@collabsy.online";
+import { requireAdmin } from "./shared/adminAuth";
 
 /**
  * One-time admin action: (re)sets `users/{uid}.createdAt` from Firebase
@@ -15,10 +15,7 @@ const ADMIN_EMAIL = "admin@collabsy.online";
  * client SDK can only ever see the signed-in user's own.
  */
 export const backfillCreatedAtFromAuth = onCall(async (request) => {
-  const email = request.auth?.token?.email;
-  if (email !== ADMIN_EMAIL) {
-    throw new HttpsError("permission-denied", "Admin only.");
-  }
+  requireAdmin(request);
 
   const firestore = getFirestore();
   let updated = 0;

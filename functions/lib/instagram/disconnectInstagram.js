@@ -12,6 +12,14 @@ exports.disconnectInstagram = (0, https_1.onCall)(async (request) => {
     if (!uid) {
         throw new https_1.HttpsError("unauthenticated", "Sign in required.");
     }
+    // The app only offers Disconnect once the admin has reviewed the creator,
+    // so a profile still awaiting review can't pull its connected account out
+    // from under that review (or swap in a different one) by calling this
+    // directly.
+    const profile = await (0, firestore_1.getFirestore)().collection("creatorProfiles").doc(uid).get();
+    if (profile.data()?.verificationStatus === "pending") {
+        throw new https_1.HttpsError("failed-precondition", "Instagram can be disconnected once your profile has been reviewed.");
+    }
     await (0, firestoreHelpers_1.tokensDoc)(uid)
         .delete()
         .catch(() => undefined);

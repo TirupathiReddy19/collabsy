@@ -2,7 +2,7 @@ import { getAuth } from "firebase-admin/auth";
 import { Timestamp, getFirestore } from "firebase-admin/firestore";
 import { HttpsError, onCall } from "firebase-functions/v2/https";
 
-const ADMIN_EMAIL = "admin@collabsy.online";
+import { requireAdmin } from "./shared/adminAuth";
 
 /**
  * Reads each staff account's real last-sign-in time from Firebase Auth —
@@ -14,10 +14,7 @@ const ADMIN_EMAIL = "admin@collabsy.online";
  * there's nothing to go stale.
  */
 export const getStaffLastSignIn = onCall(async (request) => {
-  const email = request.auth?.token?.email;
-  if (email !== ADMIN_EMAIL) {
-    throw new HttpsError("permission-denied", "Admin only.");
-  }
+  requireAdmin(request);
 
   const uids = (request.data?.uids as string[] | undefined) ?? [];
   if (uids.length === 0) return {};
@@ -49,10 +46,7 @@ export const getStaffLastSignIn = onCall(async (request) => {
  * revoke rather than depending on a follow-up client-side write.
  */
 export const forceLogoutStaffAccount = onCall(async (request) => {
-  const email = request.auth?.token?.email;
-  if (email !== ADMIN_EMAIL) {
-    throw new HttpsError("permission-denied", "Admin only.");
-  }
+  requireAdmin(request);
 
   const uid = request.data?.uid as string | undefined;
   if (!uid) {
