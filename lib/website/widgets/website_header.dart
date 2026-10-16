@@ -7,7 +7,7 @@ import '../../core/theme/app_breakpoints.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_text_styles.dart';
 import '../../core/widgets/app_logo.dart';
-import 'waitlist_cta_button.dart';
+import 'get_app_button.dart';
 
 const _navItems = [
   ('/', 'Home'),
@@ -103,7 +103,7 @@ class _WebsiteHeaderState extends State<WebsiteHeader> {
                       active: location == path,
                     ),
                   const SizedBox(width: 12),
-                  const WaitlistCtaButton.compact(),
+                  const GetAppButton.compact(),
                 ] else
                   Builder(
                     builder: (context) => IconButton(
@@ -204,7 +204,7 @@ class WebsiteNavDrawer extends StatelessWidget {
               ),
             const Padding(
               padding: EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-              child: WaitlistCtaButton(),
+              child: GetAppButton(),
             ),
           ],
         ),

@@ -10,7 +10,7 @@ import '../widgets/hero_backdrop.dart';
 import '../widgets/hover_lift.dart';
 import '../widgets/scroll_reveal_fade.dart';
 import '../widgets/step_icon.dart';
-import '../widgets/waitlist_cta_button.dart';
+import '../widgets/get_app_button.dart';
 import '../widgets/website_bullet_item.dart';
 import '../widgets/website_section.dart';
 import '../widgets/website_section_heading.dart';
@@ -117,15 +117,15 @@ class WebsiteHomeScreen extends StatelessWidget {
                 ),
                 const SizedBox(height: AppSpacing.sm),
                 Text(
-                  'Creators and Brands both start the same way — join the '
-                  'waitlist and we\'ll bring you in as we roll out.',
+                  'Creators and Brands both start the same way — download '
+                  'the app and create your account in minutes.',
                   textAlign: TextAlign.center,
                   style: AppTextStyles.bodyLarge.copyWith(
                     color: Colors.white70,
                   ),
                 ),
                 const SizedBox(height: AppSpacing.lg),
-                const SizedBox(width: 280, child: WaitlistCtaButton()),
+                const SizedBox(width: 280, child: GetAppButton()),
               ],
             ),
           ),

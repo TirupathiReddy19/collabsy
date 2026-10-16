@@ -8,7 +8,7 @@ import '../../core/theme/app_text_styles.dart';
 import '../widgets/hero_backdrop.dart';
 import '../widgets/hover_lift.dart';
 import '../widgets/scroll_reveal_fade.dart';
-import '../widgets/waitlist_cta_button.dart';
+import '../widgets/get_app_button.dart';
 import '../widgets/website_bullet_item.dart';
 import '../widgets/website_section.dart';
 import '../widgets/website_section_heading.dart';
@@ -79,7 +79,7 @@ class WebsiteCreatorsScreen extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(height: AppSpacing.lg),
-                    const SizedBox(width: 260, child: WaitlistCtaButton()),
+                    const SizedBox(width: 260, child: GetAppButton()),
                   ],
                 ),
               ),
@@ -228,13 +228,13 @@ class WebsiteCreatorsScreen extends StatelessWidget {
               ),
               const SizedBox(height: AppSpacing.sm),
               Text(
-                "Join the waitlist and we'll let you know the moment "
-                "you're in.",
+                'Download the app and start getting matched with brands '
+                'today.',
                 textAlign: TextAlign.center,
                 style: AppTextStyles.bodyLarge.copyWith(color: Colors.white70),
               ),
               const SizedBox(height: AppSpacing.lg),
-              const SizedBox(width: 280, child: WaitlistCtaButton()),
+              const SizedBox(width: 280, child: GetAppButton()),
             ],
           ),
         ),

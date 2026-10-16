@@ -10,7 +10,7 @@ import '../widgets/hero_backdrop.dart';
 import '../widgets/hover_lift.dart';
 import '../widgets/scroll_reveal_fade.dart';
 import '../widgets/step_icon.dart';
-import '../widgets/waitlist_cta_button.dart';
+import '../widgets/get_app_button.dart';
 import '../widgets/website_bullet_item.dart';
 import '../widgets/website_section.dart';
 import '../widgets/website_section_heading.dart';
@@ -329,7 +329,7 @@ class _SelfServeCard extends StatelessWidget {
           ),
           const WebsiteBulletItem('Full control, no management fee'),
           const SizedBox(height: AppSpacing.md),
-          const WaitlistCtaButton(),
+          const GetAppButton(),
         ],
       ),
     );
