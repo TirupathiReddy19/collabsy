@@ -18,7 +18,7 @@ class WebsiteBootstrap extends StatefulWidget {
 
 class _WebsiteBootstrapState extends State<WebsiteBootstrap> {
   late final Future<FirebaseApp> _initFuture = Firebase.initializeApp(
-    options: DefaultFirebaseOptions.currentPlatform,
+    options: emulatorAwareOptions(DefaultFirebaseOptions.currentPlatform),
   ).then((app) {
     connectToFirebaseEmulatorsIfEnabled();
     return app;

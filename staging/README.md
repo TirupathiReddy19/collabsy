@@ -82,6 +82,12 @@ nothing else on this machine should be in scope.
 Stopping the emulator (`Ctrl+C` in the `npm start` terminal) discards all
 seeded data; run `npm run seed` again next time.
 
+**If a browser tab was ever pointed at one of these URLs before you last
+ran `npm run build`:** Flutter web registers a service worker that caches
+the app aggressively, so a plain reload can keep showing the old build
+indefinitely. Hard-refresh (Ctrl+Shift+R) or open the URL in a private
+window if something looks stale.
+
 ## What this does not cover
 
 - The **mobile app** (Android/iOS) isn't wired to the emulator — staging

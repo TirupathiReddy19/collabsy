@@ -17,7 +17,7 @@ class InternBootstrap extends StatefulWidget {
 
 class _InternBootstrapState extends State<InternBootstrap> {
   late final Future<FirebaseApp> _initFuture = Firebase.initializeApp(
-    options: DefaultFirebaseOptions.currentPlatform,
+    options: emulatorAwareOptions(DefaultFirebaseOptions.currentPlatform),
   ).then((app) {
     connectToFirebaseEmulatorsIfEnabled();
     return app;
