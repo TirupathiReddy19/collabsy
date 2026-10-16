@@ -88,6 +88,54 @@ the app aggressively, so a plain reload can keep showing the old build
 indefinitely. Hard-refresh (Ctrl+Shift+R) or open the URL in a private
 window if something looks stale.
 
+## Pointing Strix at it
+
+[Strix](https://github.com/usestrix/strix) is an agentic scanner that drives
+its own browser inside its own Docker sandbox container — which is why
+`firebase.staging.json` binds every emulator to `0.0.0.0` (not the default
+`127.0.0.1`) and `lib/core/config/emulator_config.dart` picks the Firestore/
+Auth/Functions/Storage host dynamically from whatever hostname the page was
+actually loaded through, instead of a hardcoded `localhost`. Loopback
+addresses mean something different inside Strix's container than they do on
+this machine, so both of those matter — without them the page would load but
+every Firestore/Auth call inside it would silently fail.
+
+1. **Install** (needs Docker running):
+   ```bash
+   curl -sSL https://strix.ai/install | bash
+   ```
+2. **Set your own Anthropic API key** — this is Strix's own LLM usage, billed
+   separately from anything else:
+   ```bash
+   export STRIX_LLM="anthropic/claude-sonnet-4-6"
+   export LLM_API_KEY="your-api-key"
+   ```
+3. **Run it**, using `host.docker.internal` (what Docker Desktop resolves to
+   this machine from inside a container) instead of `localhost`:
+   ```bash
+   strix -n --scan-mode standard \
+     -t http://host.docker.internal:5000 \
+     -t http://host.docker.internal:5005 \
+     -t http://host.docker.internal:5006 \
+     -t http://host.docker.internal:5007 \
+     --instruction "Sign-in accounts: admin@collabsy.online / StagingAdmin123! for the admin portal; staff@collabsy.online / StagingStaff123! for the outreach tools. This is a local emulator with fake data — destructive actions (deleting data, suspending accounts, exhausting rate limits) are expected and fine to try; nothing here is real."
+   ```
+   If `host.docker.internal` doesn't resolve from inside the container on
+   your setup, use this machine's LAN IP instead (`ipconfig` → the Wi-Fi/
+   Ethernet adapter's IPv4 address) — the 0.0.0.0 binding works the same way
+   either way, which is how this was actually verified (not with
+   `host.docker.internal` itself, which needs Docker to test directly).
+4. Start with `--scan-mode quick` or `standard` first — `deep` (the CLI
+   default when you omit `-m`) costs and takes substantially more. `-n`
+   exits non-zero when it finds something; add `--fail-on high` to only fail
+   on high/critical.
+5. **Don't include the Emulator UI** (port 4000) as a target — that's
+   Firebase's own tooling, not part of Collabsy, and scanning it tells you
+   nothing useful.
+6. View results afterward with `strix view`. Reset staging to a clean state
+   (`Ctrl+C` the `npm start` terminal, `npm start` again, `npm run seed`
+   again) whenever you want to rerun from scratch.
+
 ## What this does not cover
 
 - The **mobile app** (Android/iOS) isn't wired to the emulator — staging

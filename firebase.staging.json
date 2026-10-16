@@ -40,13 +40,14 @@
       ]
     }
   ],
+  "//emulators": "host 0.0.0.0 on every emulator (not the 127.0.0.1 default) so a scanner's own sandboxed container can reach them via host.docker.internal — see lib/core/config/emulator_config.dart and staging/README.md.",
   "emulators": {
-    "auth": { "port": 9099 },
-    "functions": { "port": 5001 },
-    "firestore": { "port": 8080 },
-    "storage": { "port": 9199 },
-    "hosting": { "port": 5000 },
-    "ui": { "enabled": true, "port": 4000 },
+    "auth": { "port": 9099, "host": "0.0.0.0" },
+    "functions": { "port": 5001, "host": "0.0.0.0" },
+    "firestore": { "port": 8080, "host": "0.0.0.0" },
+    "storage": { "port": 9199, "host": "0.0.0.0" },
+    "hosting": { "port": 5000, "host": "0.0.0.0" },
+    "ui": { "enabled": true, "port": 4000, "host": "0.0.0.0" },
     "singleProjectMode": true
   }
 }

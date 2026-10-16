@@ -3,7 +3,7 @@
   "private": true,
   "description": "Local-only staging environment: Firebase Emulator Suite + seeded fake data, for safely pointing a scanner at the website, admin portal and outreach tools without touching production.",
   "scripts": {
-    "start": "cd .. && firebase emulators:start --config firebase.staging.json --project demo-collabsy",
+    "start": "node start.js",
     "seed": "cross-env FIRESTORE_EMULATOR_HOST=localhost:8080 FIREBASE_AUTH_EMULATOR_HOST=localhost:9099 node seed.js",
     "build": "node build.js"
   },

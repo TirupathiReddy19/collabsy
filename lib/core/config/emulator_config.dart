@@ -58,7 +58,18 @@ void connectToFirebaseEmulatorsIfEnabled() {
   if (!useFirebaseEmulator) return;
   if (!kIsWeb) return; // staging build-only; guards against accidental misuse
 
-  const host = 'localhost';
+  // Deliberately NOT a hardcoded 'localhost': a scanner that drives its own
+  // sandboxed browser (e.g. Strix, running in its own Docker container)
+  // loads this page through a different hostname than a human does on this
+  // same machine (commonly `host.docker.internal`, since `firebase.staging
+  // .json` binds every emulator to 0.0.0.0 precisely so that's reachable).
+  // `localhost` inside THAT browser would resolve to the scanner's own
+  // container, not this machine, breaking every Firestore/Auth/Functions
+  // call even though the page itself loaded fine. Reusing whatever host the
+  // page was actually loaded from keeps the two in step automatically,
+  // whether that's `localhost`, `127.0.0.1`, `host.docker.internal`, or
+  // this machine's LAN address.
+  final host = Uri.base.host;
   FirebaseFirestore.instance.useFirestoreEmulator(host, 8080);
   FirebaseAuth.instance.useAuthEmulator(host, 9099);
   FirebaseStorage.instance.useStorageEmulator(host, 9199);
