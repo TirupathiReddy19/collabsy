@@ -360,13 +360,7 @@ class _AppliedTab extends ConsumerWidget {
 
     await ref
         .read(campaignControllerProvider.notifier)
-        .withdrawApplication(
-          applicationId: application.id,
-          campaignId: application.campaignId,
-          campaignTitle: application.campaignTitle,
-          brandId: application.brandId,
-          creatorName: application.creatorName,
-        );
+        .withdrawApplication(applicationId: application.id);
     if (!context.mounted) return;
     if (ref.read(campaignControllerProvider).hasError) {
       AppSnackbar.showError(context, "Couldn't withdraw your application.");

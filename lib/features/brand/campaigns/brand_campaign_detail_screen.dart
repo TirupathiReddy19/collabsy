@@ -22,8 +22,6 @@ import '../../campaigns/models/deliverable.dart';
 import '../../campaigns/models/deliverable_status.dart';
 import '../../campaigns/providers/campaigns_providers.dart';
 import '../../chat/providers/chat_providers.dart';
-import '../../notifications/models/notification_type.dart';
-import '../../notifications/providers/notifications_providers.dart';
 import '../../settings/providers/instagram_providers.dart';
 
 /// Brand's campaign detail screen, once the campaign is live: an Overview
@@ -126,22 +124,8 @@ class _BrandCampaignDetailScreenState
         autoMessage: campaign.rejectionMessage,
       );
     }
-    await ref
-        .read(notificationsRepositoryProvider)
-        .create(
-          userId: application.creatorId,
-          type: status == ApplicationStatus.accepted
-              ? NotificationType.applicationAccepted
-              : NotificationType.applicationRejected,
-          title: status == ApplicationStatus.accepted
-              ? 'Application accepted'
-              : 'Application update',
-          body: status == ApplicationStatus.accepted
-              ? "You've been accepted for ${campaign.title}"
-              : "Your application for ${campaign.title} wasn't accepted this time",
-          referenceType: 'campaign',
-          referenceId: campaign.id,
-        );
+    // N1 phase A: the creator's accept/reject notification is now created
+    // server-side (onApplicationStatusChanged) off the status write above.
   }
 
   Future<void> _ensureChatAndMaybeSend({
@@ -203,16 +187,8 @@ class _BrandCampaignDetailScreenState
       AppSnackbar.showError(context, "Couldn't approve the deliverable.");
       return;
     }
-    await ref
-        .read(notificationsRepositoryProvider)
-        .create(
-          userId: deliverable.creatorId,
-          type: NotificationType.deliverableApproved,
-          title: 'Deliverable approved',
-          body: 'Your deliverable for ${campaign.title} was approved!',
-          referenceType: 'campaign',
-          referenceId: campaign.id,
-        );
+    // N1 phase A: the creator's "approved" notification is now created
+    // server-side (onDeliverableStatusChanged) off the status write above.
   }
 
   @override

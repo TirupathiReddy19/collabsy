@@ -14,8 +14,6 @@ import '../models/campaign_status.dart';
 import '../models/compensation_type.dart';
 import '../models/deliverable.dart';
 import '../models/deliverable_type.dart';
-import '../../notifications/models/notification_type.dart';
-import '../../notifications/providers/notifications_providers.dart';
 
 part 'campaigns_providers.g.dart';
 
@@ -277,6 +275,9 @@ class CampaignController extends _$CampaignController {
         profile?.displayName,
         instagramAccount,
       );
+      // N1 phase A: the brand's "new application" notification is now
+      // created server-side (onApplicationCreated), triggered by this same
+      // write — the client no longer creates it directly.
       await ref
           .read(campaignsRepositoryProvider)
           .applyToCampaign(
@@ -287,16 +288,6 @@ class CampaignController extends _$CampaignController {
             brandId: brandId,
             agreedDeliverablesSummary: agreedDeliverablesSummary,
             agreedBudget: agreedBudget,
-          );
-      await ref
-          .read(notificationsRepositoryProvider)
-          .create(
-            userId: brandId,
-            type: NotificationType.newApplication,
-            title: 'New application',
-            body: '$creatorName applied to $campaignTitle',
-            referenceType: 'campaign',
-            referenceId: campaignId,
           );
     });
   }
@@ -316,18 +307,10 @@ class CampaignController extends _$CampaignController {
     );
   }
 
-  /// A creator backing out of their own still-pending application — mirrors
-  /// [applyToCampaign]'s shape (repository update + a notification to the
-  /// other side) rather than just calling [updateApplicationStatus] bare,
-  /// so the brand finds out without needing to notice the status change
-  /// on their own.
-  Future<void> withdrawApplication({
-    required String applicationId,
-    required String campaignId,
-    required String campaignTitle,
-    required String brandId,
-    required String creatorName,
-  }) async {
+  /// A creator backing out of their own still-pending application. The
+  /// brand's notification is created server-side (onApplicationStatusChanged)
+  /// off this same status write — N1 phase A.
+  Future<void> withdrawApplication({required String applicationId}) async {
     state = const AsyncLoading();
     state = await AsyncValue.guard(() async {
       await ref
@@ -335,16 +318,6 @@ class CampaignController extends _$CampaignController {
           .updateApplicationStatus(
             applicationId: applicationId,
             status: ApplicationStatus.withdrawn,
-          );
-      await ref
-          .read(notificationsRepositoryProvider)
-          .create(
-            userId: brandId,
-            type: NotificationType.applicationWithdrawn,
-            title: 'Application withdrawn',
-            body: '$creatorName withdrew their application to $campaignTitle',
-            referenceType: 'campaign',
-            referenceId: campaignId,
           );
     });
   }

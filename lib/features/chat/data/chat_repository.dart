@@ -312,26 +312,8 @@ class ChatRepository {
           updates['status'] = ChatStatus.active.toDbValue();
         }
       }
-      final recipientId = isCreatorSender
-          ? chatData['brandId'] as String?
-          : chatData['creatorId'] as String?;
-      final senderName = isCreatorSender
-          ? chatData['creatorName'] as String?
-          : chatData['brandName'] as String?;
-      if (recipientId != null) {
-        await _firestore.collection('notifications').add({
-          'userId': recipientId,
-          'type': 'newMessage',
-          'title': 'New message',
-          'body':
-              '${senderName ?? 'Someone'}: '
-              '${text.length > 80 ? '${text.substring(0, 80)}…' : text}',
-          'referenceType': 'chat',
-          'referenceId': chatId,
-          'read': false,
-          'createdAt': FieldValue.serverTimestamp(),
-        });
-      }
+      // N1 phase A: the recipient's "new message" notification is now
+      // created server-side (onChatMessageCreated) off this same write.
     }
 
     await chatRef.update(updates);

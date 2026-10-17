@@ -40,6 +40,12 @@ export { backfillWelcomeMessages } from "./onboarding/backfillWelcomeMessages";
 export { submitCampaignRequest } from "./publicForms/submitCampaignRequest";
 export { submitDeletionRequest } from "./publicForms/submitDeletionRequest";
 export { backfillPrivateContact } from "./backfillPrivateContact";
+export {
+  onApplicationCreated,
+  onApplicationStatusChanged,
+} from "./notifications/notifyOnApplicationEvents";
+export { onDeliverableStatusChanged } from "./notifications/notifyOnDeliverableEvents";
+export { onChatMessageCreated } from "./notifications/notifyOnChatMessage";
 
 /**
  * Sends a push notification whenever a `notifications/{id}` document is

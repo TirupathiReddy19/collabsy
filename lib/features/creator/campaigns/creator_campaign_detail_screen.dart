@@ -20,8 +20,6 @@ import '../../campaigns/models/deliverable.dart';
 import '../../campaigns/models/deliverable_status.dart';
 import '../../campaigns/providers/campaigns_providers.dart';
 import '../../chat/providers/chat_providers.dart';
-import '../../notifications/models/notification_type.dart';
-import '../../notifications/providers/notifications_providers.dart';
 
 class CreatorCampaignDetailScreen extends ConsumerStatefulWidget {
   const CreatorCampaignDetailScreen({super.key, required this.campaignId});
@@ -134,19 +132,8 @@ class _CreatorCampaignDetailScreenState
       AppSnackbar.showError(context, "Couldn't submit. Please try again.");
       return;
     }
-    final creatorName =
-        ref.read(currentProfileProvider).value?.displayName ?? 'A creator';
-    await ref
-        .read(notificationsRepositoryProvider)
-        .create(
-          userId: campaign.brandId,
-          type: NotificationType.deliverableSubmitted,
-          title: 'Deliverable submitted',
-          body:
-              '$creatorName submitted their deliverable for ${campaign.title}',
-          referenceType: 'campaign',
-          referenceId: campaign.id,
-        );
+    // N1 phase A: the brand's "submitted" notification is now created
+    // server-side (onDeliverableStatusChanged) off the status write above.
     if (!context.mounted) return;
     AppSnackbar.showSuccess(context, 'Deliverable submitted.');
   }
