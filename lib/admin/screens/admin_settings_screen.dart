@@ -1,3 +1,4 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -10,6 +11,7 @@ import '../../core/widgets/app_text_field.dart';
 import '../../core/widgets/primary_button.dart';
 import '../../core/widgets/skeleton.dart';
 import '../../core/widgets/staggered_fade_in.dart';
+import '../../features/auth/providers/auth_providers.dart';
 import '../models/audit_log.dart';
 import '../providers/admin_audit_log_providers.dart';
 import '../providers/admin_auth_providers.dart';
@@ -44,6 +46,7 @@ class AdminSettingsScreen extends ConsumerWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    const StaggeredFadeIn(child: _EmailVerificationCard()),
                     StaggeredFadeIn(
                       child: _ConfigCard(
                         title: 'Creator Outreach',
@@ -263,6 +266,84 @@ class _ConfigCardState extends ConsumerState<_ConfigCard> {
             ),
           ],
         ],
+      ),
+    );
+  }
+}
+
+/// E1: `isAdmin()` (firestore.rules) will eventually also require
+/// `email_verified` on the admin's token — blocked until the real
+/// `admin@collabsy.online` account actually verifies its email, which
+/// nothing in this app could previously trigger (a password reset email
+/// is a different Firebase mechanism and doesn't set `emailVerified`).
+/// Shown only to whoever is actually signed in with an unverified email;
+/// hidden entirely once verified.
+class _EmailVerificationCard extends ConsumerStatefulWidget {
+  const _EmailVerificationCard();
+
+  @override
+  ConsumerState<_EmailVerificationCard> createState() =>
+      _EmailVerificationCardState();
+}
+
+class _EmailVerificationCardState
+    extends ConsumerState<_EmailVerificationCard> {
+  bool _isSending = false;
+
+  Future<void> _send(User user) async {
+    setState(() => _isSending = true);
+    try {
+      await user.sendEmailVerification();
+      if (!mounted) return;
+      AppSnackbar.showSuccess(
+        context,
+        'Verification email sent to ${user.email}.',
+      );
+    } catch (_) {
+      if (!mounted) return;
+      AppSnackbar.showError(
+        context,
+        "Couldn't send the verification email. Try again shortly.",
+      );
+    } finally {
+      if (mounted) setState(() => _isSending = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final user = ref.watch(authStateChangesProvider).value;
+    if (user == null || user.emailVerified) return const SizedBox.shrink();
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: AppSpacing.lg),
+      child: Container(
+        padding: const EdgeInsets.all(AppSpacing.card),
+        decoration: BoxDecoration(
+          color: AdminColors.surface(context),
+          borderRadius: BorderRadius.circular(AppRadius.xxl),
+          border: Border.all(color: AppColors.error.withValues(alpha: 0.4)),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Email not verified', style: AppTextStyles.titleLarge),
+            const SizedBox(height: AppSpacing.sm),
+            Text(
+              "${user.email} hasn't been verified yet. Click below, then "
+              'open the email and follow the link.',
+              style: AppTextStyles.bodyMedium.copyWith(
+                color: AdminColors.textSecondary(context),
+              ),
+            ),
+            const SizedBox(height: AppSpacing.md),
+            PrimaryButton(
+              text: 'Send verification email',
+              isLoading: _isSending,
+              onPressed: _isSending ? null : () => _send(user),
+            ),
+          ],
+        ),
       ),
     );
   }
