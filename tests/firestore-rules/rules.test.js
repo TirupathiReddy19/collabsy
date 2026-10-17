@@ -698,6 +698,14 @@ describe('support, announcements, audit and config', () => {
     await fails(setDoc(doc(supportStaffEmail, 'staffLoginEvents/e4'), event({ type: 'forcedLogout' })));
   });
 
+  it('the force-update config is readable by anyone, even signed out, but only admin-writable', async () => {
+    await ok(getDoc(doc(anon(), 'config/appVersion')));
+    await ok(getDoc(doc(as('creatorA'), 'config/appVersion')));
+    await fails(setDoc(doc(as('creatorA'), 'config/appVersion'), { minBuildAndroid: 1 }));
+    await fails(setDoc(doc(staff('internUid'), 'config/appVersion'), { minBuildAndroid: 1 }));
+    await ok(setDoc(doc(admin(), 'config/appVersion'), { minBuildAndroid: 31, minBuildIos: 31 }));
+  });
+
   it('outreach config is admin-write and staff-read only', async () => {
     await ok(getDoc(doc(staff('internUid'), 'config/outreachLinks')));
     await fails(getDoc(doc(as('creatorA'), 'config/outreachLinks')));

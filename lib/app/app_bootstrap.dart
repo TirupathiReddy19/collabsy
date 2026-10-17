@@ -1,5 +1,6 @@
 import 'dart:ui';
 
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:flutter/foundation.dart';
@@ -8,6 +9,8 @@ import 'package:flutter/material.dart';
 import '../core/theme/app_theme.dart';
 import '../firebase_options.dart';
 import 'app.dart';
+import 'update_gate/app_version_check.dart';
+import 'update_gate/update_required_screen.dart';
 
 /// Renders the first frame immediately instead of blocking on
 /// [Firebase.initializeApp] before `runApp()` — if that call stalls (slow
@@ -22,7 +25,7 @@ class AppBootstrap extends StatefulWidget {
 }
 
 class _AppBootstrapState extends State<AppBootstrap> {
-  late final Future<FirebaseApp> _initFuture =
+  late final Future<AppVersionStatus> _initFuture =
       Firebase.initializeApp(
         options: DefaultFirebaseOptions.currentPlatform,
       ).then((app) {
@@ -38,11 +41,11 @@ class _AppBootstrapState extends State<AppBootstrap> {
           };
         }
         return app;
-      });
+      }).then((_) => checkAppVersion(FirebaseFirestore.instance));
 
   @override
   Widget build(BuildContext context) {
-    return FutureBuilder<FirebaseApp>(
+    return FutureBuilder<AppVersionStatus>(
       future: _initFuture,
       builder: (context, snapshot) {
         if (snapshot.hasError) {
@@ -69,6 +72,17 @@ class _AppBootstrapState extends State<AppBootstrap> {
             theme: AppTheme.lightTheme,
             home: const Scaffold(
               body: Center(child: CircularProgressIndicator()),
+            ),
+          );
+        }
+        final status = snapshot.data;
+        if (status is AppVersionBlocked) {
+          return MaterialApp(
+            debugShowCheckedModeBanner: false,
+            theme: AppTheme.lightTheme,
+            home: UpdateRequiredScreen(
+              message: status.message,
+              storeUrl: status.storeUrl,
             ),
           );
         }

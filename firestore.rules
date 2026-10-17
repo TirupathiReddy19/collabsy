@@ -593,6 +593,16 @@ service cloud.firestore {
       allow write: if isAdmin();
     }
 
+    // The force-update gate (checkAppVersion / AppBootstrap) — publicly
+    // readable because it has to work before sign-in, and before Firebase
+    // Auth has even resolved whether anyone is signed in at all. Holds no
+    // sensitive data (just minimum build numbers, store links and a
+    // message), so there's nothing a reader could misuse.
+    match /config/appVersion {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
     // One doc per prospective brand contact, keyed by their normalized
     // LinkedIn profile URL — mirrors `leads/{handle}` exactly, gated by its
     // own permission since it's a separate intern team/tool.
