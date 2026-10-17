@@ -69,4 +69,4 @@ final class AdminNotificationWatcherProvider
 }
 
 String _$adminNotificationWatcherHash() =>
-    r'8c608ae59d23ac49d4d1b6f6e97859cb90ccdd64';
+    r'787c221b870a4435c3293344a63e88224f9dff92';

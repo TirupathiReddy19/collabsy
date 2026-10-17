@@ -306,10 +306,11 @@ class _ChatConversationScreenState
               if (chat == null || id == null) {
                 return const SizedBox.shrink();
               }
-              final phone = ref
-                  .watch(appUserProfileByIdProvider(id))
-                  .value
-                  ?.phone;
+              // U1 phase A: phone moved off the public profile doc — this
+              // reads `private/phone`, which only lets through self, admin,
+              // or (what this actually is) the other participant of the
+              // chat this screen is already showing.
+              final phone = ref.watch(privatePhoneByIdProvider(id)).value;
               return Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [

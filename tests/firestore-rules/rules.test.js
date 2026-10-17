@@ -108,6 +108,9 @@ async function seed() {
 
     await put('chats/chat1', { creatorId: 'creatorA', brandId: 'brandA', status: 'active' });
     await put('chats/chat1/messages/m1', { senderId: 'creatorA', text: 'hi' });
+    // Real deterministic id (see ChatRepository.chatId), for the
+    // isChatPartnerOf() rule tests — chat1 above predates that convention.
+    await put('chats/brandA_creatorA', { creatorId: 'creatorA', brandId: 'brandA', status: 'active' });
     await put('blocks/brandB_creatorA', { blockerId: 'brandB', blockedId: 'creatorA' });
 
     await put('notifications/n1', {
@@ -310,6 +313,29 @@ describe('personal data exposure', () => {
 
   it('a user can still read their own record', async () => {
     await ok(getDoc(doc(as('creatorA'), 'users/creatorA')));
+  });
+
+  it("private/contact (email, fcmToken) is self- and admin-only", async () => {
+    await ok(setDoc(doc(as('creatorA'), 'users/creatorA/private/contact'),
+      { email: 'creator.a@example.com', fcmToken: 'tok' }));
+    await ok(getDoc(doc(as('creatorA'), 'users/creatorA/private/contact')));
+    await ok(getDoc(doc(admin(), 'users/creatorA/private/contact')));
+    await fails(getDoc(doc(as('creatorB'), 'users/creatorA/private/contact')));
+    await fails(setDoc(doc(as('creatorB'), 'users/creatorA/private/contact'),
+      { email: 'hijack@example.com' }));
+    await fails(setDoc(doc(as('creatorA'), 'users/creatorA/private/contact'),
+      { email: 'x@example.com', phone: '+910000000000' }));
+  });
+
+  it('private/phone is self- and admin-readable, PLUS the other side of a shared chat — nobody else', async () => {
+    await ok(setDoc(doc(as('creatorA'), 'users/creatorA/private/phone'), { phone: '+919000000001' }));
+    await ok(getDoc(doc(as('creatorA'), 'users/creatorA/private/phone')));
+    await ok(getDoc(doc(admin(), 'users/creatorA/private/phone')));
+    // brandA shares the chats/brandA_creatorA thread with creatorA.
+    await ok(getDoc(doc(as('brandA'), 'users/creatorA/private/phone')));
+    // creatorB has no chat with creatorA at all.
+    await fails(getDoc(doc(as('creatorB'), 'users/creatorA/private/phone')));
+    await fails(setDoc(doc(as('brandA'), 'users/creatorA/private/phone'), { phone: '+911111111111' }));
   });
 });
 

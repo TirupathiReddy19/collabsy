@@ -44,6 +44,16 @@ service cloud.firestore {
         || exists(/databases/$(database)/documents/blocks/$(b + '_' + a));
     }
 
+    // Whether a and b have a chat thread together — same shape as
+    // isBlocked(), reusable because `chats/{chatId}` ids are the same kind
+    // of deterministic composite key (`{brandId}_{creatorId}`, see
+    // ChatRepository.chatId), just with an unknown role on each side, hence
+    // checking both orderings.
+    function isChatPartnerOf(a, b) {
+      return exists(/databases/$(database)/documents/chats/$(a + '_' + b))
+        || exists(/databases/$(database)/documents/chats/$(b + '_' + a));
+    }
+
     // Notification types that only ever originate from an admin/staff
     // action (campaign review, brand/creator verification, support reply)
     // — never from ordinary Creator/Brand app code. Used by the
@@ -87,6 +97,34 @@ service cloud.firestore {
             && (!('suspended' in request.resource.data)
                 || request.resource.data.suspended == (resource.data.suspended == true))
             && !('suspendedReason' in request.resource.data));
+
+      // U1 phase A: email and push token move here, off the world-readable
+      // `users/{uid}` doc above (`allow read: if request.auth != null` let
+      // any signed-in stranger read every user's contact details — the
+      // original bug). Self-write matches exactly what the app already
+      // does (AuthRepository writes these fields on sign-up, sign-in and
+      // token refresh); nothing but the account owner or admin ever needs
+      // to touch this. During phase A the client dual-writes both this doc
+      // and the old public fields, so a build 29/23 install — which only
+      // ever reads the public ones — keeps working unaffected.
+      match /private/contact {
+        allow read: if isAdmin() || (request.auth != null && request.auth.uid == userId);
+        allow write: if request.auth != null && request.auth.uid == userId
+          && request.resource.data.keys().hasOnly(['email', 'fcmToken']);
+      }
+
+      // Phone is a SEPARATE doc from email/fcmToken above on purpose: the
+      // in-app "Call" button on a chat needs the other participant's
+      // number, and a Firestore rule can only grant a reader the WHOLE
+      // document it names, never just one field — putting phone in the
+      // same doc as email would hand a chat partner your email too.
+      match /private/phone {
+        allow read: if isAdmin()
+          || (request.auth != null
+              && (request.auth.uid == userId || isChatPartnerOf(request.auth.uid, userId)));
+        allow write: if request.auth != null && request.auth.uid == userId
+          && request.resource.data.keys().hasOnly(['phone']);
+      }
     }
 
     // Creator-only post-signup details (languages/location) — same

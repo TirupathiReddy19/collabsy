@@ -8,31 +8,31 @@ part of 'delete_account_request_providers.dart';
 
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // ignore_for_file: type=lint, type=warning
-/// Submits the website's "Request account deletion" form straight to
-/// Firestore — the same `accountDeletionRequests` collection (and rule
-/// shape) the old standalone `web-legal/delete-account/` page used, so no
-/// rules or Admin-portal changes were needed to move this here. See
-/// `lib/admin/providers/admin_deletion_requests_providers.dart` for where
-/// staff review these.
+/// Submits the website's "Request account deletion" form through the
+/// `submitDeletionRequest` Cloud Function, which validates it and limits how
+/// often one visitor can send it. The `accountDeletionRequests` doc it
+/// produces is the same one the old direct Firestore write made, so staff
+/// still review it the same way — see
+/// `lib/admin/providers/admin_deletion_requests_providers.dart`.
 
 @ProviderFor(DeleteAccountRequestController)
 final deleteAccountRequestControllerProvider =
     DeleteAccountRequestControllerProvider._();
 
-/// Submits the website's "Request account deletion" form straight to
-/// Firestore — the same `accountDeletionRequests` collection (and rule
-/// shape) the old standalone `web-legal/delete-account/` page used, so no
-/// rules or Admin-portal changes were needed to move this here. See
-/// `lib/admin/providers/admin_deletion_requests_providers.dart` for where
-/// staff review these.
+/// Submits the website's "Request account deletion" form through the
+/// `submitDeletionRequest` Cloud Function, which validates it and limits how
+/// often one visitor can send it. The `accountDeletionRequests` doc it
+/// produces is the same one the old direct Firestore write made, so staff
+/// still review it the same way — see
+/// `lib/admin/providers/admin_deletion_requests_providers.dart`.
 final class DeleteAccountRequestControllerProvider
     extends $AsyncNotifierProvider<DeleteAccountRequestController, void> {
-  /// Submits the website's "Request account deletion" form straight to
-  /// Firestore — the same `accountDeletionRequests` collection (and rule
-  /// shape) the old standalone `web-legal/delete-account/` page used, so no
-  /// rules or Admin-portal changes were needed to move this here. See
-  /// `lib/admin/providers/admin_deletion_requests_providers.dart` for where
-  /// staff review these.
+  /// Submits the website's "Request account deletion" form through the
+  /// `submitDeletionRequest` Cloud Function, which validates it and limits how
+  /// often one visitor can send it. The `accountDeletionRequests` doc it
+  /// produces is the same one the old direct Firestore write made, so staff
+  /// still review it the same way — see
+  /// `lib/admin/providers/admin_deletion_requests_providers.dart`.
   DeleteAccountRequestControllerProvider._()
     : super(
         from: null,
@@ -53,14 +53,14 @@ final class DeleteAccountRequestControllerProvider
 }
 
 String _$deleteAccountRequestControllerHash() =>
-    r'272bd707175404990d493c9cce57158e39ce8b5c';
+    r'529bd006fad49c5c37c6190bd82de0c793b9a68c';
 
-/// Submits the website's "Request account deletion" form straight to
-/// Firestore — the same `accountDeletionRequests` collection (and rule
-/// shape) the old standalone `web-legal/delete-account/` page used, so no
-/// rules or Admin-portal changes were needed to move this here. See
-/// `lib/admin/providers/admin_deletion_requests_providers.dart` for where
-/// staff review these.
+/// Submits the website's "Request account deletion" form through the
+/// `submitDeletionRequest` Cloud Function, which validates it and limits how
+/// often one visitor can send it. The `accountDeletionRequests` doc it
+/// produces is the same one the old direct Firestore write made, so staff
+/// still review it the same way — see
+/// `lib/admin/providers/admin_deletion_requests_providers.dart`.
 
 abstract class _$DeleteAccountRequestController extends $AsyncNotifier<void> {
   FutureOr<void> build();

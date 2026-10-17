@@ -1,12 +1,13 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.sendPushOnNotificationCreate = exports.submitDeletionRequest = exports.submitCampaignRequest = exports.backfillWelcomeMessages = exports.onBrandApproved = exports.onCreatorApproved = exports.getCrashAnalytics = exports.sendPushOnAnnouncementCreate = exports.onBrandProfileWritten = exports.redirectBrandLead = exports.onOnboardingComplete = exports.redirectLead = exports.reinstateUserAccount = exports.suspendUserAccount = exports.onAuthUserDeleted = exports.expireCampaigns = exports.checkEmailRegistered = exports.deleteAccount = exports.forceLogoutStaffAccount = exports.getStaffLastSignIn = exports.createStaffAccount = exports.backfillCreatedAtFromAuth = exports.instagramOAuthRedirect = exports.refreshConnectedInstagramProfiles = exports.refreshExpiringInstagramTokens = exports.refreshInstagramProfile = exports.disconnectInstagram = exports.exchangeInstagramCode = void 0;
+exports.sendPushOnNotificationCreate = exports.backfillPrivateContact = exports.submitDeletionRequest = exports.submitCampaignRequest = exports.backfillWelcomeMessages = exports.onBrandApproved = exports.onCreatorApproved = exports.getCrashAnalytics = exports.sendPushOnAnnouncementCreate = exports.onBrandProfileWritten = exports.redirectBrandLead = exports.onOnboardingComplete = exports.redirectLead = exports.reinstateUserAccount = exports.suspendUserAccount = exports.onAuthUserDeleted = exports.expireCampaigns = exports.checkEmailRegistered = exports.deleteAccount = exports.forceLogoutStaffAccount = exports.getStaffLastSignIn = exports.createStaffAccount = exports.backfillCreatedAtFromAuth = exports.instagramOAuthRedirect = exports.refreshConnectedInstagramProfiles = exports.refreshExpiringInstagramTokens = exports.refreshInstagramProfile = exports.disconnectInstagram = exports.exchangeInstagramCode = void 0;
 const app_1 = require("firebase-admin/app");
 const firestore_1 = require("firebase-admin/firestore");
 const messaging_1 = require("firebase-admin/messaging");
 const firestore_2 = require("firebase-functions/v2/firestore");
 const firebase_functions_1 = require("firebase-functions");
 const v2_1 = require("firebase-functions/v2");
+const userContact_1 = require("./shared/userContact");
 (0, app_1.initializeApp)();
 // Caps how many instances any one function can scale out to, so a flood of
 // requests to a public endpoint (checkEmailRegistered, the /l and /bl
@@ -64,6 +65,8 @@ var submitCampaignRequest_1 = require("./publicForms/submitCampaignRequest");
 Object.defineProperty(exports, "submitCampaignRequest", { enumerable: true, get: function () { return submitCampaignRequest_1.submitCampaignRequest; } });
 var submitDeletionRequest_1 = require("./publicForms/submitDeletionRequest");
 Object.defineProperty(exports, "submitDeletionRequest", { enumerable: true, get: function () { return submitDeletionRequest_1.submitDeletionRequest; } });
+var backfillPrivateContact_1 = require("./backfillPrivateContact");
+Object.defineProperty(exports, "backfillPrivateContact", { enumerable: true, get: function () { return backfillPrivateContact_1.backfillPrivateContact; } });
 /**
  * Sends a push notification whenever a `notifications/{id}` document is
  * created — the client app never talks to FCM's send API directly (it can't;
@@ -87,7 +90,7 @@ exports.sendPushOnNotificationCreate = (0, firestore_2.onDocumentCreated)("notif
     // since older user docs predate the field.
     if (user.pushNotificationsEnabled === false)
         return;
-    const token = user.fcmToken;
+    const token = await (0, userContact_1.getFcmToken)(userId);
     if (!token)
         return;
     try {

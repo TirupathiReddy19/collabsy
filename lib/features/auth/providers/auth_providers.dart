@@ -73,6 +73,23 @@ Future<AppUserProfile?> appUserProfileById(Ref ref, String userId) {
   return ref.watch(authRepositoryProvider).fetchProfile(userId);
 }
 
+/// U1 phase A — a user's email/push token from `private/contact` (own
+/// account screens, admin). The rule denies anyone else, so this resolves
+/// null for a userId the caller has no standing to see, same as a missing
+/// doc would.
+@riverpod
+Future<Map<String, dynamic>?> privateContactById(Ref ref, String userId) {
+  return ref.watch(authRepositoryProvider).fetchPrivateContact(userId);
+}
+
+/// U1 phase A — a user's phone from `private/phone`: self, admin, or the
+/// other side of a chat with them (see `isChatPartnerOf()`) — the one case
+/// this doc exists to carve out, for a chat's "Call" button.
+@riverpod
+Stream<String?> privatePhoneById(Ref ref, String userId) {
+  return ref.watch(authRepositoryProvider).watchPrivatePhone(userId);
+}
+
 /// Holds the data the OTP screen needs, set by whichever screen navigates
 /// to it. Deliberately not passed via GoRouter's route `extra` — that gets
 /// dropped when the router re-evaluates its redirect guard mid-flow (e.g.

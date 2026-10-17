@@ -116,6 +116,13 @@ export const sendPushOnAnnouncementCreate = onDocumentCreated(
     for (const doc of targetedDocs) {
       const user = doc.data();
       if (user.pushNotificationsEnabled === false) continue;
+      // U1 phase A moved fcmToken's source of truth to users/{uid}/private
+      // /contact (see shared/userContact.ts, used by the single-recipient
+      // sendPushOnNotificationCreate above) — deliberately NOT switched here
+      // too: this loop can run over hundreds of recipients, and the public
+      // field stays correct throughout phase A since AuthRepository
+      // dual-writes it. Needs the real switch (a batched private-doc read,
+      // not one-per-recipient) once phase B removes the public field.
       const token = user.fcmToken as string | undefined;
       if (token) tokens.push(token);
     }

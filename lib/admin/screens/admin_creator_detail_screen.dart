@@ -180,6 +180,13 @@ class _AdminCreatorDetailScreenState
     final isModerating = ref
         .watch(adminAccountModerationControllerProvider)
         .isLoading;
+    // U1 phase A: email/phone moved to private/contact + private/phone,
+    // admin-readable per their rules.
+    final privateEmail =
+        ref.watch(privateContactByIdProvider(widget.creatorId)).value?['email']
+            as String?;
+    final privatePhone =
+        ref.watch(privatePhoneByIdProvider(widget.creatorId)).value;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -321,15 +328,15 @@ class _AdminCreatorDetailScreenState
                             AdminDetailRow(
                               icon: Icons.email_outlined,
                               label: 'Email',
-                              value: user.email?.isNotEmpty == true
-                                  ? user.email!
+                              value: privateEmail?.isNotEmpty == true
+                                  ? privateEmail!
                                   : '—',
                             ),
                             AdminDetailRow(
                               icon: Icons.phone_outlined,
                               label: 'Phone',
-                              value: user.phone?.isNotEmpty == true
-                                  ? user.phone!
+                              value: privatePhone?.isNotEmpty == true
+                                  ? privatePhone!
                                   : '—',
                               isLast: true,
                             ),

@@ -12,6 +12,7 @@ import '../../core/widgets/loading_indicator.dart';
 import '../../core/widgets/profile_avatar.dart';
 import '../../core/widgets/staggered_fade_in.dart';
 import '../../features/auth/models/app_user_profile.dart';
+import '../../features/auth/providers/auth_providers.dart';
 import '../../features/brand/models/brand_profile.dart';
 import '../../shared/models/verification_status.dart';
 import '../../features/brand/providers/brand_profile_providers.dart';
@@ -240,6 +241,15 @@ class _AdminBrandsScreenState extends ConsumerState<AdminBrandsScreen> {
                     }
                     if (_query.isEmpty) return true;
                     final q = _query.toLowerCase();
+                    // email still comes from the public AppUserProfile here
+                    // on purpose: U1 phase A keeps that field dual-written
+                    // and world-readable-to-signed-in, so this bulk,
+                    // synchronous client-side filter across the whole
+                    // already-loaded list keeps working unchanged. Phase B
+                    // removing the public field will need a different
+                    // search strategy for this (there's no reasonable way
+                    // to search-by-email across N private subdocs
+                    // client-side) — not a phase A concern.
                     return (user.displayName?.toLowerCase().contains(q) ??
                             false) ||
                         (user.email?.toLowerCase().contains(q) ?? false) ||
@@ -398,7 +408,7 @@ class _AdminBrandsScreenState extends ConsumerState<AdminBrandsScreen> {
   }
 }
 
-class _BrandRow extends StatelessWidget {
+class _BrandRow extends ConsumerWidget {
   const _BrandRow({
     required this.user,
     required this.profile,
@@ -414,7 +424,13 @@ class _BrandRow extends StatelessWidget {
   final ValueChanged<bool>? onSelectedChanged;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    // U1 phase A: email/phone moved to private/contact + private/phone,
+    // admin-readable per their rules.
+    final email =
+        ref.watch(privateContactByIdProvider(user.id)).value?['email']
+            as String?;
+    final phone = ref.watch(privatePhoneByIdProvider(user.id)).value;
     final location = [
       profile?.city,
       profile?.state,
@@ -478,12 +494,12 @@ class _BrandRow extends StatelessWidget {
                           ),
                           if ([
                             profile?.companyName,
-                            user.email,
+                            email,
                           ].any((s) => (s ?? '').isNotEmpty))
                             Text(
                               [
                                 profile?.companyName,
-                                user.email,
+                                email,
                               ].where((s) => (s ?? '').isNotEmpty).join(' · '),
                               style: AppTextStyles.bodySmall.copyWith(
                                 color: AdminColors.textSecondary(context),
@@ -494,7 +510,7 @@ class _BrandRow extends StatelessWidget {
                     ),
                     Expanded(
                       child: Text(
-                        user.phone?.isNotEmpty == true ? user.phone! : '—',
+                        phone?.isNotEmpty == true ? phone! : '—',
                         style: AppTextStyles.bodySmall,
                       ),
                     ),

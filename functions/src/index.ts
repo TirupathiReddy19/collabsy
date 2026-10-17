@@ -5,6 +5,8 @@ import { onDocumentCreated } from "firebase-functions/v2/firestore";
 import { logger } from "firebase-functions";
 import { setGlobalOptions } from "firebase-functions/v2";
 
+import { getFcmToken } from "./shared/userContact";
+
 initializeApp();
 
 // Caps how many instances any one function can scale out to, so a flood of
@@ -37,6 +39,7 @@ export { onCreatorApproved, onBrandApproved } from "./onboarding/sendWelcomeMess
 export { backfillWelcomeMessages } from "./onboarding/backfillWelcomeMessages";
 export { submitCampaignRequest } from "./publicForms/submitCampaignRequest";
 export { submitDeletionRequest } from "./publicForms/submitDeletionRequest";
+export { backfillPrivateContact } from "./backfillPrivateContact";
 
 /**
  * Sends a push notification whenever a `notifications/{id}` document is
@@ -63,7 +66,7 @@ export const sendPushOnNotificationCreate = onDocumentCreated(
     // since older user docs predate the field.
     if (user.pushNotificationsEnabled === false) return;
 
-    const token = user.fcmToken as string | undefined;
+    const token = await getFcmToken(userId);
     if (!token) return;
 
     try {

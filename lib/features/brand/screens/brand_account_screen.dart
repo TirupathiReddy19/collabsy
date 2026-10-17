@@ -205,6 +205,17 @@ class _BrandAccountScreenState extends ConsumerState<BrandAccountScreen> {
     final brandProfile = ref.watch(ownBrandProfileProvider).value;
     final isLoading = ref.watch(brandProfileControllerProvider).isLoading;
 
+    // U1 phase A: email/phone moved off the public profile doc to
+    // `private/contact`/`private/phone` — this is a self-read, always
+    // allowed by their rules.
+    final uid = profile?.id;
+    final phone = uid == null
+        ? null
+        : ref.watch(privatePhoneByIdProvider(uid)).value;
+    final email = uid == null
+        ? null
+        : ref.watch(privateContactByIdProvider(uid)).value?['email'] as String?;
+
     final missingDetails =
         (brandProfile?.companyName ?? '').isEmpty ||
         brandProfile?.categories.isEmpty != false ||
@@ -242,20 +253,16 @@ class _BrandAccountScreenState extends ConsumerState<BrandAccountScreen> {
                             const Spacer(),
                             _QuickAction(
                               icon: Icons.call_outlined,
-                              onTap: profile?.phone == null
+                              onTap: phone == null
                                   ? null
-                                  : () =>
-                                        _launch(profile!.phone, scheme: 'tel:'),
+                                  : () => _launch(phone, scheme: 'tel:'),
                             ),
                             const SizedBox(width: 8),
                             _QuickAction(
                               icon: Icons.email_outlined,
-                              onTap: profile?.email == null
+                              onTap: email == null
                                   ? null
-                                  : () => _launch(
-                                      profile!.email,
-                                      scheme: 'mailto:',
-                                    ),
+                                  : () => _launch(email, scheme: 'mailto:'),
                             ),
                             const SizedBox(width: 8),
                             _QuickAction(
@@ -368,7 +375,7 @@ class _BrandAccountScreenState extends ConsumerState<BrandAccountScreen> {
                             title: 'Personal details',
                             subtitle: [
                               profile?.displayName,
-                              profile?.phone,
+                              phone,
                             ].whereType<String>().join(' • '),
                             isLoading: isLoading,
                             onTap: () => _editTextField(
@@ -392,15 +399,16 @@ class _BrandAccountScreenState extends ConsumerState<BrandAccountScreen> {
                           _DetailRow(
                             icon: Icons.call_outlined,
                             title: 'Phone number',
-                            subtitle: profile?.phone,
+                            subtitle: phone,
                             placeholder: 'Add your phone number',
                             isLoading: isLoading,
                             onTap: () async {
                               final changed = await ChangePhoneSheet.show(
                                 context,
                               );
-                              if (changed == true) {
+                              if (changed == true && uid != null) {
                                 ref.invalidate(currentProfileProvider);
+                                ref.invalidate(privatePhoneByIdProvider(uid));
                               }
                             },
                           ),
@@ -448,14 +456,15 @@ class _BrandAccountScreenState extends ConsumerState<BrandAccountScreen> {
                           _DetailRow(
                             icon: Icons.mail_outline,
                             title: 'Work email',
-                            subtitle: profile?.email,
+                            subtitle: email,
                             isLoading: isLoading,
                             onTap: () async {
                               final changed = await ChangeEmailSheet.show(
                                 context,
                               );
-                              if (changed == true) {
+                              if (changed == true && uid != null) {
                                 ref.invalidate(currentProfileProvider);
+                                ref.invalidate(privateContactByIdProvider(uid));
                               }
                             },
                           ),

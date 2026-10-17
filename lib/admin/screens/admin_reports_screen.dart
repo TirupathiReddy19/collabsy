@@ -733,6 +733,13 @@ class _UserListRow extends ConsumerWidget {
         ? ref.watch(instagramAccountForUserProvider(userId)).value
         : null;
 
+    // U1 phase A: email/phone moved to private/contact + private/phone,
+    // admin-readable per their rules — this is the one fallback (a brand
+    // with no display name set) that needs them.
+    final privateEmail =
+        ref.watch(privateContactByIdProvider(userId)).value?['email'] as String?;
+    final privatePhone = ref.watch(privatePhoneByIdProvider(userId)).value;
+
     return userAsync.when(
       data: (user) {
         if (user == null) return const SizedBox.shrink();
@@ -740,7 +747,7 @@ class _UserListRow extends ConsumerWidget {
             ? creatorDisplayNameFor(user, instagram)
             : (user.displayName?.isNotEmpty == true
                   ? user.displayName!
-                  : (user.email ?? user.phone ?? 'Brand'));
+                  : (privateEmail ?? privatePhone ?? 'Brand'));
         return Padding(
           padding: const EdgeInsets.symmetric(vertical: 4),
           child: ListTile(

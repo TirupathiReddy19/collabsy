@@ -55,9 +55,14 @@ String _resolveName(WidgetRef ref, String userId, UserRole role) {
     final instagram = ref.watch(instagramAccountForUserProvider(userId)).value;
     return creatorDisplayNameFor(user, instagram);
   }
-  return user.displayName?.isNotEmpty == true
-      ? user.displayName!
-      : (user.email ?? user.phone ?? 'Brand');
+  if (user.displayName?.isNotEmpty == true) return user.displayName!;
+  // U1 phase A: email/phone moved to private/contact + private/phone,
+  // admin-readable per their rules — this fallback (a brand that never set
+  // a display name) is the one admin consumer that needs both.
+  final email =
+      ref.watch(privateContactByIdProvider(userId)).value?['email'] as String?;
+  final phone = ref.watch(privatePhoneByIdProvider(userId)).value;
+  return email ?? phone ?? 'Brand';
 }
 
 /// Combined Trust & Safety section — who has blocked whom, and the

@@ -301,6 +301,196 @@ final class AppUserProfileByIdFamily extends $Family
   String toString() => r'appUserProfileByIdProvider';
 }
 
+/// U1 phase A — a user's email/push token from `private/contact` (own
+/// account screens, admin). The rule denies anyone else, so this resolves
+/// null for a userId the caller has no standing to see, same as a missing
+/// doc would.
+
+@ProviderFor(privateContactById)
+final privateContactByIdProvider = PrivateContactByIdFamily._();
+
+/// U1 phase A — a user's email/push token from `private/contact` (own
+/// account screens, admin). The rule denies anyone else, so this resolves
+/// null for a userId the caller has no standing to see, same as a missing
+/// doc would.
+
+final class PrivateContactByIdProvider
+    extends
+        $FunctionalProvider<
+          AsyncValue<Map<String, dynamic>?>,
+          Map<String, dynamic>?,
+          FutureOr<Map<String, dynamic>?>
+        >
+    with
+        $FutureModifier<Map<String, dynamic>?>,
+        $FutureProvider<Map<String, dynamic>?> {
+  /// U1 phase A — a user's email/push token from `private/contact` (own
+  /// account screens, admin). The rule denies anyone else, so this resolves
+  /// null for a userId the caller has no standing to see, same as a missing
+  /// doc would.
+  PrivateContactByIdProvider._({
+    required PrivateContactByIdFamily super.from,
+    required String super.argument,
+  }) : super(
+         retry: null,
+         name: r'privateContactByIdProvider',
+         isAutoDispose: true,
+         dependencies: null,
+         $allTransitiveDependencies: null,
+       );
+
+  @override
+  String debugGetCreateSourceHash() => _$privateContactByIdHash();
+
+  @override
+  String toString() {
+    return r'privateContactByIdProvider'
+        ''
+        '($argument)';
+  }
+
+  @$internal
+  @override
+  $FutureProviderElement<Map<String, dynamic>?> $createElement(
+    $ProviderPointer pointer,
+  ) => $FutureProviderElement(pointer);
+
+  @override
+  FutureOr<Map<String, dynamic>?> create(Ref ref) {
+    final argument = this.argument as String;
+    return privateContactById(ref, argument);
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return other is PrivateContactByIdProvider && other.argument == argument;
+  }
+
+  @override
+  int get hashCode {
+    return argument.hashCode;
+  }
+}
+
+String _$privateContactByIdHash() =>
+    r'8f64de366a92956222b3bc5a0afbc007f18cb491';
+
+/// U1 phase A — a user's email/push token from `private/contact` (own
+/// account screens, admin). The rule denies anyone else, so this resolves
+/// null for a userId the caller has no standing to see, same as a missing
+/// doc would.
+
+final class PrivateContactByIdFamily extends $Family
+    with $FunctionalFamilyOverride<FutureOr<Map<String, dynamic>?>, String> {
+  PrivateContactByIdFamily._()
+    : super(
+        retry: null,
+        name: r'privateContactByIdProvider',
+        dependencies: null,
+        $allTransitiveDependencies: null,
+        isAutoDispose: true,
+      );
+
+  /// U1 phase A — a user's email/push token from `private/contact` (own
+  /// account screens, admin). The rule denies anyone else, so this resolves
+  /// null for a userId the caller has no standing to see, same as a missing
+  /// doc would.
+
+  PrivateContactByIdProvider call(String userId) =>
+      PrivateContactByIdProvider._(argument: userId, from: this);
+
+  @override
+  String toString() => r'privateContactByIdProvider';
+}
+
+/// U1 phase A — a user's phone from `private/phone`: self, admin, or the
+/// other side of a chat with them (see `isChatPartnerOf()`) — the one case
+/// this doc exists to carve out, for a chat's "Call" button.
+
+@ProviderFor(privatePhoneById)
+final privatePhoneByIdProvider = PrivatePhoneByIdFamily._();
+
+/// U1 phase A — a user's phone from `private/phone`: self, admin, or the
+/// other side of a chat with them (see `isChatPartnerOf()`) — the one case
+/// this doc exists to carve out, for a chat's "Call" button.
+
+final class PrivatePhoneByIdProvider
+    extends $FunctionalProvider<AsyncValue<String?>, String?, Stream<String?>>
+    with $FutureModifier<String?>, $StreamProvider<String?> {
+  /// U1 phase A — a user's phone from `private/phone`: self, admin, or the
+  /// other side of a chat with them (see `isChatPartnerOf()`) — the one case
+  /// this doc exists to carve out, for a chat's "Call" button.
+  PrivatePhoneByIdProvider._({
+    required PrivatePhoneByIdFamily super.from,
+    required String super.argument,
+  }) : super(
+         retry: null,
+         name: r'privatePhoneByIdProvider',
+         isAutoDispose: true,
+         dependencies: null,
+         $allTransitiveDependencies: null,
+       );
+
+  @override
+  String debugGetCreateSourceHash() => _$privatePhoneByIdHash();
+
+  @override
+  String toString() {
+    return r'privatePhoneByIdProvider'
+        ''
+        '($argument)';
+  }
+
+  @$internal
+  @override
+  $StreamProviderElement<String?> $createElement($ProviderPointer pointer) =>
+      $StreamProviderElement(pointer);
+
+  @override
+  Stream<String?> create(Ref ref) {
+    final argument = this.argument as String;
+    return privatePhoneById(ref, argument);
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return other is PrivatePhoneByIdProvider && other.argument == argument;
+  }
+
+  @override
+  int get hashCode {
+    return argument.hashCode;
+  }
+}
+
+String _$privatePhoneByIdHash() => r'0bfba1c852f57e676627f233706050900582093c';
+
+/// U1 phase A — a user's phone from `private/phone`: self, admin, or the
+/// other side of a chat with them (see `isChatPartnerOf()`) — the one case
+/// this doc exists to carve out, for a chat's "Call" button.
+
+final class PrivatePhoneByIdFamily extends $Family
+    with $FunctionalFamilyOverride<Stream<String?>, String> {
+  PrivatePhoneByIdFamily._()
+    : super(
+        retry: null,
+        name: r'privatePhoneByIdProvider',
+        dependencies: null,
+        $allTransitiveDependencies: null,
+        isAutoDispose: true,
+      );
+
+  /// U1 phase A — a user's phone from `private/phone`: self, admin, or the
+  /// other side of a chat with them (see `isChatPartnerOf()`) — the one case
+  /// this doc exists to carve out, for a chat's "Call" button.
+
+  PrivatePhoneByIdProvider call(String userId) =>
+      PrivatePhoneByIdProvider._(argument: userId, from: this);
+
+  @override
+  String toString() => r'privatePhoneByIdProvider';
+}
+
 /// Holds the data the OTP screen needs, set by whichever screen navigates
 /// to it. Deliberately not passed via GoRouter's route `extra` — that gets
 /// dropped when the router re-evaluates its redirect guard mid-flow (e.g.
