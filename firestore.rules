@@ -150,6 +150,11 @@ service cloud.firestore {
         || isActiveStaffWithPermission('/campaigns/review')
         || (request.auth != null && notSuspended()
             && resource.data.brandId == request.auth.uid
+            // `brandId` was never pinned here, so an owner could hand their
+            // own campaign to a different account in one write — the owner
+            // check above only ever verified who could still touch the
+            // existing campaign, not that it stayed theirs afterward.
+            && request.resource.data.brandId == resource.data.brandId
             && (request.resource.data.status == resource.data.status
                 || (resource.data.status in ['active', 'paused', 'closed', 'expired']
                     && request.resource.data.status in ['active', 'paused', 'closed'])))
@@ -454,7 +459,25 @@ service cloud.firestore {
     // rewritten after the fact.
     match /auditLogs/{logId} {
       allow read: if isAdmin() || isActiveStaffWithPermission('/audit');
-      allow create: if isAdmin() || isActiveStaff();
+      // The app always sends the signed-in admin/staff's own email as
+      // `actorEmail` (see AdminAuditLogRepository.log) — requiring it match
+      // the caller's real token, not just a client-supplied string, is what
+      // actually stops one staff account from writing a history entry that
+      // falsely credits (or blames) someone else, including the admin.
+      allow create: if (isAdmin() || isActiveStaff())
+        && request.resource.data.keys().hasOnly(['actorEmail', 'action', 'targetId', 'targetName', 'timestamp'])
+        && request.resource.data.actorEmail == request.auth.token.email
+        && request.resource.data.action in [
+             'campaignApproved', 'campaignRejected', 'brandVerified', 'brandRejected',
+             'creatorVerified', 'creatorRejected', 'staffAccountCreated',
+             'staffPermissionsUpdated', 'staffAccountForcedLogout', 'supportReplySent',
+             'supportTicketResolved', 'supportTicketReopened', 'broadcastSent',
+             'outreachSettingsUpdated', 'creatorSuspended', 'creatorReinstated',
+             'brandSuspended', 'brandReinstated'
+           ]
+        && request.resource.data.targetId is string
+        && request.resource.data.targetName is string
+        && request.resource.data.timestamp == request.time;
       allow update, delete: if false;
     }
 
@@ -465,7 +488,19 @@ service cloud.firestore {
     // permission map.
     match /staffLoginEvents/{eventId} {
       allow read: if isAdmin();
-      allow create: if isAdmin() || isActiveStaff();
+      // Same reasoning as auditLogs: the app only ever logs the signed-in
+      // account's own login/logout (see AdminStaffLoginEventRepository),
+      // never `forcedLogout` — that one is written only by the
+      // forceLogoutStaffAccount Cloud Function via the Admin SDK, which
+      // bypasses this rule entirely. Pinning uid/email to the caller's own
+      // token stops a staff account from logging an event as someone else.
+      allow create: if (isAdmin() || isActiveStaff())
+        && request.resource.data.keys().hasOnly(['uid', 'email', 'roleName', 'type', 'timestamp'])
+        && request.resource.data.uid == request.auth.uid
+        && request.resource.data.email == request.auth.token.email
+        && request.resource.data.type in ['login', 'logout']
+        && request.resource.data.roleName is string
+        && request.resource.data.timestamp == request.time;
       allow update, delete: if false;
     }
 

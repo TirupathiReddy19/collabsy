@@ -658,12 +658,44 @@ describe('support, announcements, audit and config', () => {
   });
 
   it('audit logs are write-once and readable only with the audit permission', async () => {
-    await ok(setDoc(doc(staff('supportStaff'), 'auditLogs/l1'), { action: 'x' }));
-    await fails(setDoc(doc(as('creatorA'), 'auditLogs/l2'), { action: 'forged' }));
+    const supportStaffEmail = as('supportStaff', { email: 'support-staff@test.example' });
+    const entry = (overrides = {}) => ({
+      actorEmail: 'support-staff@test.example', action: 'supportReplySent',
+      targetId: 't1', targetName: 'Creator A', timestamp: serverTimestamp(), ...overrides,
+    });
+    await ok(setDoc(doc(supportStaffEmail, 'auditLogs/l1'), entry()));
+    await fails(setDoc(doc(as('creatorA'), 'auditLogs/l2'), entry()));
     await fails(updateDoc(doc(admin(), 'auditLogs/l1'), { action: 'rewritten' }));
     await fails(deleteDoc(doc(admin(), 'auditLogs/l1')));
     await ok(getDoc(doc(staff('auditor'), 'auditLogs/l1')));
     await fails(getDoc(doc(staff('supportStaff'), 'auditLogs/l1')));
+  });
+
+  it('cannot forge an audit log under someone else\'s name, or an unknown action', async () => {
+    const supportStaffEmail = as('supportStaff', { email: 'support-staff@test.example' });
+    const base = {
+      action: 'supportReplySent', targetId: 't1', targetName: 'x', timestamp: serverTimestamp(),
+    };
+    // The actual bug this closes: a staff account writing admin's email as the actor.
+    await fails(setDoc(doc(supportStaffEmail, 'auditLogs/forged'),
+      { ...base, actorEmail: 'admin@collabsy.online' }));
+    await fails(setDoc(doc(supportStaffEmail, 'auditLogs/badaction'),
+      { ...base, actorEmail: 'support-staff@test.example', action: 'notARealAction' }));
+    await fails(setDoc(doc(supportStaffEmail, 'auditLogs/extra'),
+      { ...base, actorEmail: 'support-staff@test.example', extra: 'field' }));
+  });
+
+  it('staff login events are pinned to the caller and never forgedLogout from the client', async () => {
+    const supportStaffEmail = as('supportStaff', { email: 'support-staff@test.example' });
+    const event = (overrides = {}) => ({
+      uid: 'supportStaff', email: 'support-staff@test.example', roleName: 'Support',
+      type: 'login', timestamp: serverTimestamp(), ...overrides,
+    });
+    await ok(setDoc(doc(supportStaffEmail, 'staffLoginEvents/e1'), event()));
+    await fails(setDoc(doc(supportStaffEmail, 'staffLoginEvents/e2'), event({ uid: 'internUid' })));
+    await fails(setDoc(doc(supportStaffEmail, 'staffLoginEvents/e3'),
+      event({ email: 'admin@collabsy.online' })));
+    await fails(setDoc(doc(supportStaffEmail, 'staffLoginEvents/e4'), event({ type: 'forcedLogout' })));
   });
 
   it('outreach config is admin-write and staff-read only', async () => {
@@ -765,12 +797,11 @@ describe('shipped-app compatibility', () => {
 });
 
 describe('campaign ownership', () => {
-  // Not part of the approved fixes — recorded because the update rule never
-  // pins brandId, so an owner can hand a campaign to another account.
-  it('an owner cannot reassign a campaign to a different brand', {
-    todo: 'GAP C2: brandId is not immutable on update',
-  }, async () => {
+  it('an owner cannot reassign a campaign to a different brand', async () => {
     await fails(updateDoc(doc(as('brandA'), 'campaigns/cActive'), { brandId: 'brandB' }));
+    // Staff/admin review still needs to be able to touch other fields without
+    // this new check getting in the way of a write that leaves brandId alone.
+    await ok(updateDoc(doc(as('brandA'), 'campaigns/cActive'), { status: 'paused' }));
   });
 });
 
