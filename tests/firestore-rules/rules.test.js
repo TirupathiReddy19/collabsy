@@ -553,8 +553,32 @@ describe('chats', () => {
   });
 
   it('a blocked pair cannot open a chat', async () => {
-    await fails(setDoc(doc(as('brandB'), 'chats/chat2'), { creatorId: 'creatorA', brandId: 'brandB', status: 'active' }));
-    await fails(setDoc(doc(as('creatorA'), 'chats/chat3'), { creatorId: 'creatorA', brandId: 'brandB', status: 'active' }));
+    await fails(setDoc(doc(as('brandB'), 'chats/chat2'), {
+      creatorId: 'creatorA', creatorName: 'Creator A', brandId: 'brandB', brandName: 'Brand B',
+      status: 'active', createdAt: serverTimestamp(),
+    }));
+    await fails(setDoc(doc(as('creatorA'), 'chats/chat3'), {
+      creatorId: 'creatorA', creatorName: 'Creator A', brandId: 'brandB', brandName: 'Brand B',
+      status: 'active', createdAt: serverTimestamp(),
+    }));
+  });
+
+  it('a participant can open a new chat with the real shape', async () => {
+    await ok(setDoc(doc(as('creatorA'), 'chats/creatorA_newBrand'), {
+      creatorId: 'creatorA', creatorName: 'Creator A', brandId: 'brandA', brandName: 'Brand A',
+      status: 'request', initiatedBy: 'creator', createdAt: serverTimestamp(),
+    }));
+  });
+
+  it('a new chat cannot carry extra fields or a bogus status', async () => {
+    await fails(setDoc(doc(as('creatorA'), 'chats/creatorA_extra'), {
+      creatorId: 'creatorA', creatorName: 'Creator A', brandId: 'brandA', brandName: 'Brand A',
+      status: 'request', createdAt: serverTimestamp(), lastMessage: 'planted',
+    }));
+    await fails(setDoc(doc(as('creatorA'), 'chats/creatorA_bogus'), {
+      creatorId: 'creatorA', creatorName: 'Creator A', brandId: 'brandA', brandName: 'Brand A',
+      status: 'closed', createdAt: serverTimestamp(),
+    }));
   });
 });
 

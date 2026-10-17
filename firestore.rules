@@ -331,10 +331,30 @@ service cloud.firestore {
       allow read: if request.auth != null
         && (resource.data.creatorId == request.auth.uid
             || resource.data.brandId == request.auth.uid);
+      // Field allow-list added — previously any field could be set here
+      // with no shape or length limit, including the OTHER party's
+      // displayed name (whichever side creates the thread sends both
+      // creatorName and brandName). This doesn't validate either name
+      // against the real profile (that'd need an extra get() per role);
+      // self-asserting your own display name is already no more trusted
+      // anywhere else in the app, and the asymmetric case — one side
+      // mislabeling the other — only ever shows that label back to the
+      // party who set it, when they view their own thread. What this
+      // closes is the unbounded field/length issue, same style as the
+      // notifications/auditLogs allow-lists.
       allow create: if request.auth != null && notSuspended()
+        && request.resource.data.keys().hasOnly(
+            ['creatorId', 'creatorName', 'brandId', 'brandName', 'status', 'initiatedBy', 'createdAt'])
         && (request.resource.data.creatorId == request.auth.uid
             || request.resource.data.brandId == request.auth.uid)
-        && !isBlocked(request.resource.data.creatorId, request.resource.data.brandId);
+        && !isBlocked(request.resource.data.creatorId, request.resource.data.brandId)
+        && request.resource.data.creatorId is string
+        && request.resource.data.brandId is string
+        && request.resource.data.creatorName is string && request.resource.data.creatorName.size() < 200
+        && request.resource.data.brandName is string && request.resource.data.brandName.size() < 200
+        && request.resource.data.status in ['request', 'active']
+        && (!('initiatedBy' in request.resource.data) || request.resource.data.initiatedBy in ['creator', 'brand'])
+        && request.resource.data.createdAt == request.time;
       // Neither participant may ever rewrite who the other party is —
       // status/lastMessage(At) are shared, but each side may only touch
       // their own lastReadAt. Without a field allow-list here, a
