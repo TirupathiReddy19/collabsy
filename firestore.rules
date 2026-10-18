@@ -6,9 +6,14 @@ service cloud.firestore {
     // (verified) email claim, not a client-writable field, so it can't be
     // self-granted. There's deliberately no signup path for this; the
     // account itself is created once, by hand, in the Firebase Console.
+    // E1: email_verified is required so a mere email-claim match isn't
+    // enough — re-enabled 2026-10-18 once admin@collabsy.online's email was
+    // actually verified (an earlier attempt locked the admin portal out on
+    // 2026-10-11, because it wasn't verified yet at that point).
     function isAdmin() {
       return request.auth != null
-        && request.auth.token.email == 'admin@collabsy.online';
+        && request.auth.token.email == 'admin@collabsy.online'
+        && request.auth.token.email_verified == true;
     }
 
     // False once suspendUserAccount has put the `suspended` custom claim on

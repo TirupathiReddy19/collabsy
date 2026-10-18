@@ -2,9 +2,12 @@ rules_version = '2';
 
 service firebase.storage {
   match /b/{bucket}/o {
+    // E1: mirrors firestore.rules' isAdmin() — re-enabled 2026-10-18 once
+    // admin@collabsy.online's email was actually verified.
     function isAdmin() {
       return request.auth != null
-        && request.auth.token.email == 'admin@collabsy.online';
+        && request.auth.token.email == 'admin@collabsy.online'
+        && request.auth.token.email_verified == true;
     }
 
     // Mirrors firestore.rules' `isActiveStaffWithPermission` via Storage

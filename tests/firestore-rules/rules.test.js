@@ -290,9 +290,9 @@ describe('admin identity', () => {
     await fails(getDoc(doc(fake, 'reports/r1')));
   });
 
-  // Not enforced yet: requiring email_verified locked the real admin out
-  // (its email is unverified in Firebase Auth), so it was reverted.
-  it('an UNVERIFIED token with the admin email is not admin', { todo: 'GAP E1: isAdmin() never checks email_verified (admin email must be verified first)' }, async () => {
+  // E1 re-enabled 2026-10-18 (admin@collabsy.online's email is now
+  // actually verified) — this is a real assertion again, not a todo.
+  it('an UNVERIFIED token with the admin email is not admin', async () => {
     const unverified = as('attacker', { email: ADMIN_EMAIL, email_verified: false });
     await fails(getDoc(doc(unverified, 'reports/r1')));
     const noClaim = as('attacker2', { email: ADMIN_EMAIL });

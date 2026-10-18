@@ -5,12 +5,13 @@ export const ADMIN_EMAIL = "admin@collabsy.online";
 
 /**
  * True only for the super admin, mirroring firestore.rules' isAdmin().
- * TODO(E1): also require `email_verified === true` once the admin account's
- * email is verified in Firebase Auth. Adding it earlier locked the admin
- * portal out (2026-10-11), so it was reverted.
+ * E1: email_verified re-enabled 2026-10-18 once admin@collabsy.online's
+ * email was actually verified (an earlier attempt locked the admin portal
+ * out on 2026-10-11, because it wasn't verified yet at that point).
  */
 export function isAdminRequest(request: CallableRequest): boolean {
-  return request.auth?.token?.email === ADMIN_EMAIL;
+  return request.auth?.token?.email === ADMIN_EMAIL
+    && request.auth?.token?.email_verified === true;
 }
 
 /** Throws `permission-denied` unless the caller is the super admin. */
