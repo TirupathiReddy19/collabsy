@@ -31,6 +31,7 @@ class AdminAnalyticsScreen extends ConsumerStatefulWidget {
 class _AdminAnalyticsScreenState extends ConsumerState<AdminAnalyticsScreen> {
   bool _isBackfilling = false;
   bool _isSendingWelcomes = false;
+  bool _isBackfillingPrivateContact = false;
 
   /// One-time migration, run server-side: `setRole()` never wrote
   /// `createdAt` for password/phone signups until that bug was fixed, so
@@ -106,6 +107,46 @@ class _AdminAnalyticsScreenState extends ConsumerState<AdminAnalyticsScreen> {
     }
   }
 
+  /// U1 phase A: email/phone/fcmToken moved to `private/contact`/
+  /// `private/phone`, but the app only dual-writes those on sign-up/
+  /// sign-in/phone change/token refresh — an existing account that hasn't
+  /// done any of those since updating has an empty private doc until it
+  /// does. This backfills every existing account in one pass instead of
+  /// waiting on that. Safe to run more than once: it always just re-copies
+  /// whatever's currently on the public fields.
+  Future<void> _backfillPrivateContact() async {
+    setState(() => _isBackfillingPrivateContact = true);
+    try {
+      final result = await ref
+          .read(firebaseFunctionsProvider)
+          .httpsCallable('backfillPrivateContact')
+          .call();
+      final scanned = result.data['scanned'] as int;
+      final updated = result.data['updated'] as int;
+
+      if (!mounted) return;
+      AppSnackbar.showSuccess(
+        context,
+        'Scanned $scanned account${scanned == 1 ? '' : 's'}, backfilled '
+        '$updated.',
+      );
+    } on FirebaseFunctionsException catch (e) {
+      if (!mounted) return;
+      AppSnackbar.showError(
+        context,
+        e.message ?? "Couldn't backfill private contact data.",
+      );
+    } catch (_) {
+      if (!mounted) return;
+      AppSnackbar.showError(
+        context,
+        "Couldn't backfill private contact data.",
+      );
+    } finally {
+      if (mounted) setState(() => _isBackfillingPrivateContact = false);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final signups = ref.watch(allUserSignupsProvider);
@@ -142,6 +183,20 @@ class _AdminAnalyticsScreenState extends ConsumerState<AdminAnalyticsScreen> {
                     )
                   : const Icon(Icons.celebration_outlined, size: 18),
               label: const Text('Send welcome to existing users'),
+            ),
+            const SizedBox(width: 8),
+            TextButton.icon(
+              onPressed: _isBackfillingPrivateContact
+                  ? null
+                  : _backfillPrivateContact,
+              icon: _isBackfillingPrivateContact
+                  ? const SizedBox(
+                      width: 14,
+                      height: 14,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const Icon(Icons.lock_outline, size: 18),
+              label: const Text('Backfill private contact data'),
             ),
           ],
         ),
