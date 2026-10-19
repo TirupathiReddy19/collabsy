@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_radius.dart';
@@ -165,6 +166,10 @@ class _AdminCreatorDetailScreenState
     ref.invalidate(appUserProfileByIdProvider(widget.creatorId));
     if (!mounted) return;
     AppSnackbar.showSuccess(context, '$creatorName reinstated.');
+  }
+
+  Future<void> _launch(String url) async {
+    await launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication);
   }
 
   @override
@@ -393,6 +398,16 @@ class _AdminCreatorDetailScreenState
                                     ? '@${instagram.username}'
                                     : '—',
                               ),
+                              if (instagram.username?.isNotEmpty == true)
+                                AdminDetailRow(
+                                  icon: Icons.open_in_new,
+                                  label: 'Profile URL',
+                                  value:
+                                      'https://instagram.com/${instagram.username}',
+                                  onTap: () => _launch(
+                                    'https://instagram.com/${instagram.username}',
+                                  ),
+                                ),
                               AdminDetailRow(
                                 icon: Icons.groups_outlined,
                                 label: 'Followers',
