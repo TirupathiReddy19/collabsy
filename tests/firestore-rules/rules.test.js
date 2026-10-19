@@ -490,9 +490,14 @@ describe('applications and deliverables', () => {
 });
 
 describe('notifications', () => {
+  // N1 phase B (2026-10-19): the 7 user-to-user types are now exclusively
+  // server-created (Cloud Function triggers using the Admin SDK, which
+  // bypasses this rule) — no client, staff or admin, ever legitimately
+  // creates one directly anymore. `valid()` reflects the only shape a
+  // client create can still take: an admin/staff-only type.
   const valid = () => ({
-    userId: 'brandA', type: 'newApplication', title: 'New application', body: 'hello',
-    referenceType: 'application', referenceId: 'app1', read: false, createdAt: serverTimestamp(),
+    userId: 'creatorA', type: 'profileVerified', title: 'Profile verified', body: 'hello',
+    referenceType: 'profile', referenceId: 'creatorA', read: false, createdAt: serverTimestamp(),
   });
 
   it('only the recipient can read a notification, and can only mark it read', async () => {
@@ -502,29 +507,33 @@ describe('notifications', () => {
     await fails(updateDoc(doc(as('creatorA'), 'notifications/n1'), { body: 'edited' }));
   });
 
-  it('a normal user cannot forge admin-only notification types', async () => {
+  it('a normal user cannot create a notification at all, admin-type or otherwise', async () => {
     await fails(setDoc(doc(as('creatorA'), 'notifications/f1'), { ...valid(), userId: 'creatorB', type: 'profileVerified' }));
     await fails(setDoc(doc(as('creatorA'), 'notifications/f2'), { ...valid(), userId: 'creatorB', type: 'supportReply' }));
   });
 
   it('shape limits are enforced', async () => {
-    const db = as('creatorA');
+    const db = admin();
     await ok(setDoc(doc(db, 'notifications/v1'), valid()));
     await fails(setDoc(doc(db, 'notifications/v2'), { ...valid(), read: true }));
     await fails(setDoc(doc(db, 'notifications/v3'), { ...valid(), extra: 'x' }));
     await fails(setDoc(doc(db, 'notifications/v4'), { ...valid(), title: 'x'.repeat(250) }));
   });
 
-  // The rule has to allow cross-user writes (a creator notifies a brand), but
-  // it doesn't require any relationship, so any user can push arbitrary text
-  // to any other user.
-  it('a user cannot push arbitrary text to a user they have no relationship with', { todo: 'GAP N1: notification create needs no relationship to the recipient' }, async () => {
+  // N1 phase B closes this for real: a regular user can no longer create
+  // ANY notification type client-side, not just the admin-gated ones — the
+  // 7 user-to-user types only ever come from the server triggers now.
+  it('a user cannot push arbitrary text to a user they have no relationship with', async () => {
     await fails(
       setDoc(doc(as('creatorA'), 'notifications/spam'), {
         ...valid(), userId: 'creatorB', type: 'newMessage',
         title: 'Account locked', body: 'Verify now at http://evil.example',
       }),
     );
+  });
+
+  it('admin/staff can still create the 5 admin-only types for the app itself', async () => {
+    await ok(setDoc(doc(admin(), 'notifications/adm1'), valid()));
   });
 });
 
