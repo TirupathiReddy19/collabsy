@@ -231,6 +231,23 @@ describe('privilege escalation', () => {
     await fails(updateDoc(doc(as('creatorA'), 'users/creatorB'), { displayName: 'pwned' }));
   });
 
+  // U1 phase B: email/phone/fcmToken can no longer land on the public doc
+  // at all, by anyone — not even the account owner. A straggler doc that
+  // still carries one from before this shipped (creatorA's seed data) must
+  // still accept unrelated edits without that leftover value tripping the
+  // guard, and must still reject an attempt to actually introduce or
+  // change it.
+  it('email/phone/fcmToken cannot be written to the public user doc anymore', async () => {
+    const db = as('creatorA');
+    await ok(updateDoc(doc(db, 'users/creatorA'), { displayName: 'Still fine' }));
+    await fails(updateDoc(doc(db, 'users/creatorA'), { email: 'new@example.com' }));
+    await fails(updateDoc(doc(db, 'users/creatorA'), { phone: '+919999999999' }));
+    await fails(updateDoc(doc(db, 'users/creatorA'), { fcmToken: 'new-token' }));
+    await fails(setDoc(doc(admin(), 'users/newUser'), {
+      role: 'creator', displayName: 'New', email: 'x@example.com',
+    }));
+  });
+
   it('a suspended user cannot un-suspend themselves; others cannot self-suspend', async () => {
     await fails(updateDoc(doc(as('suspendedC'), 'users/suspendedC'), { suspended: false }));
     await fails(updateDoc(doc(as('creatorA'), 'users/creatorA'), { suspended: true }));

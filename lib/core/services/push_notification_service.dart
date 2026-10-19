@@ -12,8 +12,9 @@ part 'push_notification_service.g.dart';
 FirebaseMessaging firebaseMessaging(Ref ref) => FirebaseMessaging.instance;
 
 /// Requests notification permission, grabs the device's FCM token, and
-/// keeps it saved on `users/{uid}.fcmToken` — that's the only piece the
-/// Cloud Function needs to actually deliver a push for a given user.
+/// keeps it saved on `users/{uid}/private/contact.fcmToken` — that's the
+/// only piece the Cloud Function needs to actually deliver a push for a
+/// given user.
 ///
 /// Deliberately request-and-forget: if the user denies permission, or the
 /// token can't be fetched (emulator without Play services, etc.), the app

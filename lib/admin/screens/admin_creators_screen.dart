@@ -12,6 +12,7 @@ import '../../core/widgets/loading_indicator.dart';
 import '../../core/widgets/profile_avatar.dart';
 import '../../core/widgets/staggered_fade_in.dart';
 import '../../features/auth/models/app_user_profile.dart';
+import '../../features/auth/providers/auth_providers.dart';
 import '../../features/creator/models/creator_profile.dart';
 import '../../features/creator/providers/creator_profile_providers.dart';
 import '../../features/notifications/models/notification_type.dart';
@@ -414,7 +415,7 @@ class _AdminCreatorsScreenState extends ConsumerState<AdminCreatorsScreen> {
   }
 }
 
-class _CreatorRow extends StatelessWidget {
+class _CreatorRow extends ConsumerWidget {
   const _CreatorRow({
     required this.user,
     required this.profile,
@@ -432,7 +433,14 @@ class _CreatorRow extends StatelessWidget {
   final ValueChanged<bool>? onSelectedChanged;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    // U1 phase B: email/phone no longer live on the public doc — read from
+    // the admin-readable private subdocs instead, same pattern as the
+    // detail screens and `_BrandRow`.
+    final email =
+        ref.watch(privateContactByIdProvider(user.id)).value?['email']
+            as String?;
+    final phone = ref.watch(privatePhoneByIdProvider(user.id)).value;
     final location = [
       profile?.city,
       profile?.state,
@@ -501,10 +509,10 @@ class _CreatorRow extends StatelessWidget {
                             ),
                             overflow: TextOverflow.ellipsis,
                           ),
-                          if (user.email != null || showInstagramHandle)
+                          if (email != null || showInstagramHandle)
                             Text(
                               [
-                                if (user.email != null) user.email!,
+                                if (email != null) email,
                                 if (showInstagramHandle)
                                   '@${instagram!.username}',
                               ].join(' · '),
@@ -518,7 +526,7 @@ class _CreatorRow extends StatelessWidget {
                     ),
                     Expanded(
                       child: Text(
-                        user.phone?.isNotEmpty == true ? user.phone! : '—',
+                        phone?.isNotEmpty == true ? phone! : '—',
                         style: AppTextStyles.bodySmall,
                       ),
                     ),

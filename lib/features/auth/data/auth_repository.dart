@@ -28,12 +28,15 @@ class AuthRepository {
   final FirebaseStorage _storage;
   final FirebaseFunctions _functions;
 
-  // U1 phase A — see firestore.rules' `users/{uid}/private/contact` and
-  // `.../private/phone`. Every write below that touches email, phone or
-  // fcmToken writes BOTH here and the matching public `users/{uid}` field,
-  // so a build 29/23 install (which only ever reads the public one) keeps
-  // working unaffected; only the read side switches over, via
-  // [fetchPrivateContact]/[watchPrivatePhone] below.
+  // U1 phase B (2026-10-19) — see firestore.rules' `users/{uid}/private/
+  // contact` and `.../private/phone`. Every write below that touches email,
+  // phone or fcmToken writes ONLY here now, never the public `users/{uid}`
+  // field — phase A's dual-write is gone, closing the gap where any
+  // signed-in user could read anyone's email/phone/fcmToken off the public
+  // doc. This does mean a build 29/23 install (which only ever reads the
+  // public field) sees that field go stale/blank for any account that
+  // signs in on 31+ after this ships — an accepted, one-way tradeoff now
+  // that the force-update gate is already pushing those builds out.
   DocumentReference<Map<String, dynamic>> _privateContactDoc(String userId) =>
       _firestore.collection('users').doc(userId).collection('private').doc('contact');
   DocumentReference<Map<String, dynamic>> _privatePhoneDoc(String userId) =>
@@ -330,9 +333,6 @@ class AuthRepository {
     final signingOutUid = _auth.currentUser?.uid;
     if (signingOutUid != null) {
       try {
-        await _firestore.collection('users').doc(signingOutUid).update({
-          'fcmToken': FieldValue.delete(),
-        });
         await _privateContactDoc(signingOutUid).set(
           {'fcmToken': FieldValue.delete()},
           SetOptions(merge: true),
@@ -398,7 +398,6 @@ class AuthRepository {
     final doc = await ref.get();
     if (doc.exists) return;
     await ref.set({
-      'email': user.email,
       'displayName': user.displayName,
       'onboardingCompleted': false,
       'createdAt': FieldValue.serverTimestamp(),
@@ -430,8 +429,6 @@ class AuthRepository {
       'role': role.toDbValue(),
       if (displayName != null && displayName.isNotEmpty)
         'displayName': displayName,
-      if (phone != null && phone.isNotEmpty) 'phone': phone,
-      if (email != null && email.isNotEmpty) 'email': email,
       if (isNewDoc) 'createdAt': FieldValue.serverTimestamp(),
       'updatedAt': FieldValue.serverTimestamp(),
     }, SetOptions(merge: true));
@@ -512,9 +509,6 @@ class AuthRepository {
   /// Saves the device's current FCM token so the push-sending Cloud
   /// Function knows where to deliver this user's notifications.
   Future<void> saveFcmToken({required String userId, required String token}) async {
-    await _firestore.collection('users').doc(userId).set({
-      'fcmToken': token,
-    }, SetOptions(merge: true));
     await _privateContactDoc(userId).set({'fcmToken': token}, SetOptions(merge: true));
   }
 
@@ -570,9 +564,6 @@ class AuthRepository {
       smsCode: smsCode,
     );
     await user.updatePhoneNumber(credential);
-    await _firestore.collection('users').doc(user.uid).set({
-      'phone': user.phoneNumber,
-    }, SetOptions(merge: true));
     if (user.phoneNumber != null) {
       await _privatePhoneDoc(user.uid).set(
         {'phone': user.phoneNumber},
@@ -603,9 +594,6 @@ class AuthRepository {
     await user.reload();
     final current = _auth.currentUser?.email;
     if (current != expectedEmail) return false;
-    await _firestore.collection('users').doc(user.uid).set({
-      'email': current,
-    }, SetOptions(merge: true));
     await _privateContactDoc(user.uid).set(
       {'email': current},
       SetOptions(merge: true),
@@ -613,15 +601,16 @@ class AuthRepository {
     return true;
   }
 
-  // --- U1 phase A reads: the private contact/phone this file's write
-  // methods above dual-write. Deliberately separate from [fetchProfile]/
-  // [watchProfile] (which stay on the public `users/{uid}` doc, unchanged,
-  // for the ~20 call sites that only ever need displayName/avatarUrl/role/
-  // bio) rather than merged into them — merging would mean every profile
-  // view app-wide (Discover lists included) opens a second listener and
-  // eats a permission-denied for every OTHER user's profile, for the sake
-  // of the handful of call sites that actually need email/phone: a brand's
-  // own account screen, the admin portal, and a chat's "Call" button.
+  // --- Private contact/phone reads: the subdocs this file's write methods
+  // above now write exclusively (U1 phase B — no more public dual-write).
+  // Deliberately separate from [fetchProfile]/[watchProfile] (which stay
+  // on the public `users/{uid}` doc, unchanged, for the ~20 call sites
+  // that only ever need displayName/avatarUrl/role/bio) rather than merged
+  // into them — merging would mean every profile view app-wide (Discover
+  // lists included) opens a second listener and eats a permission-denied
+  // for every OTHER user's profile, for the sake of the handful of call
+  // sites that actually need email/phone: a brand's own account screen,
+  // the admin portal, and a chat's "Call" button.
 
   /// Own (or, for admin, anyone's) email/push token — see
   /// `private/contact`'s rule. Denied for anyone else.

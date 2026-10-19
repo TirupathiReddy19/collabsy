@@ -186,6 +186,14 @@ class _CreatorProfileScreenState extends ConsumerState<CreatorProfileScreen> {
     final creatorProfileAsync = ref.watch(ownCreatorProfileProvider);
     final instagramAccount = ref.watch(ownInstagramAccountProvider).value;
     final isLoading = ref.watch(creatorProfileControllerProvider).isLoading;
+    // U1 phase B: phone no longer lives on the public doc (unlike email,
+    // which already falls back to Firebase Auth's own value in
+    // CurrentProfile — see auth_providers.dart) — this is a self-read,
+    // always allowed by private/phone's rule.
+    final uid = profile.value?.id;
+    final phone = uid == null
+        ? null
+        : ref.watch(privatePhoneByIdProvider(uid)).value;
 
     creatorProfileAsync.whenData(_initializeFromProfile);
 
@@ -245,7 +253,7 @@ class _CreatorProfileScreenState extends ConsumerState<CreatorProfileScreen> {
                               ),
                             ),
                           ],
-                          if (value?.phone != null) ...[
+                          if (phone != null) ...[
                             const SizedBox(height: 4),
                             InkWell(
                               onTap: () async {
@@ -254,13 +262,14 @@ class _CreatorProfileScreenState extends ConsumerState<CreatorProfileScreen> {
                                 );
                                 if (changed == true) {
                                   ref.invalidate(currentProfileProvider);
+                                  ref.invalidate(privatePhoneByIdProvider(uid!));
                                 }
                               },
                               child: Row(
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
                                   Text(
-                                    value!.phone!,
+                                    phone,
                                     style: AppTextStyles.bodyMedium,
                                   ),
                                   const SizedBox(width: 4),

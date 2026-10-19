@@ -77,7 +77,16 @@ service cloud.firestore {
     // their own role field to anything, including 'admin'.
     match /users/{userId} {
       allow read: if request.auth != null;
-      allow write: if isAdmin()
+      // U1 phase B (2026-10-19): email/phone/fcmToken can no longer be
+      // written here at all, by anyone, admin included — they live
+      // exclusively in private/contact and private/phone below now. A
+      // Firestore rule can only grant or deny a WHOLE document read, never
+      // individual fields within it, so the only way to actually stop a
+      // signed-in stranger from reading someone's email/phone off this
+      // (still broadly-readable, by design — displayName/role/etc. need to
+      // stay public) doc is for those fields to never be present on it —
+      // hence blocking the write outright rather than just the read.
+      allow write: if (isAdmin()
         || (request.auth != null && request.auth.uid == userId
             && (!('role' in request.resource.data)
                 || request.resource.data.role in ['creator', 'brand'])
@@ -87,7 +96,22 @@ service cloud.firestore {
             // its own doc.
             && (!('suspended' in request.resource.data)
                 || request.resource.data.suspended == (resource.data.suspended == true))
-            && !('suspendedReason' in request.resource.data));
+            && !('suspendedReason' in request.resource.data)))
+        // A merge write reflects the FULL post-merge document, so a
+        // straggler doc that still has one of these fields (not yet
+        // scrubbed) would otherwise fail every future write to it, not
+        // just one attempting to set the field — same "unchanged is fine,
+        // newly-introduced or changed is not" pattern as creatorProfiles'
+        // verificationStatus. The key being present at all here always
+        // means it was inherited from an existing doc (nothing writes it
+        // fresh anymore), so `resource` is guaranteed non-null whenever
+        // the second half of each disjunct actually runs.
+        && (!('email' in request.resource.data)
+            || request.resource.data.email == resource.data.email)
+        && (!('phone' in request.resource.data)
+            || request.resource.data.phone == resource.data.phone)
+        && (!('fcmToken' in request.resource.data)
+            || request.resource.data.fcmToken == resource.data.fcmToken);
 
       // U1 phase A: email and push token move here, off the world-readable
       // `users/{uid}` doc above (`allow read: if request.auth != null` let
