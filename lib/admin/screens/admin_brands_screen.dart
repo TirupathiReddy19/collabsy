@@ -24,6 +24,7 @@ import '../providers/admin_audit_log_providers.dart';
 import '../providers/admin_auth_providers.dart';
 import '../providers/admin_users_providers.dart';
 import '../utils/admin_dialog.dart';
+import '../utils/csv_download.dart';
 import '../widgets/admin_row_skeleton.dart';
 import '../widgets/admin_top_bar.dart';
 import '../theme/admin_colors.dart';
@@ -51,6 +52,12 @@ class _AdminBrandsScreenState extends ConsumerState<AdminBrandsScreen> {
   VerificationStatus? _verificationFilter;
   final Set<String> _selectedIds = {};
   bool _isBulkActing = false;
+  bool _isExporting = false;
+
+  // Set during build()'s data callback, read by the Export CSV button in
+  // the top bar above it — same reasoning as the Creators screen.
+  List<AppUserProfile>? _lastFiltered;
+  Map<String, BrandProfile>? _lastProfileMap;
 
   @override
   void initState() {
@@ -155,10 +162,61 @@ class _AdminBrandsScreenState extends ConsumerState<AdminBrandsScreen> {
     }
   }
 
+  String _csvEscape(String value) {
+    if (value.contains(',') || value.contains('"') || value.contains('\n')) {
+      return '"${value.replaceAll('"', '""')}"';
+    }
+    return value;
+  }
+
+  /// Exports exactly the currently filtered/searched list, not every
+  /// brand — matches what the admin is actually looking at.
+  Future<void> _exportCsv(
+    List<AppUserProfile> filtered,
+    Map<String, BrandProfile> profileMap,
+    Map<String, Map<String, dynamic>> privateContacts,
+  ) async {
+    setState(() => _isExporting = true);
+    try {
+      final rows = <String>[
+        'Contact name,Company,Email,Phone,Verification,Website,City,State,Categories',
+      ];
+      for (final user in filtered) {
+        final profile = profileMap[user.id];
+        final contact = privateContacts[user.id];
+        rows.add(
+          [
+            _brandName(user),
+            profile?.companyName ?? '',
+            contact?['email'] as String? ?? '',
+            contact?['phone'] as String? ?? '',
+            (profile?.verificationStatus ?? VerificationStatus.pending).label,
+            profile?.website ?? '',
+            profile?.city ?? '',
+            profile?.state ?? '',
+            profile?.categories.join('; ') ?? '',
+          ].map(_csvEscape).join(','),
+        );
+      }
+      downloadCsv(
+        'collabsy-brands-${DateTime.now().toIso8601String().split('T').first}.csv',
+        rows.join('\n'),
+      );
+      if (mounted) AppSnackbar.showSuccess(context, 'Exported ${filtered.length} brands.');
+    } catch (_) {
+      if (mounted) AppSnackbar.showError(context, "Couldn't export the list.");
+    } finally {
+      if (mounted) setState(() => _isExporting = false);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final users = ref.watch(usersByRoleProvider(UserRole.brand));
     final profiles = ref.watch(brandDirectoryProvider);
+    final privateContacts =
+        ref.watch(privateContactsByRoleProvider(UserRole.brand)).value ??
+        const {};
     final locked = widget.lockedVerificationStatus != null;
     // Approve/reject only makes sense for still-pending accounts, so
     // selection only appears when that's the active filter — no separate
@@ -173,6 +231,25 @@ class _AdminBrandsScreenState extends ConsumerState<AdminBrandsScreen> {
           subtitle: locked
               ? 'Brands waiting on your decision'
               : 'Everyone signed up on the Brand side',
+          actions: [
+            TextButton.icon(
+              onPressed: _isExporting || _lastFiltered == null
+                  ? null
+                  : () => _exportCsv(
+                      _lastFiltered!,
+                      _lastProfileMap!,
+                      privateContacts,
+                    ),
+              icon: _isExporting
+                  ? const SizedBox(
+                      width: 14,
+                      height: 14,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const Icon(Icons.download_outlined, size: 18),
+              label: const Text('Export CSV'),
+            ),
+          ],
         ),
         Padding(
           padding: const EdgeInsets.symmetric(
@@ -241,24 +318,22 @@ class _AdminBrandsScreenState extends ConsumerState<AdminBrandsScreen> {
                     }
                     if (_query.isEmpty) return true;
                     final q = _query.toLowerCase();
-                    // email still comes from the public AppUserProfile here
-                    // on purpose: U1 phase A keeps that field dual-written
-                    // and world-readable-to-signed-in, so this bulk,
-                    // synchronous client-side filter across the whole
-                    // already-loaded list keeps working unchanged. Phase B
-                    // removing the public field will need a different
-                    // search strategy for this (there's no reasonable way
-                    // to search-by-email across N private subdocs
-                    // client-side) — not a phase A concern.
+                    // U1 phase B: email no longer lives on the public doc —
+                    // match against the bulk-loaded private contact map
+                    // instead (see privateContactsByRoleProvider).
+                    final email =
+                        privateContacts[user.id]?['email'] as String?;
                     return (user.displayName?.toLowerCase().contains(q) ??
                             false) ||
-                        (user.email?.toLowerCase().contains(q) ?? false) ||
+                        (email?.toLowerCase().contains(q) ?? false) ||
                         (profile?.companyName?.toLowerCase().contains(q) ??
                             false);
                   }).toList()..sort(
                     (a, b) =>
                         (a.displayName ?? '').compareTo(b.displayName ?? ''),
                   );
+              _lastFiltered = filtered;
+              _lastProfileMap = profileMap;
 
               if (filtered.isEmpty) {
                 return const EmptyState(

@@ -638,6 +638,38 @@ class AuthRepository {
     ).snapshots().map((doc) => doc.data()?['phone'] as String?);
   }
 
+  /// Every given user's email/phone in one go, keyed by uid — admin-only
+  /// in practice (see `private/contact`/`private/phone`'s rules). Exists
+  /// for the admin Creators/Brands screens' search and CSV export, which
+  /// need to look up email/phone across the whole loaded list — U1 phase B
+  /// removed the public `email`/`phone` fields those used to read
+  /// synchronously.
+  ///
+  /// A `collectionGroup('private')` query would do this in one round trip,
+  /// but Firestore's list-query validator can't prove `private/contact`
+  /// and `private/phone`'s two SEPARATE match blocks hold for every
+  /// document in the group (confirmed: denied even for admin) — unlike a
+  /// single `get()`, which each already allows individually. Fetching
+  /// every id's two docs directly sidesteps that; it reuses the exact
+  /// rule already live in production rather than needing a rules change
+  /// to introduce list support.
+  Future<Map<String, Map<String, dynamic>>> fetchPrivateContactsFor(
+    List<String> userIds,
+  ) async {
+    final results = await Future.wait(
+      userIds.map((id) async {
+        final contactDoc = await _privateContactDoc(id).get();
+        final phoneDoc = await _privatePhoneDoc(id).get();
+        return MapEntry(id, {
+          ...?contactDoc.data(),
+          if (phoneDoc.data()?['phone'] != null)
+            'phone': phoneDoc.data()!['phone'],
+        });
+      }),
+    );
+    return Map.fromEntries(results);
+  }
+
   /// Re-authenticates with the account's password — needed when
   /// [changePhoneNumber]/[changeEmail] throw `requires-recent-login`.
   Future<void> reauthenticateWithPassword(String password) async {

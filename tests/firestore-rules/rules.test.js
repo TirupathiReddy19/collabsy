@@ -17,6 +17,8 @@ const {
 const {
   doc,
   collection,
+  collectionGroup,
+  query,
   getDoc,
   getDocs,
   setDoc,
@@ -353,6 +355,17 @@ describe('personal data exposure', () => {
     // creatorB has no chat with creatorA at all.
     await fails(getDoc(doc(as('creatorB'), 'users/creatorA/private/phone')));
     await fails(setDoc(doc(as('brandA'), 'users/creatorA/private/phone'), { phone: '+911111111111' }));
+  });
+
+  // Confirmed during Build 32 work: a collectionGroup('private') query is
+  // denied outright, even for admin — the two separate match blocks for
+  // /private/contact and /private/phone can't be proven to hold for every
+  // doc in the group the way a single get() can. No rule change made for
+  // this; the app works around it with per-id get()s instead (see
+  // AuthRepository.fetchPrivateContactsFor). Kept as a regression guard so
+  // nobody assumes list support exists here without re-deriving this.
+  it('a collection-group read across private/ is denied even for admin', async () => {
+    await fails(getDocs(query(collectionGroup(admin(), 'private'))));
   });
 });
 

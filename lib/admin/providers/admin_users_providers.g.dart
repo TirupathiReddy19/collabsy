@@ -103,3 +103,124 @@ final class UsersByRoleFamily extends $Family
   @override
   String toString() => r'usersByRoleProvider';
 }
+
+/// Every [role]'s email/phone in one go, keyed by uid — backs the admin
+/// Creators/Brands screens' search and CSV export now that U1 phase B
+/// removed the public `email`/`phone` fields those used to read directly.
+/// Keyed by [UserRole] rather than the actual id list (a fresh `List`
+/// built on every build() is never `==` to the last one, so a family
+/// keyed by it would never hit cache) — refetches whenever the underlying
+/// user list changes.
+
+@ProviderFor(privateContactsByRole)
+final privateContactsByRoleProvider = PrivateContactsByRoleFamily._();
+
+/// Every [role]'s email/phone in one go, keyed by uid — backs the admin
+/// Creators/Brands screens' search and CSV export now that U1 phase B
+/// removed the public `email`/`phone` fields those used to read directly.
+/// Keyed by [UserRole] rather than the actual id list (a fresh `List`
+/// built on every build() is never `==` to the last one, so a family
+/// keyed by it would never hit cache) — refetches whenever the underlying
+/// user list changes.
+
+final class PrivateContactsByRoleProvider
+    extends
+        $FunctionalProvider<
+          AsyncValue<Map<String, Map<String, dynamic>>>,
+          Map<String, Map<String, dynamic>>,
+          FutureOr<Map<String, Map<String, dynamic>>>
+        >
+    with
+        $FutureModifier<Map<String, Map<String, dynamic>>>,
+        $FutureProvider<Map<String, Map<String, dynamic>>> {
+  /// Every [role]'s email/phone in one go, keyed by uid — backs the admin
+  /// Creators/Brands screens' search and CSV export now that U1 phase B
+  /// removed the public `email`/`phone` fields those used to read directly.
+  /// Keyed by [UserRole] rather than the actual id list (a fresh `List`
+  /// built on every build() is never `==` to the last one, so a family
+  /// keyed by it would never hit cache) — refetches whenever the underlying
+  /// user list changes.
+  PrivateContactsByRoleProvider._({
+    required PrivateContactsByRoleFamily super.from,
+    required UserRole super.argument,
+  }) : super(
+         retry: null,
+         name: r'privateContactsByRoleProvider',
+         isAutoDispose: true,
+         dependencies: null,
+         $allTransitiveDependencies: null,
+       );
+
+  @override
+  String debugGetCreateSourceHash() => _$privateContactsByRoleHash();
+
+  @override
+  String toString() {
+    return r'privateContactsByRoleProvider'
+        ''
+        '($argument)';
+  }
+
+  @$internal
+  @override
+  $FutureProviderElement<Map<String, Map<String, dynamic>>> $createElement(
+    $ProviderPointer pointer,
+  ) => $FutureProviderElement(pointer);
+
+  @override
+  FutureOr<Map<String, Map<String, dynamic>>> create(Ref ref) {
+    final argument = this.argument as UserRole;
+    return privateContactsByRole(ref, argument);
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return other is PrivateContactsByRoleProvider && other.argument == argument;
+  }
+
+  @override
+  int get hashCode {
+    return argument.hashCode;
+  }
+}
+
+String _$privateContactsByRoleHash() =>
+    r'6c3eca0417b7af892abc6adb61750e72fc83ae5c';
+
+/// Every [role]'s email/phone in one go, keyed by uid — backs the admin
+/// Creators/Brands screens' search and CSV export now that U1 phase B
+/// removed the public `email`/`phone` fields those used to read directly.
+/// Keyed by [UserRole] rather than the actual id list (a fresh `List`
+/// built on every build() is never `==` to the last one, so a family
+/// keyed by it would never hit cache) — refetches whenever the underlying
+/// user list changes.
+
+final class PrivateContactsByRoleFamily extends $Family
+    with
+        $FunctionalFamilyOverride<
+          FutureOr<Map<String, Map<String, dynamic>>>,
+          UserRole
+        > {
+  PrivateContactsByRoleFamily._()
+    : super(
+        retry: null,
+        name: r'privateContactsByRoleProvider',
+        dependencies: null,
+        $allTransitiveDependencies: null,
+        isAutoDispose: true,
+      );
+
+  /// Every [role]'s email/phone in one go, keyed by uid — backs the admin
+  /// Creators/Brands screens' search and CSV export now that U1 phase B
+  /// removed the public `email`/`phone` fields those used to read directly.
+  /// Keyed by [UserRole] rather than the actual id list (a fresh `List`
+  /// built on every build() is never `==` to the last one, so a family
+  /// keyed by it would never hit cache) — refetches whenever the underlying
+  /// user list changes.
+
+  PrivateContactsByRoleProvider call(UserRole role) =>
+      PrivateContactsByRoleProvider._(argument: role, from: this);
+
+  @override
+  String toString() => r'privateContactsByRoleProvider';
+}
