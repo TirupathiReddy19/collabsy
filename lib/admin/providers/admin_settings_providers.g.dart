@@ -140,3 +140,44 @@ final class BrandOutreachLinksConfigProvider
 
 String _$brandOutreachLinksConfigHash() =>
     r'8f729a1aedf590f7d30f61c324e7e4be6d5ac265';
+
+@ProviderFor(appVersionConfig)
+final appVersionConfigProvider = AppVersionConfigProvider._();
+
+final class AppVersionConfigProvider
+    extends
+        $FunctionalProvider<
+          AsyncValue<Map<String, dynamic>?>,
+          Map<String, dynamic>?,
+          FutureOr<Map<String, dynamic>?>
+        >
+    with
+        $FutureModifier<Map<String, dynamic>?>,
+        $FutureProvider<Map<String, dynamic>?> {
+  AppVersionConfigProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'appVersionConfigProvider',
+        isAutoDispose: true,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$appVersionConfigHash();
+
+  @$internal
+  @override
+  $FutureProviderElement<Map<String, dynamic>?> $createElement(
+    $ProviderPointer pointer,
+  ) => $FutureProviderElement(pointer);
+
+  @override
+  FutureOr<Map<String, dynamic>?> create(Ref ref) {
+    return appVersionConfig(ref);
+  }
+}
+
+String _$appVersionConfigHash() => r'f9d0f37dbc816b6a8e2ebfae61458d1abb14288d';

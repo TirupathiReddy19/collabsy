@@ -22,7 +22,8 @@ enum AuditLogAction {
   creatorSuspended,
   creatorReinstated,
   brandSuspended,
-  brandReinstated;
+  brandReinstated,
+  appVersionGateUpdated;
 
   static AuditLogAction fromDbValue(String? value) => switch (value) {
     'campaignRejected' => AuditLogAction.campaignRejected,
@@ -42,6 +43,7 @@ enum AuditLogAction {
     'creatorReinstated' => AuditLogAction.creatorReinstated,
     'brandSuspended' => AuditLogAction.brandSuspended,
     'brandReinstated' => AuditLogAction.brandReinstated,
+    'appVersionGateUpdated' => AuditLogAction.appVersionGateUpdated,
     _ => AuditLogAction.campaignApproved,
   };
 
@@ -69,6 +71,8 @@ enum AuditLogAction {
     AuditLogAction.creatorReinstated => 'Reinstated creator "$targetName"',
     AuditLogAction.brandSuspended => 'Suspended brand "$targetName"',
     AuditLogAction.brandReinstated => 'Reinstated brand "$targetName"',
+    AuditLogAction.appVersionGateUpdated =>
+      'Updated the force-update gate ($targetName)',
   };
 
   IconData get icon => switch (this) {
@@ -90,6 +94,7 @@ enum AuditLogAction {
     AuditLogAction.brandSuspended => Icons.block,
     AuditLogAction.creatorReinstated ||
     AuditLogAction.brandReinstated => Icons.restart_alt,
+    AuditLogAction.appVersionGateUpdated => Icons.system_update_outlined,
   };
 
   bool get isApproval => switch (this) {
@@ -103,7 +108,8 @@ enum AuditLogAction {
     AuditLogAction.broadcastSent ||
     AuditLogAction.outreachSettingsUpdated ||
     AuditLogAction.creatorReinstated ||
-    AuditLogAction.brandReinstated => true,
+    AuditLogAction.brandReinstated ||
+    AuditLogAction.appVersionGateUpdated => true,
     AuditLogAction.campaignRejected ||
     AuditLogAction.brandRejected ||
     AuditLogAction.creatorRejected ||
@@ -134,6 +140,7 @@ enum AuditLogAction {
     AuditLogAction.creatorReinstated => '/creators/$targetId',
     AuditLogAction.brandSuspended ||
     AuditLogAction.brandReinstated => '/brands/$targetId',
+    AuditLogAction.appVersionGateUpdated => '/settings',
   };
 }
 

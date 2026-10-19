@@ -536,7 +536,7 @@ service cloud.firestore {
              'staffPermissionsUpdated', 'staffAccountForcedLogout', 'supportReplySent',
              'supportTicketResolved', 'supportTicketReopened', 'broadcastSent',
              'outreachSettingsUpdated', 'creatorSuspended', 'creatorReinstated',
-             'brandSuspended', 'brandReinstated'
+             'brandSuspended', 'brandReinstated', 'appVersionGateUpdated'
            ]
         && request.resource.data.targetId is string
         && request.resource.data.targetName is string

@@ -2,6 +2,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../app/update_gate/app_version_check.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_radius.dart';
 import '../../core/theme/app_spacing.dart';
@@ -47,6 +48,13 @@ class AdminSettingsScreen extends ConsumerWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     const StaggeredFadeIn(child: _EmailVerificationCard()),
+                    StaggeredFadeIn(
+                      child: _ForceUpdateGateCard(
+                        configAsync: ref.watch(appVersionConfigProvider),
+                        onSaved: () => ref.invalidate(appVersionConfigProvider),
+                      ),
+                    ),
+                    const SizedBox(height: AppSpacing.lg),
                     StaggeredFadeIn(
                       child: _ConfigCard(
                         title: 'Creator Outreach',
@@ -344,6 +352,202 @@ class _EmailVerificationCardState
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+/// The force-update gate (`config/appVersion`, read by `checkAppVersion` —
+/// see `app_version_check.dart`). Blank by default: the gate fails open
+/// with no doc, so builds below any minimum set here get blocked, and
+/// everyone else is unaffected. Raising a minimum is a one-way door for
+/// whoever's still on an older build — they're hard-blocked the next time
+/// they open the app — so this is deliberately a manual, reviewed save
+/// rather than something set automatically at release time.
+class _ForceUpdateGateCard extends ConsumerStatefulWidget {
+  const _ForceUpdateGateCard({required this.configAsync, required this.onSaved});
+
+  final AsyncValue<Map<String, dynamic>?> configAsync;
+  final VoidCallback onSaved;
+
+  @override
+  ConsumerState<_ForceUpdateGateCard> createState() =>
+      _ForceUpdateGateCardState();
+}
+
+class _ForceUpdateGateCardState extends ConsumerState<_ForceUpdateGateCard> {
+  final _androidMinController = TextEditingController();
+  final _iosMinController = TextEditingController();
+  final _androidUrlController = TextEditingController();
+  final _iosUrlController = TextEditingController();
+  final _messageController = TextEditingController();
+  bool _seeded = false;
+  bool _isSaving = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _maybeSeed();
+  }
+
+  @override
+  void didUpdateWidget(covariant _ForceUpdateGateCard oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    _maybeSeed();
+  }
+
+  void _maybeSeed() {
+    if (_seeded || widget.configAsync.isLoading) return;
+    _seeded = true;
+    final data = widget.configAsync.value;
+    _androidMinController.text = (data?['minBuildAndroid'] as int?)
+            ?.toString() ??
+        '';
+    _iosMinController.text = (data?['minBuildIos'] as int?)?.toString() ?? '';
+    _androidUrlController.text = data?['androidStoreUrl'] as String? ??
+        'https://play.google.com/store/apps/details?id=online.collabsy.app';
+    _iosUrlController.text = data?['iosStoreUrl'] as String? ??
+        'https://apps.apple.com/in/app/collabsy/id6808197823';
+    _messageController.text = data?['message'] as String? ??
+        defaultUpdateMessage;
+  }
+
+  @override
+  void dispose() {
+    _androidMinController.dispose();
+    _iosMinController.dispose();
+    _androidUrlController.dispose();
+    _iosUrlController.dispose();
+    _messageController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _save() async {
+    final androidMin = int.tryParse(_androidMinController.text.trim());
+    final iosMin = int.tryParse(_iosMinController.text.trim());
+    if (androidMin == null || iosMin == null) {
+      AppSnackbar.showError(
+        context,
+        'Minimum build numbers must be whole numbers.',
+      );
+      return;
+    }
+    setState(() => _isSaving = true);
+    try {
+      await ref.read(adminSettingsRepositoryProvider).updateConfig(
+        appVersionConfigDocId,
+        {
+          'minBuildAndroid': androidMin,
+          'minBuildIos': iosMin,
+          'androidStoreUrl': _androidUrlController.text.trim(),
+          'iosStoreUrl': _iosUrlController.text.trim(),
+          'message': _messageController.text.trim(),
+        },
+      );
+      await ref.read(adminAuditLogRepositoryProvider).log(
+            actorEmail: ref.read(currentAdminEmailProvider) ?? adminEmail,
+            action: AuditLogAction.appVersionGateUpdated,
+            targetId: appVersionConfigDocId,
+            targetName: 'Android $androidMin / iOS $iosMin',
+          );
+      widget.onSaved();
+      if (!mounted) return;
+      AppSnackbar.showSuccess(
+        context,
+        'Force-update gate saved: Android min build $androidMin, '
+        'iOS min build $iosMin.',
+      );
+    } catch (_) {
+      if (!mounted) return;
+      AppSnackbar.showError(context, "Couldn't save the force-update gate.");
+    } finally {
+      if (mounted) setState(() => _isSaving = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(AppSpacing.card),
+      decoration: BoxDecoration(
+        color: AdminColors.surface(context),
+        borderRadius: BorderRadius.circular(AppRadius.xxl),
+        border: Border.all(color: AppColors.warning.withValues(alpha: 0.5)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('Force-update gate', style: AppTextStyles.titleLarge),
+          const SizedBox(height: AppSpacing.sm),
+          Text(
+            'Anyone below the minimum build gets hard-blocked the next '
+            'time they open the app — no gradual rollout. Only save this '
+            "once you're confident the new build is stable.",
+            style: AppTextStyles.bodyMedium.copyWith(
+              color: AdminColors.textSecondary(context),
+            ),
+          ),
+          const SizedBox(height: AppSpacing.md),
+          if (!_seeded && widget.configAsync.isLoading)
+            const _CardSkeleton()
+          else if (widget.configAsync.hasError)
+            Text(
+              "Couldn't load the current gate settings.",
+              style: AppTextStyles.bodyMedium.copyWith(color: AppColors.error),
+            )
+          else ...[
+            Row(
+              children: [
+                Expanded(
+                  child: AppTextField(
+                    controller: _androidMinController,
+                    label: 'Android minimum build',
+                    hintText: '31',
+                    keyboardType: TextInputType.number,
+                    enabled: !_isSaving,
+                  ),
+                ),
+                const SizedBox(width: AppSpacing.sm + 4),
+                Expanded(
+                  child: AppTextField(
+                    controller: _iosMinController,
+                    label: 'iOS minimum build',
+                    hintText: '31',
+                    keyboardType: TextInputType.number,
+                    enabled: !_isSaving,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: AppSpacing.sm + 4),
+            AppTextField(
+              controller: _androidUrlController,
+              label: 'Android Play Store URL',
+              keyboardType: TextInputType.url,
+              enabled: !_isSaving,
+            ),
+            const SizedBox(height: AppSpacing.sm + 4),
+            AppTextField(
+              controller: _iosUrlController,
+              label: 'iOS App Store URL',
+              keyboardType: TextInputType.url,
+              enabled: !_isSaving,
+            ),
+            const SizedBox(height: AppSpacing.sm + 4),
+            AppTextField(
+              controller: _messageController,
+              label: 'Message shown on the update screen',
+              maxLines: 3,
+              enabled: !_isSaving,
+            ),
+            const SizedBox(height: AppSpacing.md),
+            PrimaryButton(
+              text: 'Save force-update gate',
+              isLoading: _isSaving,
+              onPressed: _isSaving ? null : _save,
+            ),
+          ],
+        ],
       ),
     );
   }

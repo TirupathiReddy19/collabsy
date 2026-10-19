@@ -7,6 +7,7 @@ part 'admin_settings_providers.g.dart';
 
 const outreachLinksConfigDocId = 'outreachLinks';
 const brandOutreachLinksConfigDocId = 'brandOutreachLinks';
+const appVersionConfigDocId = 'appVersion';
 
 /// The only place that reads/writes the `config/{docId}` docs the outreach
 /// tools' `redirectLead`/`redirectBrandLead` Cloud Functions depend on
@@ -48,4 +49,11 @@ Future<Map<String, dynamic>?> brandOutreachLinksConfig(Ref ref) {
   return ref
       .watch(adminSettingsRepositoryProvider)
       .fetchConfig(brandOutreachLinksConfigDocId);
+}
+
+@riverpod
+Future<Map<String, dynamic>?> appVersionConfig(Ref ref) {
+  return ref
+      .watch(adminSettingsRepositoryProvider)
+      .fetchConfig(appVersionConfigDocId);
 }

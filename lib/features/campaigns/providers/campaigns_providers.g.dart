@@ -911,7 +911,7 @@ final class CampaignControllerProvider
 }
 
 String _$campaignControllerHash() =>
-    r'11ba0d6ffd0cafb966279ec788a43af6b768221a';
+    r'e321fe3f32c1a2cac3b38bceecc13d3a2587ec2b';
 
 /// Drives campaign creation/status changes and application actions
 /// (apply/approve/reject), exposing their loading/error state.

@@ -86,6 +86,7 @@ String _actionLabel(AuditLogAction action) => switch (action) {
   AuditLogAction.creatorReinstated => 'Creator reinstated',
   AuditLogAction.brandSuspended => 'Brand suspended',
   AuditLogAction.brandReinstated => 'Brand reinstated',
+  AuditLogAction.appVersionGateUpdated => 'Force-update gate updated',
 };
 
 enum _ReportSection {
