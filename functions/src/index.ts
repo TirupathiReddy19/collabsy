@@ -40,6 +40,7 @@ export { backfillWelcomeMessages } from "./onboarding/backfillWelcomeMessages";
 export { submitCampaignRequest } from "./publicForms/submitCampaignRequest";
 export { submitDeletionRequest } from "./publicForms/submitDeletionRequest";
 export { backfillPrivateContact } from "./backfillPrivateContact";
+export { scrubPublicContactFields } from "./scrubPublicContactFields";
 export {
   onApplicationCreated,
   onApplicationStatusChanged,

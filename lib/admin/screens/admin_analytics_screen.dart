@@ -32,6 +32,7 @@ class _AdminAnalyticsScreenState extends ConsumerState<AdminAnalyticsScreen> {
   bool _isBackfilling = false;
   bool _isSendingWelcomes = false;
   bool _isBackfillingPrivateContact = false;
+  bool _isScrubbingPublicContact = false;
 
   /// One-time migration, run server-side: `setRole()` never wrote
   /// `createdAt` for password/phone signups until that bug was fixed, so
@@ -147,6 +148,46 @@ class _AdminAnalyticsScreenState extends ConsumerState<AdminAnalyticsScreen> {
     }
   }
 
+  /// U1 interim mitigation, ahead of the phase B app release: strips
+  /// email/phone/fcmToken off every EXISTING public `users/{uid}` doc.
+  /// Not permanent — build 31 is still live and re-writes a given
+  /// account's fields the next time THAT account signs in — but with
+  /// real usage still near zero, this closes the exposure window for
+  /// almost everyone right now. Safe to re-run any time before the
+  /// phase B build ships and removes the dual-write for good.
+  Future<void> _scrubPublicContactFields() async {
+    setState(() => _isScrubbingPublicContact = true);
+    try {
+      final result = await ref
+          .read(firebaseFunctionsProvider)
+          .httpsCallable('scrubPublicContactFields')
+          .call();
+      final scanned = result.data['scanned'] as int;
+      final scrubbed = result.data['scrubbed'] as int;
+
+      if (!mounted) return;
+      AppSnackbar.showSuccess(
+        context,
+        'Scanned $scanned account${scanned == 1 ? '' : 's'}, scrubbed '
+        '$scrubbed.',
+      );
+    } on FirebaseFunctionsException catch (e) {
+      if (!mounted) return;
+      AppSnackbar.showError(
+        context,
+        e.message ?? "Couldn't scrub public contact fields.",
+      );
+    } catch (_) {
+      if (!mounted) return;
+      AppSnackbar.showError(
+        context,
+        "Couldn't scrub public contact fields.",
+      );
+    } finally {
+      if (mounted) setState(() => _isScrubbingPublicContact = false);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final signups = ref.watch(allUserSignupsProvider);
@@ -197,6 +238,20 @@ class _AdminAnalyticsScreenState extends ConsumerState<AdminAnalyticsScreen> {
                     )
                   : const Icon(Icons.lock_outline, size: 18),
               label: const Text('Backfill private contact data'),
+            ),
+            const SizedBox(width: 8),
+            TextButton.icon(
+              onPressed: _isScrubbingPublicContact
+                  ? null
+                  : _scrubPublicContactFields,
+              icon: _isScrubbingPublicContact
+                  ? const SizedBox(
+                      width: 14,
+                      height: 14,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const Icon(Icons.cleaning_services_outlined, size: 18),
+              label: const Text('Scrub public contact fields (U1)'),
             ),
           ],
         ),
