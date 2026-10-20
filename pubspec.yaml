@@ -35,7 +35,6 @@ dependencies:
   # Use with the CupertinoIcons class for iOS style icons.
   cupertino_icons: ^1.0.8
   go_router: ^17.3.0
-  google_fonts: ^8.2.0
   flutter_svg: ^2.3.0
   gap: ^3.0.1
   flutter_riverpod: ^3.3.2
@@ -103,6 +102,29 @@ flutter:
   assets:
     - assets/icons/
     - assets/sounds/
+
+  # Bundled rather than fetched via google_fonts at runtime — on Flutter
+  # Web, text rendered before a runtime-fetched font finishes downloading
+  # lays out with wrong glyph widths (seen live: every character wrapping
+  # onto its own line). A single variable font file covers every weight
+  # AppTextStyles uses; declaring the same asset under several `weight:`
+  # entries is the standard way to expose a variable font's instances to
+  # Flutter's font-weight matching.
+  fonts:
+    - family: Inter
+      fonts:
+        - asset: assets/fonts/Inter-Variable.ttf
+          weight: 400
+        - asset: assets/fonts/Inter-Variable.ttf
+          weight: 500
+        - asset: assets/fonts/Inter-Variable.ttf
+          weight: 600
+        - asset: assets/fonts/Inter-Variable.ttf
+          weight: 700
+        - asset: assets/fonts/Inter-Variable.ttf
+          weight: 800
+        - asset: assets/fonts/Inter-Variable.ttf
+          weight: 900
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images
