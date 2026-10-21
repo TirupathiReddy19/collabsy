@@ -13,6 +13,7 @@ import 'screens/admin_analytics_screen.dart';
 import 'screens/admin_audit_logs_screen.dart';
 import 'screens/admin_brand_detail_screen.dart';
 import 'screens/admin_brand_outreach_leads_screen.dart';
+import 'screens/admin_brand_prospects_screen.dart';
 import 'screens/admin_broadcast_screen.dart';
 import 'screens/admin_brands_screen.dart';
 import 'screens/admin_campaign_detail_screen.dart';
@@ -92,6 +93,7 @@ final Map<String, GoRouterWidgetBuilder> _builtScreens = {
   '/outreach-leads': (context, state) => const AdminOutreachLeadsScreen(),
   '/brand-outreach-leads': (context, state) =>
       const AdminBrandOutreachLeadsScreen(),
+  '/brand-prospects': (context, state) => const AdminBrandProspectsScreen(),
   '/campaign-requests': (context, state) => const AdminCampaignRequestsScreen(),
   '/intern-shift-report': (context, state) =>
       const AdminInternShiftReportScreen(),

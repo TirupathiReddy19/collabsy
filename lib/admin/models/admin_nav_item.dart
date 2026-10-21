@@ -150,6 +150,11 @@ const adminNavGroups = [
         icon: Icons.groups_outlined,
       ),
       AdminNavItem(
+        path: '/brand-prospects',
+        label: 'Brand Prospects',
+        icon: Icons.inventory_2_outlined,
+      ),
+      AdminNavItem(
         path: '/campaign-requests',
         label: 'Campaign Requests',
         icon: Icons.request_quote_outlined,

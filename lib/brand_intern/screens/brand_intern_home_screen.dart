@@ -13,8 +13,10 @@ import '../../core/widgets/primary_button.dart';
 import '../../core/widgets/staggered_fade_in.dart';
 import '../../features/auth/providers/auth_providers.dart';
 import '../../shared/models/brand_lead.dart';
+import '../../shared/models/brand_prospect.dart';
 import '../../shared/utils/linkedin_url.dart';
 import '../providers/brand_intern_leads_providers.dart';
+import '../providers/brand_intern_prospects_providers.dart';
 
 const _linkBaseUrl = 'https://collabsy.online/bl/';
 
@@ -100,9 +102,11 @@ IconData _statusIcon(String status) => switch (status) {
   _ => Icons.north_east_outlined,
 };
 
-/// The brand outreach tool's only screen — paste a target's LinkedIn
-/// profile, get back a unique tracking link + ready-to-send message, or
-/// find out someone else already claimed them.
+/// The brand outreach tool's only screen (still true in spirit — these are
+/// tabs within one route, not separate screens/sub-routes): generate a
+/// tracking link for a LinkedIn profile you found yourself, or work through
+/// the admin-pushed "My Prospects" reference list from the bulk-imported
+/// research pool.
 class BrandInternHomeScreen extends ConsumerStatefulWidget {
   const BrandInternHomeScreen({super.key});
 
@@ -111,7 +115,8 @@ class BrandInternHomeScreen extends ConsumerStatefulWidget {
       _BrandInternHomeScreenState();
 }
 
-class _BrandInternHomeScreenState extends ConsumerState<BrandInternHomeScreen> {
+class _BrandInternHomeScreenState extends ConsumerState<BrandInternHomeScreen>
+    with SingleTickerProviderStateMixin {
   final _urlController = TextEditingController();
   bool _isGenerating = false;
   bool _justCopiedMessage = false;
@@ -121,6 +126,7 @@ class _BrandInternHomeScreenState extends ConsumerState<BrandInternHomeScreen> {
   late DateTime _start;
   late DateTime _end;
   _StatusFilter _statusFilter = _StatusFilter.all;
+  late TabController _tabController;
 
   @override
   void initState() {
@@ -128,11 +134,13 @@ class _BrandInternHomeScreenState extends ConsumerState<BrandInternHomeScreen> {
     final today = DateTime.now();
     _end = DateTime(today.year, today.month, today.day);
     _start = _end.subtract(const Duration(days: 29));
+    _tabController = TabController(length: 2, vsync: this);
   }
 
   @override
   void dispose() {
     _urlController.dispose();
+    _tabController.dispose();
     super.dispose();
   }
 
@@ -247,6 +255,8 @@ class _BrandInternHomeScreenState extends ConsumerState<BrandInternHomeScreen> {
   Widget build(BuildContext context) {
     final myLeads =
         ref.watch(myBrandLeadsProvider).value ?? const <BrandLead>[];
+    final myProspects =
+        ref.watch(myBrandProspectsProvider).value ?? const <BrandProspect>[];
     final signedUpCount = myLeads
         .where(
           (l) => l.status == 'signedUp' || l.status == 'onboardingComplete',
@@ -267,78 +277,382 @@ class _BrandInternHomeScreenState extends ConsumerState<BrandInternHomeScreen> {
             onboarded: onboardedCount,
             onSignOut: () => ref.read(authRepositoryProvider).signOut(),
           ),
+          TabBar(
+            controller: _tabController,
+            labelColor: AppColors.primary,
+            unselectedLabelColor: AppColors.textSecondary,
+            indicatorColor: AppColors.primary,
+            tabs: [
+              const Tab(text: 'Generate link'),
+              Tab(text: 'My prospects (${myProspects.length})'),
+            ],
+          ),
           Expanded(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.fromLTRB(
-                AppSpacing.screenHorizontal,
-                AppSpacing.lg,
-                AppSpacing.screenHorizontal,
-                AppSpacing.xl,
+            child: TabBarView(
+              controller: _tabController,
+              children: [
+                SingleChildScrollView(
+                  padding: const EdgeInsets.fromLTRB(
+                    AppSpacing.screenHorizontal,
+                    AppSpacing.lg,
+                    AppSpacing.screenHorizontal,
+                    AppSpacing.xl,
+                  ),
+                  child: Center(
+                    child: ConstrainedBox(
+                      constraints: const BoxConstraints(maxWidth: 560),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          _GeneratorCard(
+                            urlController: _urlController,
+                            isGenerating: _isGenerating,
+                            onGenerate: _generate,
+                            duplicateLead: _duplicateLead,
+                            generatedLead: _generatedLead,
+                            justCopiedMessage: _justCopiedMessage,
+                            onCopyMessage: _copyMessage,
+                          ),
+                          const SizedBox(height: AppSpacing.xl),
+                          Text('My Links', style: AppTextStyles.titleLarge),
+                          const SizedBox(height: AppSpacing.md),
+                          if (myLeads.isEmpty)
+                            const EmptyState(
+                              icon: Icons.send_outlined,
+                              title: 'No links yet',
+                              subtitle:
+                                  'Paste a LinkedIn profile above to '
+                                  'generate your first one.',
+                            )
+                          else ...[
+                            _LinksFilterCard(
+                              start: _start,
+                              end: _end,
+                              statusFilter: _statusFilter,
+                              onPickStart: _pickStart,
+                              onPickEnd: _pickEnd,
+                              onStatusChanged: (value) =>
+                                  setState(() => _statusFilter = value),
+                            ),
+                            const SizedBox(height: AppSpacing.md),
+                            if (filteredLeads.isEmpty)
+                              const EmptyState(
+                                icon: Icons.filter_alt_off_outlined,
+                                title: 'No links match this filter',
+                                subtitle:
+                                    'Try widening the date range or '
+                                    'status filter above.',
+                              )
+                            else
+                              Column(
+                                children: [
+                                  for (final (index, lead)
+                                      in filteredLeads.indexed)
+                                    StaggeredFadeIn(
+                                      key: ValueKey(lead.handle),
+                                      delay: Duration(
+                                        milliseconds: (index * 40).clamp(
+                                          0,
+                                          400,
+                                        ),
+                                      ),
+                                      child: _LeadRow(lead: lead),
+                                    ),
+                                ],
+                              ),
+                          ],
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+                _ProspectsTab(prospects: myProspects),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// "My Prospects" — the reference list an admin has pushed to this intern
+/// from the bulk-imported brand research pool. Deliberately no link
+/// generation and no click tracking here: just the prospect's details plus
+/// an optional one-way "Mark contacted" self-report.
+class _ProspectsTab extends ConsumerWidget {
+  const _ProspectsTab({required this.prospects});
+
+  final List<BrandProspect> prospects;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    if (prospects.isEmpty) {
+      return const SingleChildScrollView(
+        padding: EdgeInsets.fromLTRB(
+          AppSpacing.screenHorizontal,
+          AppSpacing.lg,
+          AppSpacing.screenHorizontal,
+          AppSpacing.xl,
+        ),
+        child: Center(
+          child: Padding(
+            padding: EdgeInsets.only(top: 48),
+            child: EmptyState(
+              icon: Icons.inventory_2_outlined,
+              title: 'No prospects pushed to you yet',
+              subtitle:
+                  "When admin assigns you a category from the brand "
+                  'research pool, they will show up here.',
+            ),
+          ),
+        ),
+      );
+    }
+
+    final contactedCount = prospects.where((p) => p.contacted).length;
+
+    return SingleChildScrollView(
+      padding: const EdgeInsets.fromLTRB(
+        AppSpacing.screenHorizontal,
+        AppSpacing.lg,
+        AppSpacing.screenHorizontal,
+        AppSpacing.xl,
+      ),
+      child: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 560),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                '$contactedCount of ${prospects.length} contacted',
+                style: AppTextStyles.bodyMedium.copyWith(
+                  color: AppColors.textSecondary,
+                ),
               ),
-              child: Center(
-                child: ConstrainedBox(
-                  constraints: const BoxConstraints(maxWidth: 560),
+              const SizedBox(height: AppSpacing.md),
+              for (final (index, prospect) in prospects.indexed)
+                StaggeredFadeIn(
+                  key: ValueKey(prospect.id),
+                  delay: Duration(milliseconds: (index * 40).clamp(0, 400)),
+                  child: _ProspectRow(prospect: prospect),
+                ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _ProspectRow extends ConsumerStatefulWidget {
+  const _ProspectRow({required this.prospect});
+
+  final BrandProspect prospect;
+
+  @override
+  ConsumerState<_ProspectRow> createState() => _ProspectRowState();
+}
+
+class _ProspectRowState extends ConsumerState<_ProspectRow> {
+  bool _expanded = false;
+  bool _isMarking = false;
+
+  Future<void> _copy(String value, String label) async {
+    await Clipboard.setData(ClipboardData(text: value));
+    if (!mounted) return;
+    AppSnackbar.showSuccess(context, '$label copied.');
+  }
+
+  Future<void> _markContacted() async {
+    setState(() => _isMarking = true);
+    try {
+      await ref
+          .read(brandInternProspectsRepositoryProvider)
+          .markContacted(widget.prospect.id);
+    } catch (error) {
+      if (!mounted) return;
+      AppSnackbar.showError(context, "Couldn't mark as contacted.");
+    } finally {
+      if (mounted) setState(() => _isMarking = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final prospect = widget.prospect;
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: AppSpacing.sm),
+      padding: const EdgeInsets.all(AppSpacing.card),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(AppRadius.lg),
+        border: Border.all(color: AppColors.border),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          InkWell(
+            borderRadius: BorderRadius.circular(AppRadius.lg),
+            onTap: () => setState(() => _expanded = !_expanded),
+            child: Row(
+              children: [
+                Container(
+                  width: 40,
+                  height: 40,
+                  decoration: const BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [
+                        AppColors.splashGradientLight,
+                        AppColors.primaryDark,
+                      ],
+                    ),
+                    shape: BoxShape.circle,
+                  ),
+                  alignment: Alignment.center,
+                  child: Text(
+                    prospect.brandName.isEmpty
+                        ? '?'
+                        : prospect.brandName[0].toUpperCase(),
+                    style: AppTextStyles.titleSmall.copyWith(
+                      color: Colors.white,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: AppSpacing.sm + 2),
+                Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      _GeneratorCard(
-                        urlController: _urlController,
-                        isGenerating: _isGenerating,
-                        onGenerate: _generate,
-                        duplicateLead: _duplicateLead,
-                        generatedLead: _generatedLead,
-                        justCopiedMessage: _justCopiedMessage,
-                        onCopyMessage: _copyMessage,
-                      ),
-                      const SizedBox(height: AppSpacing.xl),
-                      Text('My Links', style: AppTextStyles.titleLarge),
-                      const SizedBox(height: AppSpacing.md),
-                      if (myLeads.isEmpty)
-                        const EmptyState(
-                          icon: Icons.send_outlined,
-                          title: 'No links yet',
-                          subtitle:
-                              'Paste a LinkedIn profile above to '
-                              'generate your first one.',
-                        )
-                      else ...[
-                        _LinksFilterCard(
-                          start: _start,
-                          end: _end,
-                          statusFilter: _statusFilter,
-                          onPickStart: _pickStart,
-                          onPickEnd: _pickEnd,
-                          onStatusChanged: (value) =>
-                              setState(() => _statusFilter = value),
+                      Text(
+                        prospect.brandName,
+                        style: AppTextStyles.bodyMedium.copyWith(
+                          color: AppColors.textPrimary,
+                          fontWeight: FontWeight.w600,
                         ),
-                        const SizedBox(height: AppSpacing.md),
-                        if (filteredLeads.isEmpty)
-                          const EmptyState(
-                            icon: Icons.filter_alt_off_outlined,
-                            title: 'No links match this filter',
-                            subtitle:
-                                'Try widening the date range or '
-                                'status filter above.',
-                          )
-                        else
-                          Column(
-                            children: [
-                              for (final (index, lead) in filteredLeads.indexed)
-                                StaggeredFadeIn(
-                                  key: ValueKey(lead.handle),
-                                  delay: Duration(
-                                    milliseconds: (index * 40).clamp(0, 400),
-                                  ),
-                                  child: _LeadRow(lead: lead),
-                                ),
-                            ],
-                          ),
-                      ],
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      Text(
+                        [
+                          if (prospect.category != null) prospect.category!,
+                          if (prospect.city != null) prospect.city!,
+                        ].join(' · '),
+                        style: AppTextStyles.bodySmall,
+                        overflow: TextOverflow.ellipsis,
+                      ),
                     ],
                   ),
                 ),
-              ),
+                if (prospect.contacted)
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 4,
+                    ),
+                    decoration: BoxDecoration(
+                      color: AppColors.successLight,
+                      borderRadius: BorderRadius.circular(AppRadius.full),
+                    ),
+                    child: Text(
+                      'Contacted',
+                      style: AppTextStyles.bodySmall.copyWith(
+                        color: AppColors.success,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                const SizedBox(width: 4),
+                AnimatedRotation(
+                  turns: _expanded ? 0.5 : 0,
+                  duration: const Duration(milliseconds: 220),
+                  curve: Curves.easeOut,
+                  child: const Icon(
+                    Icons.expand_more,
+                    size: 20,
+                    color: AppColors.textHint,
+                  ),
+                ),
+              ],
             ),
+          ),
+          AnimatedSize(
+            duration: const Duration(milliseconds: 220),
+            curve: Curves.easeOut,
+            alignment: Alignment.topCenter,
+            child: !_expanded
+                ? const SizedBox(width: double.infinity)
+                : Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const SizedBox(height: AppSpacing.sm + 4),
+                      const Divider(height: 1, color: AppColors.border),
+                      const SizedBox(height: AppSpacing.sm + 4),
+                      if (prospect.website != null)
+                        _CopyableField(
+                          label: 'Website',
+                          value: prospect.website!,
+                          onCopy: () =>
+                              _copy(prospect.website!, 'Website'),
+                        ),
+                      if (prospect.emails.isNotEmpty) ...[
+                        const SizedBox(height: AppSpacing.sm),
+                        _CopyableField(
+                          label: 'Email${prospect.emails.length == 1 ? '' : 's'}',
+                          value: prospect.emails.join(', '),
+                          onCopy: () =>
+                              _copy(prospect.emails.join(', '), 'Emails'),
+                        ),
+                      ],
+                      if (prospect.instagramUrl != null) ...[
+                        const SizedBox(height: AppSpacing.sm),
+                        _CopyableField(
+                          label: 'Instagram',
+                          value: prospect.instagramUrl!,
+                          onCopy: () =>
+                              _copy(prospect.instagramUrl!, 'Instagram'),
+                        ),
+                      ],
+                      if (prospect.linkedinUrl != null) ...[
+                        const SizedBox(height: AppSpacing.sm),
+                        _CopyableField(
+                          label: 'LinkedIn',
+                          value: prospect.linkedinUrl!,
+                          onCopy: () =>
+                              _copy(prospect.linkedinUrl!, 'LinkedIn'),
+                        ),
+                      ],
+                      if (prospect.emails.isEmpty &&
+                          prospect.website == null &&
+                          prospect.instagramUrl == null &&
+                          prospect.linkedinUrl == null)
+                        Text(
+                          'No contact details on file for this one.',
+                          style: AppTextStyles.bodySmall,
+                        ),
+                      const SizedBox(height: AppSpacing.sm + 4),
+                      if (!prospect.contacted)
+                        Align(
+                          alignment: Alignment.centerRight,
+                          child: OutlinedButton.icon(
+                            onPressed: _isMarking ? null : _markContacted,
+                            icon: _isMarking
+                                ? const SizedBox(
+                                    width: 14,
+                                    height: 14,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                    ),
+                                  )
+                                : const Icon(Icons.check, size: 16),
+                            label: const Text('Mark contacted'),
+                          ),
+                        ),
+                    ],
+                  ),
           ),
         ],
       ),
