@@ -700,6 +700,36 @@ service cloud.firestore {
       allow write: if isAdmin();
     }
 
+    // Bulk-imported company research (name, website, category, contact
+    // emails) — distinct from `brandLeads` above, which tracks a specific
+    // LinkedIn profile an intern personally found. This is admin-assigned:
+    // an intern only ever sees the prospects pushed to them, not the whole
+    // pool, and can only self-report having contacted one — assignment
+    // itself (who gets what) is admin-only. `assignedTo` is deliberately
+    // filterable (matches the query brand_intern's "My Prospects" screen
+    // issues) rather than needing a `get()`-based check, the same shape
+    // `applications`'s own query-friendly ownership check already uses.
+    match /brandProspects/{prospectId} {
+      allow read: if isAdmin()
+        || (isActiveStaffWithPermission('/brand-outreach-leads')
+            && resource.data.assignedTo == request.auth.uid);
+      // Bulk import and (re)assignment are both admin actions — the import
+      // writes everything up front with status 'unassigned', assignment
+      // only ever touches assignedTo/assignedToEmail/assignedAt/status.
+      allow create: if isAdmin();
+      allow update: if isAdmin()
+        || (isActiveStaffWithPermission('/brand-outreach-leads')
+            && resource.data.assignedTo == request.auth.uid
+            // Self-report only — a one-way false-to-true flip, same shape
+            // as `leads/{handle}`'s internConfirmedSent.
+            && request.resource.data.diff(resource.data).affectedKeys()
+                .hasOnly(['contacted', 'contactedAt'])
+            && request.resource.data.contacted == true
+            && resource.data.get('contacted', false) == false
+            && request.resource.data.contactedAt == request.time);
+      allow delete: if false;
+    }
+
     // One doc per support *ticket* (auto-generated id, `userId` field says
     // who it belongs to) — a user can have many over time, so resolved
     // tickets stay as history instead of being overwritten. The admin is

@@ -893,6 +893,86 @@ describe('shipped-app compatibility', () => {
   });
 });
 
+describe('brandProspects (bulk-imported, admin-assigned)', () => {
+  // Each `it` gets a fresh, cleared Firestore (see the suite's global
+  // beforeEach), so every test seeds exactly the doc(s) it needs via the
+  // rules-bypassing helper rather than relying on a previous test's write.
+  const seedUnassigned = () =>
+    testEnv.withSecurityRulesDisabled((ctx) =>
+      setDoc(doc(ctx.firestore(), 'brandProspects/acme'), {
+        brandName: 'Acme', status: 'unassigned', emails: [],
+      }),
+    );
+  const seedAssignedTo = (uid) =>
+    testEnv.withSecurityRulesDisabled((ctx) =>
+      setDoc(doc(ctx.firestore(), 'brandProspects/acme'), {
+        brandName: 'Acme', status: 'assigned', emails: [],
+        assignedTo: uid, assignedToEmail: 'b@x.com', contacted: false,
+      }),
+    );
+
+  it('only admin can bulk-import', async () => {
+    const payload = { brandName: 'Acme', status: 'unassigned', emails: [] };
+    await fails(setDoc(doc(staff('brandInternUid'), 'brandProspects/acme'), payload));
+    await ok(setDoc(doc(admin(), 'brandProspects/acme'), payload));
+  });
+
+  it('an unassigned intern cannot read or claim a prospect', async () => {
+    await seedUnassigned();
+    await fails(getDoc(doc(staff('brandInternUid'), 'brandProspects/acme')));
+    await fails(
+      updateDoc(doc(staff('brandInternUid'), 'brandProspects/acme'), {
+        assignedTo: 'brandInternUid',
+      }),
+    );
+  });
+
+  it('a prospect assigned to an intern is visible to them and admin, nobody else', async () => {
+    await seedAssignedTo('brandInternUid');
+    await ok(getDoc(doc(staff('brandInternUid'), 'brandProspects/acme')));
+    await ok(getDoc(doc(admin(), 'brandProspects/acme')));
+    await fails(getDoc(doc(as('creatorA'), 'brandProspects/acme')));
+    await fails(getDoc(doc(staff('otherInternUid'), 'brandProspects/acme')));
+  });
+
+  it('an intern cannot assign prospects to themselves or anyone else', async () => {
+    await seedUnassigned();
+    await fails(
+      updateDoc(doc(staff('brandInternUid'), 'brandProspects/acme'), {
+        assignedTo: 'brandInternUid',
+        status: 'assigned',
+      }),
+    );
+  });
+
+  it('an intern can only self-report contacted (one-way, server timestamp), nothing else', async () => {
+    await seedAssignedTo('brandInternUid');
+    const db = staff('brandInternUid');
+    await ok(
+      updateDoc(doc(db, 'brandProspects/acme'), {
+        contacted: true,
+        contactedAt: serverTimestamp(),
+      }),
+    );
+    // Already contacted — can't flip it again.
+    await fails(
+      updateDoc(doc(db, 'brandProspects/acme'), {
+        contacted: true,
+        contactedAt: serverTimestamp(),
+      }),
+    );
+  });
+
+  it('an intern cannot touch any field besides contacted/contactedAt on their own assigned prospect', async () => {
+    await seedAssignedTo('brandInternUid');
+    await fails(
+      updateDoc(doc(staff('brandInternUid'), 'brandProspects/acme'), {
+        brandName: 'Hacked',
+      }),
+    );
+  });
+});
+
 describe('campaign ownership', () => {
   it('an owner cannot reassign a campaign to a different brand', async () => {
     await fails(updateDoc(doc(as('brandA'), 'campaigns/cActive'), { brandId: 'brandB' }));
