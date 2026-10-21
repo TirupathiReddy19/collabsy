@@ -20,6 +20,7 @@ abstract class AppUserProfile with _$AppUserProfile {
     @Default(false) bool onboardingCompleted,
     @Default(true) bool pushNotificationsEnabled,
     String? fcmToken,
+    @NullableTimestampConverter() DateTime? createdAt,
     // Null for every account created before this existed — the router's
     // redirect guard treats that exactly like a brand-new signup that
     // hasn't agreed yet, so pre-existing accounts get the same gate on

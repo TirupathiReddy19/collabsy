@@ -19,6 +19,7 @@ _AppUserProfile _$AppUserProfileFromJson(Map<String, dynamic> json) =>
       pushNotificationsEnabled:
           json['pushNotificationsEnabled'] as bool? ?? true,
       fcmToken: json['fcmToken'] as String?,
+      createdAt: const NullableTimestampConverter().fromJson(json['createdAt']),
       termsAcceptedAt: const NullableTimestampConverter().fromJson(
         json['termsAcceptedAt'],
       ),
@@ -26,24 +27,26 @@ _AppUserProfile _$AppUserProfileFromJson(Map<String, dynamic> json) =>
       suspendedReason: json['suspendedReason'] as String?,
     );
 
-Map<String, dynamic> _$AppUserProfileToJson(_AppUserProfile instance) =>
-    <String, dynamic>{
-      'id': instance.id,
-      'role': _$UserRoleEnumMap[instance.role],
-      'displayName': instance.displayName,
-      'email': instance.email,
-      'phone': instance.phone,
-      'avatarUrl': instance.avatarUrl,
-      'bio': instance.bio,
-      'onboardingCompleted': instance.onboardingCompleted,
-      'pushNotificationsEnabled': instance.pushNotificationsEnabled,
-      'fcmToken': instance.fcmToken,
-      'termsAcceptedAt': const NullableTimestampConverter().toJson(
-        instance.termsAcceptedAt,
-      ),
-      'suspended': instance.suspended,
-      'suspendedReason': instance.suspendedReason,
-    };
+Map<String, dynamic> _$AppUserProfileToJson(
+  _AppUserProfile instance,
+) => <String, dynamic>{
+  'id': instance.id,
+  'role': _$UserRoleEnumMap[instance.role],
+  'displayName': instance.displayName,
+  'email': instance.email,
+  'phone': instance.phone,
+  'avatarUrl': instance.avatarUrl,
+  'bio': instance.bio,
+  'onboardingCompleted': instance.onboardingCompleted,
+  'pushNotificationsEnabled': instance.pushNotificationsEnabled,
+  'fcmToken': instance.fcmToken,
+  'createdAt': const NullableTimestampConverter().toJson(instance.createdAt),
+  'termsAcceptedAt': const NullableTimestampConverter().toJson(
+    instance.termsAcceptedAt,
+  ),
+  'suspended': instance.suspended,
+  'suspendedReason': instance.suspendedReason,
+};
 
 const _$UserRoleEnumMap = {
   UserRole.creator: 'creator',

@@ -6,9 +6,14 @@ import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_radius.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_text_styles.dart';
+import '../../core/utils/campaign_categories.dart';
+import '../../core/utils/company_size_options.dart';
+import '../../core/utils/india_regions.dart';
 import '../../core/widgets/app_snackbar.dart';
+import '../../core/widgets/app_text_field.dart';
 import '../../core/widgets/empty_state.dart';
 import '../../core/widgets/loading_indicator.dart';
+import '../../core/widgets/primary_button.dart';
 import '../../core/widgets/profile_avatar.dart';
 import '../../core/widgets/staggered_fade_in.dart';
 import '../../features/auth/models/app_user_profile.dart';
@@ -46,10 +51,31 @@ class AdminBrandsScreen extends ConsumerStatefulWidget {
   ConsumerState<AdminBrandsScreen> createState() => _AdminBrandsScreenState();
 }
 
+typedef _BrandFilters = ({
+  DateTime? signupFrom,
+  DateTime? signupTo,
+  String? state,
+  String city,
+  Set<String> categories,
+  String? companySize,
+  String companyName,
+});
+
+const _emptyBrandFilters = (
+  signupFrom: null,
+  signupTo: null,
+  state: null,
+  city: '',
+  categories: <String>{},
+  companySize: null,
+  companyName: '',
+);
+
 class _AdminBrandsScreenState extends ConsumerState<AdminBrandsScreen> {
   final _searchController = TextEditingController();
   String _query = '';
   VerificationStatus? _verificationFilter;
+  _BrandFilters _filters = _emptyBrandFilters;
   final Set<String> _selectedIds = {};
   bool _isBulkActing = false;
   bool _isExporting = false;
@@ -58,6 +84,25 @@ class _AdminBrandsScreenState extends ConsumerState<AdminBrandsScreen> {
   // the top bar above it — same reasoning as the Creators screen.
   List<AppUserProfile>? _lastFiltered;
   Map<String, BrandProfile>? _lastProfileMap;
+
+  int get _activeFilterCount {
+    var count = 0;
+    if (_filters.signupFrom != null || _filters.signupTo != null) count++;
+    if (_filters.state != null) count++;
+    if (_filters.city.isNotEmpty) count++;
+    if (_filters.categories.isNotEmpty) count++;
+    if (_filters.companySize != null) count++;
+    if (_filters.companyName.isNotEmpty) count++;
+    return count;
+  }
+
+  Future<void> _openFilters() async {
+    final result = await showDialog<_BrandFilters>(
+      context: context,
+      builder: (context) => _BrandFiltersDialog(initial: _filters),
+    );
+    if (result != null) setState(() => _filters = result);
+  }
 
   @override
   void initState() {
@@ -233,6 +278,16 @@ class _AdminBrandsScreenState extends ConsumerState<AdminBrandsScreen> {
               : 'Everyone signed up on the Brand side',
           actions: [
             TextButton.icon(
+              onPressed: _openFilters,
+              icon: const Icon(Icons.filter_list, size: 18),
+              label: Text(
+                _activeFilterCount == 0
+                    ? 'Filters'
+                    : 'Filters ($_activeFilterCount)',
+              ),
+            ),
+            const SizedBox(width: 8),
+            TextButton.icon(
               onPressed: _isExporting || _lastFiltered == null
                   ? null
                   : () => _exportCsv(
@@ -314,6 +369,42 @@ class _AdminBrandsScreenState extends ConsumerState<AdminBrandsScreen> {
                         (profile?.verificationStatus ??
                                 VerificationStatus.pending) !=
                             _verificationFilter) {
+                      return false;
+                    }
+                    if (_filters.signupFrom != null &&
+                        (user.createdAt == null ||
+                            user.createdAt!.isBefore(_filters.signupFrom!))) {
+                      return false;
+                    }
+                    if (_filters.signupTo != null &&
+                        (user.createdAt == null ||
+                            user.createdAt!.isAfter(_filters.signupTo!))) {
+                      return false;
+                    }
+                    if (_filters.state != null &&
+                        profile?.state != _filters.state) {
+                      return false;
+                    }
+                    if (_filters.city.isNotEmpty &&
+                        !(profile?.city ?? '').toLowerCase().contains(
+                          _filters.city.toLowerCase(),
+                        )) {
+                      return false;
+                    }
+                    if (_filters.categories.isNotEmpty &&
+                        !_filters.categories.any(
+                          (c) => (profile?.categories ?? const []).contains(c),
+                        )) {
+                      return false;
+                    }
+                    if (_filters.companySize != null &&
+                        profile?.companySize != _filters.companySize) {
+                      return false;
+                    }
+                    if (_filters.companyName.isNotEmpty &&
+                        !(profile?.companyName ?? '').toLowerCase().contains(
+                          _filters.companyName.toLowerCase(),
+                        )) {
                       return false;
                     }
                     if (_query.isEmpty) return true;
@@ -678,6 +769,178 @@ class _VerificationBadge extends StatelessWidget {
           fontWeight: FontWeight.w600,
         ),
       ),
+    );
+  }
+}
+
+/// Edits a copy of the current filters, returning the new value on Apply
+/// or `null` on Cancel/dismiss — mirrors `_CreatorFiltersDialog` on the
+/// Creators screen, applied to both the on-screen list and CSV export.
+class _BrandFiltersDialog extends StatefulWidget {
+  const _BrandFiltersDialog({required this.initial});
+
+  final _BrandFilters initial;
+
+  @override
+  State<_BrandFiltersDialog> createState() => _BrandFiltersDialogState();
+}
+
+class _BrandFiltersDialogState extends State<_BrandFiltersDialog> {
+  late DateTime? _signupFrom = widget.initial.signupFrom;
+  late DateTime? _signupTo = widget.initial.signupTo;
+  late String? _state = widget.initial.state;
+  late final _cityController = TextEditingController(
+    text: widget.initial.city,
+  );
+  late final Set<String> _categories = {...widget.initial.categories};
+  late String? _companySize = widget.initial.companySize;
+  late final _companyNameController = TextEditingController(
+    text: widget.initial.companyName,
+  );
+
+  @override
+  void dispose() {
+    _cityController.dispose();
+    _companyNameController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _pickFrom() async {
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: _signupFrom ?? DateTime.now(),
+      firstDate: DateTime(2020),
+      lastDate: _signupTo ?? DateTime.now(),
+    );
+    if (picked != null) setState(() => _signupFrom = picked);
+  }
+
+  Future<void> _pickTo() async {
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: _signupTo ?? DateTime.now(),
+      firstDate: _signupFrom ?? DateTime(2020),
+      lastDate: DateTime.now(),
+    );
+    if (picked != null) setState(() => _signupTo = picked);
+  }
+
+  String _fmtDate(DateTime? date) =>
+      date == null ? 'Any' : '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
+
+  void _apply() {
+    Navigator.of(context).pop((
+      signupFrom: _signupFrom,
+      signupTo: _signupTo,
+      state: _state,
+      city: _cityController.text.trim(),
+      categories: _categories,
+      companySize: _companySize,
+      companyName: _companyNameController.text.trim(),
+    ));
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: const Text('Filter brands'),
+      content: SizedBox(
+        width: 420,
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              AppTextField(
+                controller: _companyNameController,
+                label: 'Company name',
+              ),
+              const SizedBox(height: 16),
+              Text('Signed up', style: AppTextStyles.labelLarge),
+              const SizedBox(height: 8),
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton(
+                      onPressed: _pickFrom,
+                      child: Text('From: ${_fmtDate(_signupFrom)}'),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: OutlinedButton(
+                      onPressed: _pickTo,
+                      child: Text('To: ${_fmtDate(_signupTo)}'),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              Text('State', style: AppTextStyles.labelLarge),
+              const SizedBox(height: 8),
+              DropdownButtonFormField<String>(
+                initialValue: _state,
+                hint: const Text('Any'),
+                isExpanded: true,
+                items: [
+                  const DropdownMenuItem(value: null, child: Text('Any')),
+                  for (final state in indianStates)
+                    DropdownMenuItem(value: state, child: Text(state)),
+                ],
+                onChanged: (value) => setState(() => _state = value),
+              ),
+              const SizedBox(height: 16),
+              AppTextField(controller: _cityController, label: 'City'),
+              const SizedBox(height: 16),
+              Text('Company size', style: AppTextStyles.labelLarge),
+              const SizedBox(height: 8),
+              DropdownButtonFormField<String>(
+                initialValue: _companySize,
+                hint: const Text('Any'),
+                isExpanded: true,
+                items: [
+                  const DropdownMenuItem(value: null, child: Text('Any')),
+                  for (final size in companySizeOptions)
+                    DropdownMenuItem(value: size, child: Text(size)),
+                ],
+                onChanged: (value) => setState(() => _companySize = value),
+              ),
+              const SizedBox(height: 16),
+              Text('Categories', style: AppTextStyles.labelLarge),
+              const SizedBox(height: 8),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: campaignCategories.map((category) {
+                  final selected = _categories.contains(category);
+                  return FilterChip(
+                    label: Text(category),
+                    selected: selected,
+                    onSelected: (value) => setState(() {
+                      if (value) {
+                        _categories.add(category);
+                      } else {
+                        _categories.remove(category);
+                      }
+                    }),
+                  );
+                }).toList(),
+              ),
+            ],
+          ),
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(_emptyBrandFilters),
+          child: const Text('Clear all'),
+        ),
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: const Text('Cancel'),
+        ),
+        PrimaryButton(text: 'Apply', onPressed: _apply, width: 100, height: 40),
+      ],
     );
   }
 }
