@@ -104,21 +104,31 @@ class AdminBrandProspectsRepository {
     return result.count ?? 0;
   }
 
-  /// Pushes every still-unassigned prospect in [category] to one intern —
-  /// the admin-controlled "push" the brand-intern tool's My Prospects tab
-  /// reads from. Not a live transaction: two admins pushing the same
-  /// category at once could double-assign a handful of docs, which is an
-  /// acceptable, self-correcting edge case for a manual, occasional action
-  /// like this.
+  /// Pushes up to [limit] prospects in [category] to one intern — the
+  /// admin-controlled "push" the brand-intern tool's My Prospects tab reads
+  /// from. By default only pulls from the still-unassigned pool (so a
+  /// category can be split across several interns over multiple pushes);
+  /// [includeAlreadyAssigned] widens the source pool to every prospect in
+  /// the category regardless of current assignment, for the "reassign
+  /// everything, including what's already out, to this intern" case. Not a
+  /// live transaction: two admins pushing the same category at once could
+  /// double-assign a handful of docs, which is an acceptable, self
+  /// -correcting edge case for a manual, occasional action like this.
   Future<int> assignCategoryToIntern({
     required String category,
     required String internUid,
     required String internEmail,
+    required int limit,
+    bool includeAlreadyAssigned = false,
   }) async {
-    final snapshot = await _col
-        .where('category', isEqualTo: category)
-        .where('status', isEqualTo: 'unassigned')
-        .get();
+    Query<Map<String, dynamic>> query = _col.where(
+      'category',
+      isEqualTo: category,
+    );
+    if (!includeAlreadyAssigned) {
+      query = query.where('status', isEqualTo: 'unassigned');
+    }
+    final snapshot = await query.limit(limit).get();
     const chunkSize = 500;
     final docs = snapshot.docs;
     for (var start = 0; start < docs.length; start += chunkSize) {

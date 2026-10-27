@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/theme/app_colors.dart';
@@ -107,29 +108,31 @@ class _AdminBrandProspectsScreenState
   }
 
   Future<void> _pushCategory(
-    String category,
+    BrandProspectCategoryCounts row,
     List<StaffAccount> interns,
   ) async {
-    final chosen = await showDialog<StaffAccount>(
+    final result = await showDialog<_AssignResult>(
       context: context,
-      builder: (context) => _AssignDialog(category: category, interns: interns),
+      builder: (context) => _AssignDialog(row: row, interns: interns),
     );
-    if (chosen == null) return;
+    if (result == null) return;
 
-    setState(() => _pushingCategory = category);
+    setState(() => _pushingCategory = row.category);
     try {
       final count = await ref
           .read(adminBrandProspectsRepositoryProvider)
           .assignCategoryToIntern(
-            category: category,
-            internUid: chosen.uid,
-            internEmail: chosen.email,
+            category: row.category,
+            internUid: result.intern.uid,
+            internEmail: result.intern.email,
+            limit: result.limit,
+            includeAlreadyAssigned: result.includeAlreadyAssigned,
           );
       if (!mounted) return;
       AppSnackbar.showSuccess(
         context,
-        'Pushed $count $category prospect${count == 1 ? '' : 's'} to '
-        '${chosen.email}.',
+        'Pushed $count ${row.category} prospect${count == 1 ? '' : 's'} to '
+        '${result.intern.email}.',
       );
       _refresh();
     } catch (error) {
@@ -248,8 +251,10 @@ class _AdminBrandProspectsScreenState
                         _CategoryRow(
                           row: row,
                           isPushing: _pushingCategory == row.category,
-                          canPush: interns.isNotEmpty && row.unassigned > 0,
-                          onPush: () => _pushCategory(row.category, interns),
+                          canPush:
+                              interns.isNotEmpty &&
+                              (row.unassigned + row.assigned) > 0,
+                          onPush: () => _pushCategory(row, interns),
                         ),
                     ],
                   ),
@@ -334,10 +339,19 @@ class _CategoryRow extends StatelessWidget {
   }
 }
 
-class _AssignDialog extends StatefulWidget {
-  const _AssignDialog({required this.category, required this.interns});
+/// What `_AssignDialog` hands back: who to push to, how many, and whether
+/// the source pool is just the still-unassigned remainder or the whole
+/// category (reassigning ones already pushed elsewhere).
+typedef _AssignResult = ({
+  StaffAccount intern,
+  int limit,
+  bool includeAlreadyAssigned,
+});
 
-  final String category;
+class _AssignDialog extends StatefulWidget {
+  const _AssignDialog({required this.row, required this.interns});
+
+  final BrandProspectCategoryCounts row;
   final List<StaffAccount> interns;
 
   @override
@@ -346,29 +360,113 @@ class _AssignDialog extends StatefulWidget {
 
 class _AssignDialogState extends State<_AssignDialog> {
   StaffAccount? _chosen;
+  bool _includeAlreadyAssigned = false;
+  late final TextEditingController _countController;
+  String? _countError;
+
+  int get _maxCount => _includeAlreadyAssigned
+      ? widget.row.unassigned + widget.row.assigned
+      : widget.row.unassigned;
 
   @override
   void initState() {
     super.initState();
     _chosen = widget.interns.isEmpty ? null : widget.interns.first;
+    _countController = TextEditingController(text: '$_maxCount');
+  }
+
+  @override
+  void dispose() {
+    _countController.dispose();
+    super.dispose();
+  }
+
+  void _setMode(bool includeAlreadyAssigned) {
+    setState(() {
+      _includeAlreadyAssigned = includeAlreadyAssigned;
+      _countController.text = '$_maxCount';
+      _countError = null;
+    });
+  }
+
+  int? _validatedCount() {
+    final value = int.tryParse(_countController.text.trim());
+    if (value == null || value < 1 || value > _maxCount) return null;
+    return value;
   }
 
   @override
   Widget build(BuildContext context) {
+    final hasAlreadyAssigned = widget.row.assigned > 0;
+
     return AlertDialog(
-      title: Text('Push ${widget.category} to an intern'),
-      content: DropdownButtonFormField<StaffAccount>(
-        initialValue: _chosen,
-        decoration: const InputDecoration(labelText: 'Intern'),
-        items: widget.interns
-            .map(
-              (s) => DropdownMenuItem(
-                value: s,
-                child: Text(s.email, overflow: TextOverflow.ellipsis),
+      title: Text('Push ${widget.row.category} to an intern'),
+      content: SizedBox(
+        width: 360,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            if (hasAlreadyAssigned) ...[
+              Text(
+                '${widget.row.assigned} prospect'
+                '${widget.row.assigned == 1 ? '' : 's'} in this category '
+                'have already been pushed out to an intern.',
+                style: AppTextStyles.bodySmall.copyWith(
+                  color: AppColors.textSecondary,
+                ),
               ),
-            )
-            .toList(),
-        onChanged: (value) => setState(() => _chosen = value),
+              const SizedBox(height: AppSpacing.sm),
+              RadioListTile<bool>(
+                contentPadding: EdgeInsets.zero,
+                dense: true,
+                value: false,
+                groupValue: _includeAlreadyAssigned,
+                onChanged: (_) => _setMode(false),
+                title: Text(
+                  'Only the ${widget.row.unassigned} remaining unassigned',
+                ),
+              ),
+              RadioListTile<bool>(
+                contentPadding: EdgeInsets.zero,
+                dense: true,
+                value: true,
+                groupValue: _includeAlreadyAssigned,
+                onChanged: (_) => _setMode(true),
+                title: Text(
+                  'All ${widget.row.unassigned + widget.row.assigned} '
+                  '(reassign the already-pushed ones too)',
+                ),
+              ),
+              const SizedBox(height: AppSpacing.sm),
+            ],
+            DropdownButtonFormField<StaffAccount>(
+              initialValue: _chosen,
+              decoration: const InputDecoration(labelText: 'Intern'),
+              items: widget.interns
+                  .map(
+                    (s) => DropdownMenuItem(
+                      value: s,
+                      child: Text(s.email, overflow: TextOverflow.ellipsis),
+                    ),
+                  )
+                  .toList(),
+              onChanged: (value) => setState(() => _chosen = value),
+            ),
+            const SizedBox(height: AppSpacing.sm),
+            TextField(
+              controller: _countController,
+              keyboardType: TextInputType.number,
+              inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+              decoration: InputDecoration(
+                labelText: 'How many to push',
+                helperText: 'Up to $_maxCount available',
+                errorText: _countError,
+              ),
+              onChanged: (_) => setState(() => _countError = null),
+            ),
+          ],
+        ),
       ),
       actions: [
         TextButton(
@@ -379,8 +477,19 @@ class _AssignDialogState extends State<_AssignDialog> {
           width: 100,
           height: 40,
           text: 'Push',
-          isEnabled: _chosen != null,
-          onPressed: () => Navigator.pop(context, _chosen),
+          isEnabled: _chosen != null && _maxCount > 0,
+          onPressed: () {
+            final count = _validatedCount();
+            if (count == null) {
+              setState(() => _countError = 'Enter 1–$_maxCount');
+              return;
+            }
+            Navigator.pop(context, (
+              intern: _chosen!,
+              limit: count,
+              includeAlreadyAssigned: _includeAlreadyAssigned,
+            ));
+          },
         ),
       ],
     );
