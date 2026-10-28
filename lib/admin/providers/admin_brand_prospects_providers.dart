@@ -3,6 +3,7 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../../core/services/firebase_service.dart';
 import '../../core/utils/campaign_categories.dart';
+import '../../shared/models/brand_prospect.dart';
 
 part 'admin_brand_prospects_providers.g.dart';
 
@@ -18,6 +19,41 @@ typedef BrandProspectCategoryCounts = ({
   int unassigned,
   int assigned,
 });
+
+/// One page of `listByCategory` — [cursor] is `null` once there's nothing
+/// left to load, otherwise it's the last doc read, to pass back in as the
+/// next page's `startAfter`.
+typedef BrandProspectPage = ({
+  List<BrandProspect> prospects,
+  DocumentSnapshot<Map<String, dynamic>>? cursor,
+});
+
+DateTime? _asDate(dynamic value) => value is Timestamp ? value.toDate() : null;
+
+BrandProspect _prospectFromDoc(DocumentSnapshot<Map<String, dynamic>> doc) {
+  final data = doc.data()!;
+  return (
+    id: doc.id,
+    brandName: data['brandName'] as String? ?? '',
+    website: data['website'] as String?,
+    category: data['category'] as String?,
+    rawCategory: data['rawCategory'] as String?,
+    location: data['location'] as String?,
+    city: data['city'] as String?,
+    teamSize: data['teamSize'] as String?,
+    igFollowers: data['igFollowers'] as String?,
+    monthlyVisits: data['monthlyVisits'] as String?,
+    instagramUrl: data['instagramUrl'] as String?,
+    linkedinUrl: data['linkedinUrl'] as String?,
+    emails: List<String>.from((data['emails'] as List?) ?? const []),
+    status: data['status'] as String? ?? 'unassigned',
+    assignedTo: data['assignedTo'] as String?,
+    assignedToEmail: data['assignedToEmail'] as String?,
+    assignedAt: _asDate(data['assignedAt']),
+    contacted: data['contacted'] as bool? ?? false,
+    contactedAt: _asDate(data['contactedAt']),
+  );
+}
 
 /// The only place that talks to the `brandProspects` collection directly.
 /// Bulk import and category-to-intern assignment are both one-off, bursty
@@ -102,6 +138,37 @@ class AdminBrandProspectsRepository {
   Future<int> totalImported() async {
     final result = await _col.count().get();
     return result.count ?? 0;
+  }
+
+  /// One page of individual prospects in [category] — the admin "View
+  /// prospects" browser, so admin can see each brand's website, email(s),
+  /// Instagram, and LinkedIn before deciding what to push. Deliberately
+  /// paginated (never a live listener) since a single category can hold
+  /// upwards of 10k docs. [status] narrows to `'unassigned'`/`'assigned'`;
+  /// `null` shows both. Pass the previous page's `cursor` back as
+  /// [startAfter] to keep paging.
+  Future<BrandProspectPage> listByCategory({
+    required String category,
+    String? status,
+    DocumentSnapshot<Map<String, dynamic>>? startAfter,
+    int pageSize = 50,
+  }) async {
+    Query<Map<String, dynamic>> query = _col.where(
+      'category',
+      isEqualTo: category,
+    );
+    if (status != null) {
+      query = query.where('status', isEqualTo: status);
+    }
+    query = query.orderBy(FieldPath.documentId).limit(pageSize);
+    if (startAfter != null) {
+      query = query.startAfterDocument(startAfter);
+    }
+    final snapshot = await query.get();
+    return (
+      prospects: snapshot.docs.map(_prospectFromDoc).toList(),
+      cursor: snapshot.docs.isEmpty ? null : snapshot.docs.last,
+    );
   }
 
   /// Pushes up to [limit] prospects in [category] to one intern — the
