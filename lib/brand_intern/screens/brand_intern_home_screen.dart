@@ -591,48 +591,43 @@ class _ProspectRowState extends ConsumerState<_ProspectRow> {
                       const SizedBox(height: AppSpacing.sm + 4),
                       const Divider(height: 1, color: AppColors.border),
                       const SizedBox(height: AppSpacing.sm + 4),
-                      if (prospect.website != null)
-                        _CopyableField(
-                          label: 'Website',
-                          value: prospect.website!,
-                          onCopy: () =>
-                              _copy(prospect.website!, 'Website'),
-                        ),
-                      if (prospect.emails.isNotEmpty) ...[
-                        const SizedBox(height: AppSpacing.sm),
-                        _CopyableField(
-                          label: 'Email${prospect.emails.length == 1 ? '' : 's'}',
-                          value: prospect.emails.join(', '),
-                          onCopy: () =>
-                              _copy(prospect.emails.join(', '), 'Emails'),
-                        ),
-                      ],
-                      if (prospect.instagramUrl != null) ...[
-                        const SizedBox(height: AppSpacing.sm),
-                        _CopyableField(
-                          label: 'Instagram',
-                          value: prospect.instagramUrl!,
-                          onCopy: () =>
-                              _copy(prospect.instagramUrl!, 'Instagram'),
-                        ),
-                      ],
-                      if (prospect.linkedinUrl != null) ...[
-                        const SizedBox(height: AppSpacing.sm),
-                        _CopyableField(
-                          label: 'LinkedIn',
-                          value: prospect.linkedinUrl!,
-                          onCopy: () =>
-                              _copy(prospect.linkedinUrl!, 'LinkedIn'),
-                        ),
-                      ],
-                      if (prospect.emails.isEmpty &&
-                          prospect.website == null &&
-                          prospect.instagramUrl == null &&
-                          prospect.linkedinUrl == null)
-                        Text(
-                          'No contact details on file for this one.',
-                          style: AppTextStyles.bodySmall,
-                        ),
+                      _CopyableField(
+                        label: 'Website',
+                        value: prospect.website ?? '—',
+                        onCopy: prospect.website == null
+                            ? null
+                            : () => _copy(prospect.website!, 'Website'),
+                      ),
+                      const SizedBox(height: AppSpacing.sm),
+                      _CopyableField(
+                        label: prospect.emails.length == 1
+                            ? 'Email'
+                            : 'Emails',
+                        value: prospect.emails.isEmpty
+                            ? '—'
+                            : prospect.emails.join(', '),
+                        onCopy: prospect.emails.isEmpty
+                            ? null
+                            : () =>
+                                  _copy(prospect.emails.join(', '), 'Emails'),
+                      ),
+                      const SizedBox(height: AppSpacing.sm),
+                      _CopyableField(
+                        label: 'Instagram',
+                        value: prospect.instagramUrl ?? '—',
+                        onCopy: prospect.instagramUrl == null
+                            ? null
+                            : () =>
+                                  _copy(prospect.instagramUrl!, 'Instagram'),
+                      ),
+                      const SizedBox(height: AppSpacing.sm),
+                      _CopyableField(
+                        label: 'LinkedIn',
+                        value: prospect.linkedinUrl ?? '—',
+                        onCopy: prospect.linkedinUrl == null
+                            ? null
+                            : () => _copy(prospect.linkedinUrl!, 'LinkedIn'),
+                      ),
                       const SizedBox(height: AppSpacing.sm + 4),
                       if (!prospect.contacted)
                         Align(
@@ -1273,7 +1268,7 @@ class _CopyableField extends StatelessWidget {
 
   final String label;
   final String value;
-  final VoidCallback onCopy;
+  final VoidCallback? onCopy;
 
   @override
   Widget build(BuildContext context) {
@@ -1283,18 +1278,19 @@ class _CopyableField extends StatelessWidget {
         Row(
           children: [
             Expanded(child: Text(label, style: AppTextStyles.labelSmall)),
-            InkWell(
-              onTap: onCopy,
-              borderRadius: BorderRadius.circular(AppRadius.sm),
-              child: const Padding(
-                padding: EdgeInsets.all(4),
-                child: Icon(
-                  Icons.copy,
-                  size: 14,
-                  color: AppColors.textSecondary,
+            if (onCopy != null)
+              InkWell(
+                onTap: onCopy,
+                borderRadius: BorderRadius.circular(AppRadius.sm),
+                child: const Padding(
+                  padding: EdgeInsets.all(4),
+                  child: Icon(
+                    Icons.copy,
+                    size: 14,
+                    color: AppColors.textSecondary,
+                  ),
                 ),
               ),
-            ),
           ],
         ),
         const SizedBox(height: 4),
@@ -1308,7 +1304,9 @@ class _CopyableField extends StatelessWidget {
           child: SelectableText(
             value,
             style: AppTextStyles.bodyMedium.copyWith(
-              color: AppColors.textPrimary,
+              color: onCopy == null
+                  ? AppColors.textHint
+                  : AppColors.textPrimary,
             ),
           ),
         ),
