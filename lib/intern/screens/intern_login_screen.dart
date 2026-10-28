@@ -9,6 +9,7 @@ import '../../core/widgets/app_text_field.dart';
 import '../../core/widgets/primary_button.dart';
 import '../../core/widgets/staggered_fade_in.dart';
 import '../../features/auth/providers/auth_providers.dart';
+import '../../features/auth/shared/staff_forgot_password_sheet.dart';
 
 const _outreachPermission = '/outreach-leads';
 
@@ -152,7 +153,19 @@ class _InternLoginScreenState extends ConsumerState<InternLoginScreen> {
                               ? 'Enter your password'
                               : null,
                         ),
-                        const SizedBox(height: 24),
+                        Align(
+                          alignment: Alignment.centerRight,
+                          child: TextButton(
+                            onPressed: isLoading
+                                ? null
+                                : () => StaffForgotPasswordSheet.show(
+                                    context,
+                                    initialEmail: _emailController.text.trim(),
+                                  ),
+                            child: const Text('Forgot password?'),
+                          ),
+                        ),
+                        const SizedBox(height: 8),
                         PrimaryButton(
                           text: 'Sign in',
                           isLoading: isLoading,
