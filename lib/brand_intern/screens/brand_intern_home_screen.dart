@@ -6,6 +6,7 @@ import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_radius.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_text_styles.dart';
+import '../../core/utils/validators.dart';
 import '../../core/widgets/app_snackbar.dart';
 import '../../core/widgets/app_text_field.dart';
 import '../../core/widgets/empty_state.dart';
@@ -17,6 +18,7 @@ import '../../shared/models/brand_prospect.dart';
 import '../../shared/utils/linkedin_url.dart';
 import '../providers/brand_intern_leads_providers.dart';
 import '../providers/brand_intern_prospects_providers.dart';
+import '../utils/webmail_compose.dart';
 
 const _linkBaseUrl = 'https://collabsy.online/bl/';
 
@@ -649,17 +651,6 @@ class _ProspectRowState extends ConsumerState<_ProspectRow> {
                             : () => _copy(prospect.linkedinUrl!, 'LinkedIn'),
                       ),
                       const SizedBox(height: AppSpacing.sm + 4),
-                      if (prospect.emailSentCount > 0)
-                        Padding(
-                          padding: const EdgeInsets.only(
-                            bottom: AppSpacing.sm,
-                          ),
-                          child: Text(
-                            'Emailed ${prospect.emailSentCount}x'
-                            '${prospect.emailSentAt == null ? '' : ' · last ${_relativeTime(prospect.emailSentAt)}'}',
-                            style: AppTextStyles.bodySmall,
-                          ),
-                        ),
                       Align(
                         alignment: Alignment.centerRight,
                         child: Wrap(
@@ -680,15 +671,11 @@ class _ProspectRowState extends ConsumerState<_ProspectRow> {
                                     : const Icon(Icons.check, size: 16),
                                 label: const Text('Mark contacted'),
                               ),
-                            if (prospect.emails.isNotEmpty)
-                              OutlinedButton.icon(
-                                onPressed: _openCompose,
-                                icon: const Icon(
-                                  Icons.mail_outline,
-                                  size: 16,
-                                ),
-                                label: const Text('Send email'),
-                              ),
+                            OutlinedButton.icon(
+                              onPressed: _openCompose,
+                              icon: const Icon(Icons.mail_outline, size: 16),
+                              label: const Text('Send email'),
+                            ),
                           ],
                         ),
                       ),
@@ -1377,15 +1364,17 @@ class _ComposeEmailDialog extends ConsumerStatefulWidget {
 }
 
 class _ComposeEmailDialogState extends ConsumerState<_ComposeEmailDialog> {
-  late String _to;
+  late final TextEditingController _toController;
   late final TextEditingController _subjectController;
   late final TextEditingController _bodyController;
-  bool _isSending = false;
+  bool _isOpening = false;
 
   @override
   void initState() {
     super.initState();
-    _to = widget.prospect.emails.first;
+    _toController = TextEditingController(
+      text: widget.prospect.emails.isEmpty ? '' : widget.prospect.emails.first,
+    );
 
     final internEmail =
         ref.read(authRepositoryProvider).currentUser?.email ?? '';
@@ -1408,89 +1397,98 @@ class _ComposeEmailDialogState extends ConsumerState<_ComposeEmailDialog> {
 
   @override
   void dispose() {
+    _toController.dispose();
     _subjectController.dispose();
     _bodyController.dispose();
     super.dispose();
   }
 
-  Future<void> _send() async {
+  Future<void> _openInWebmail() async {
+    final to = _toController.text.trim();
     final subject = _subjectController.text.trim();
     final body = _bodyController.text.trim();
-    if (subject.isEmpty || body.isEmpty) return;
-
-    setState(() => _isSending = true);
-    try {
-      await ref
-          .read(brandInternProspectsRepositoryProvider)
-          .sendEmail(
-            prospectId: widget.prospect.id,
-            to: _to,
-            subject: subject,
-            body: body,
-          );
-      if (!mounted) return;
-      Navigator.pop(context);
-      AppSnackbar.showSuccess(context, 'Email sent to $_to.');
-    } catch (error) {
-      if (!mounted) return;
+    if (Validators.email(to) != null || subject.isEmpty || body.isEmpty) {
       AppSnackbar.showError(
         context,
-        "Couldn't send the email. Please try again.",
+        'Enter a valid email, subject, and message.',
       );
-    } finally {
-      if (mounted) setState(() => _isSending = false);
+      return;
     }
+
+    setState(() => _isOpening = true);
+    openWebmailCompose(to: to, subject: subject, body: body);
+
+    // Best-effort — opening the compose tab is the real action; a failed
+    // self-report write (e.g. already contacted) shouldn't block it.
+    if (!widget.prospect.contacted) {
+      try {
+        await ref
+            .read(brandInternProspectsRepositoryProvider)
+            .markContacted(widget.prospect.id);
+      } catch (_) {
+        // Ignore — see comment above.
+      }
+    }
+
+    if (!mounted) return;
+    Navigator.pop(context);
+    AppSnackbar.showSuccess(
+      context,
+      'Opened in webmail — finish and send it from there.',
+    );
   }
 
   @override
   Widget build(BuildContext context) {
-    final emails = widget.prospect.emails;
+    final otherEmails = widget.prospect.emails
+        .where((e) => e != _toController.text.trim())
+        .toList();
 
     return AlertDialog(
-      title: const Text('Send outreach email'),
+      title: const Text('Compose outreach email'),
       content: SizedBox(
         width: 480,
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            if (emails.length > 1)
-              DropdownButtonFormField<String>(
-                initialValue: _to,
-                decoration: const InputDecoration(labelText: 'To'),
-                items: emails
-                    .map(
-                      (e) => DropdownMenuItem(
-                        value: e,
-                        child: Text(e, overflow: TextOverflow.ellipsis),
-                      ),
-                    )
-                    .toList(),
-                onChanged: _isSending
-                    ? null
-                    : (value) => setState(() => _to = value ?? _to),
-              )
-            else
-              Padding(
-                padding: const EdgeInsets.only(bottom: AppSpacing.sm),
-                child: Text(
-                  'To: $_to',
-                  style: AppTextStyles.bodyMedium.copyWith(
-                    color: AppColors.textSecondary,
-                  ),
-                ),
+            AppTextField(
+              controller: _toController,
+              label: 'To',
+              hintText: 'name@example.com',
+              keyboardType: TextInputType.emailAddress,
+              enabled: !_isOpening,
+              onChanged: (_) => setState(() {}),
+            ),
+            if (otherEmails.isNotEmpty) ...[
+              const SizedBox(height: 6),
+              Wrap(
+                spacing: 6,
+                runSpacing: 6,
+                children: [
+                  for (final email in otherEmails)
+                    ActionChip(
+                      label: Text(email, style: AppTextStyles.bodySmall),
+                      onPressed: _isOpening
+                          ? null
+                          : () => setState(() {
+                              _toController.text = email;
+                            }),
+                    ),
+                ],
               ),
+            ],
             const SizedBox(height: AppSpacing.sm),
             AppTextField(
               controller: _subjectController,
               label: 'Subject',
-              enabled: !_isSending,
+              enabled: !_isOpening,
             ),
             const SizedBox(height: AppSpacing.sm),
             TextField(
               controller: _bodyController,
               maxLines: 8,
-              enabled: !_isSending,
+              enabled: !_isOpening,
               decoration: const InputDecoration(
                 labelText: 'Message',
                 alignLabelWithHint: true,
@@ -1502,15 +1500,16 @@ class _ComposeEmailDialogState extends ConsumerState<_ComposeEmailDialog> {
       ),
       actions: [
         TextButton(
-          onPressed: _isSending ? null : () => Navigator.pop(context),
+          onPressed: _isOpening ? null : () => Navigator.pop(context),
           child: const Text('Cancel'),
         ),
         PrimaryButton(
-          width: 120,
+          width: 160,
           height: 40,
-          text: 'Send',
-          isLoading: _isSending,
-          onPressed: _isSending ? null : _send,
+          text: 'Open in webmail',
+          icon: Icons.open_in_new,
+          isLoading: _isOpening,
+          onPressed: _isOpening ? null : _openInWebmail,
         ),
       ],
     );
