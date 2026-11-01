@@ -26,6 +26,19 @@ const _defaultMessageTemplate =
     'creators for influencer campaigns. Download the app from the Play '
     'Store or App Store here: {{link}}';
 
+const _defaultProspectEmailSubject = 'Partnering with {{brandName}} — Collabsy';
+
+const _defaultProspectEmailBody =
+    'Hi {{brandName}} team,\n\n'
+    "I'm reaching out from Collabsy — a platform that connects brands "
+    'with content creators for influencer marketing campaigns. We think '
+    '{{brandName}} would be a great fit for a collaboration.\n\n'
+    'Collabsy makes it easy to discover and work with vetted creators, '
+    'run campaigns, and track results, all in one place. Would you be '
+    'open to a quick call to explore working together?\n\n'
+    'Looking forward to hearing from you.\n\n'
+    'Best,\n{{internName}}\nCollabsy';
+
 const _months = [
   'Jan',
   'Feb',
@@ -479,6 +492,13 @@ class _ProspectRowState extends ConsumerState<_ProspectRow> {
     }
   }
 
+  void _openCompose() {
+    showDialog<void>(
+      context: context,
+      builder: (context) => _ComposeEmailDialog(prospect: widget.prospect),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final prospect = widget.prospect;
@@ -629,23 +649,49 @@ class _ProspectRowState extends ConsumerState<_ProspectRow> {
                             : () => _copy(prospect.linkedinUrl!, 'LinkedIn'),
                       ),
                       const SizedBox(height: AppSpacing.sm + 4),
-                      if (!prospect.contacted)
-                        Align(
-                          alignment: Alignment.centerRight,
-                          child: OutlinedButton.icon(
-                            onPressed: _isMarking ? null : _markContacted,
-                            icon: _isMarking
-                                ? const SizedBox(
-                                    width: 14,
-                                    height: 14,
-                                    child: CircularProgressIndicator(
-                                      strokeWidth: 2,
-                                    ),
-                                  )
-                                : const Icon(Icons.check, size: 16),
-                            label: const Text('Mark contacted'),
+                      if (prospect.emailSentCount > 0)
+                        Padding(
+                          padding: const EdgeInsets.only(
+                            bottom: AppSpacing.sm,
+                          ),
+                          child: Text(
+                            'Emailed ${prospect.emailSentCount}x'
+                            '${prospect.emailSentAt == null ? '' : ' · last ${_relativeTime(prospect.emailSentAt)}'}',
+                            style: AppTextStyles.bodySmall,
                           ),
                         ),
+                      Align(
+                        alignment: Alignment.centerRight,
+                        child: Wrap(
+                          spacing: 8,
+                          runSpacing: 8,
+                          children: [
+                            if (!prospect.contacted)
+                              OutlinedButton.icon(
+                                onPressed: _isMarking ? null : _markContacted,
+                                icon: _isMarking
+                                    ? const SizedBox(
+                                        width: 14,
+                                        height: 14,
+                                        child: CircularProgressIndicator(
+                                          strokeWidth: 2,
+                                        ),
+                                      )
+                                    : const Icon(Icons.check, size: 16),
+                                label: const Text('Mark contacted'),
+                              ),
+                            if (prospect.emails.isNotEmpty)
+                              OutlinedButton.icon(
+                                onPressed: _openCompose,
+                                icon: const Icon(
+                                  Icons.mail_outline,
+                                  size: 16,
+                                ),
+                                label: const Text('Send email'),
+                              ),
+                          ],
+                        ),
+                      ),
                     ],
                   ),
           ),
@@ -1309,6 +1355,162 @@ class _CopyableField extends StatelessWidget {
                   : AppColors.textPrimary,
             ),
           ),
+        ),
+      ],
+    );
+  }
+}
+
+/// Composes and sends a real outreach email for one prospect, through
+/// Collabsy's own mailbox (`sendBrandProspectEmail`) — not a `mailto:`
+/// link, so it works the same on every platform and the prospect's
+/// `emailSentAt`/`emailSentCount`/`contacted` update automatically once it
+/// goes through (this dialog itself only has to await the call).
+class _ComposeEmailDialog extends ConsumerStatefulWidget {
+  const _ComposeEmailDialog({required this.prospect});
+
+  final BrandProspect prospect;
+
+  @override
+  ConsumerState<_ComposeEmailDialog> createState() =>
+      _ComposeEmailDialogState();
+}
+
+class _ComposeEmailDialogState extends ConsumerState<_ComposeEmailDialog> {
+  late String _to;
+  late final TextEditingController _subjectController;
+  late final TextEditingController _bodyController;
+  bool _isSending = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _to = widget.prospect.emails.first;
+
+    final internEmail =
+        ref.read(authRepositoryProvider).currentUser?.email ?? '';
+    final internName = internEmail.contains('@')
+        ? internEmail.split('@').first
+        : 'Collabsy Team';
+
+    _subjectController = TextEditingController(
+      text: _defaultProspectEmailSubject.replaceAll(
+        '{{brandName}}',
+        widget.prospect.brandName,
+      ),
+    );
+    _bodyController = TextEditingController(
+      text: _defaultProspectEmailBody
+          .replaceAll('{{brandName}}', widget.prospect.brandName)
+          .replaceAll('{{internName}}', internName),
+    );
+  }
+
+  @override
+  void dispose() {
+    _subjectController.dispose();
+    _bodyController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _send() async {
+    final subject = _subjectController.text.trim();
+    final body = _bodyController.text.trim();
+    if (subject.isEmpty || body.isEmpty) return;
+
+    setState(() => _isSending = true);
+    try {
+      await ref
+          .read(brandInternProspectsRepositoryProvider)
+          .sendEmail(
+            prospectId: widget.prospect.id,
+            to: _to,
+            subject: subject,
+            body: body,
+          );
+      if (!mounted) return;
+      Navigator.pop(context);
+      AppSnackbar.showSuccess(context, 'Email sent to $_to.');
+    } catch (error) {
+      if (!mounted) return;
+      AppSnackbar.showError(
+        context,
+        "Couldn't send the email. Please try again.",
+      );
+    } finally {
+      if (mounted) setState(() => _isSending = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final emails = widget.prospect.emails;
+
+    return AlertDialog(
+      title: const Text('Send outreach email'),
+      content: SizedBox(
+        width: 480,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            if (emails.length > 1)
+              DropdownButtonFormField<String>(
+                initialValue: _to,
+                decoration: const InputDecoration(labelText: 'To'),
+                items: emails
+                    .map(
+                      (e) => DropdownMenuItem(
+                        value: e,
+                        child: Text(e, overflow: TextOverflow.ellipsis),
+                      ),
+                    )
+                    .toList(),
+                onChanged: _isSending
+                    ? null
+                    : (value) => setState(() => _to = value ?? _to),
+              )
+            else
+              Padding(
+                padding: const EdgeInsets.only(bottom: AppSpacing.sm),
+                child: Text(
+                  'To: $_to',
+                  style: AppTextStyles.bodyMedium.copyWith(
+                    color: AppColors.textSecondary,
+                  ),
+                ),
+              ),
+            const SizedBox(height: AppSpacing.sm),
+            AppTextField(
+              controller: _subjectController,
+              label: 'Subject',
+              enabled: !_isSending,
+            ),
+            const SizedBox(height: AppSpacing.sm),
+            TextField(
+              controller: _bodyController,
+              maxLines: 8,
+              enabled: !_isSending,
+              decoration: const InputDecoration(
+                labelText: 'Message',
+                alignLabelWithHint: true,
+                border: OutlineInputBorder(),
+              ),
+            ),
+          ],
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: _isSending ? null : () => Navigator.pop(context),
+          child: const Text('Cancel'),
+        ),
+        PrimaryButton(
+          width: 120,
+          height: 40,
+          text: 'Send',
+          isLoading: _isSending,
+          onPressed: _isSending ? null : _send,
         ),
       ],
     );

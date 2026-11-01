@@ -740,6 +740,16 @@ class _ProspectDetailCard extends StatelessWidget {
           ),
           _DetailLine(label: 'Instagram', value: prospect.instagramUrl),
           _DetailLine(label: 'LinkedIn', value: prospect.linkedinUrl),
+          if (prospect.emailSentCount > 0) ...[
+            const SizedBox(height: 2),
+            Text(
+              'Emailed ${prospect.emailSentCount}x'
+              '${prospect.contacted ? ' · contacted' : ''}',
+              style: AppTextStyles.bodySmall.copyWith(
+                color: AppColors.success,
+              ),
+            ),
+          ],
         ],
       ),
     );

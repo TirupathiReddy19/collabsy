@@ -52,6 +52,8 @@ BrandProspect _prospectFromDoc(DocumentSnapshot<Map<String, dynamic>> doc) {
     assignedAt: _asDate(data['assignedAt']),
     contacted: data['contacted'] as bool? ?? false,
     contactedAt: _asDate(data['contactedAt']),
+    emailSentAt: _asDate(data['emailSentAt']),
+    emailSentCount: data['emailSentCount'] as int? ?? 0,
   );
 }
 

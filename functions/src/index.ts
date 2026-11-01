@@ -33,6 +33,7 @@ export { redirectLead } from "./leads/redirectLead";
 export { onOnboardingComplete } from "./leads/onOnboardingComplete";
 export { redirectBrandLead } from "./brandLeads/redirectBrandLead";
 export { onBrandProfileWritten } from "./brandLeads/onBrandProfileWritten";
+export { sendBrandProspectEmail } from "./brandLeads/sendBrandProspectEmail";
 export { sendPushOnAnnouncementCreate } from "./sendPushOnAnnouncementCreate";
 export { getCrashAnalytics } from "./admin/getCrashAnalytics";
 export { onCreatorApproved, onBrandApproved } from "./onboarding/sendWelcomeMessage";

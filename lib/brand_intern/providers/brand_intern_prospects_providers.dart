@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:cloud_functions/cloud_functions.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../../core/services/firebase_service.dart';
@@ -31,6 +32,8 @@ BrandProspect _prospectFromDoc(DocumentSnapshot<Map<String, dynamic>> doc) {
     assignedAt: _asDate(data['assignedAt']),
     contacted: data['contacted'] as bool? ?? false,
     contactedAt: _asDate(data['contactedAt']),
+    emailSentAt: _asDate(data['emailSentAt']),
+    emailSentCount: data['emailSentCount'] as int? ?? 0,
   );
 }
 
@@ -38,9 +41,10 @@ BrandProspect _prospectFromDoc(DocumentSnapshot<Map<String, dynamic>> doc) {
 /// brand-intern tool's side — a reference list of admin-pushed prospects,
 /// never link generation (that's `BrandInternLeadsRepository`).
 class BrandInternProspectsRepository {
-  BrandInternProspectsRepository(this._firestore);
+  BrandInternProspectsRepository(this._firestore, this._functions);
 
   final FirebaseFirestore _firestore;
+  final FirebaseFunctions _functions;
 
   Stream<List<BrandProspect>> watchMine(String internId) {
     return _firestore
@@ -66,11 +70,35 @@ class BrandInternProspectsRepository {
       'contactedAt': FieldValue.serverTimestamp(),
     });
   }
+
+  /// Sends a real outreach email through Collabsy's own mailbox — a Cloud
+  /// Function, not a client write, since it has to reach past the
+  /// self-report-only update rule (`contacted`/`contactedAt` alone) to also
+  /// stamp `emailSentAt`/`emailSentCount`, and it's the server, not the
+  /// client, that actually owns the SMTP credentials. Throws on failure
+  /// (unlike `markContacted`'s plain Firestore write) so the UI can tell
+  /// the intern the send itself didn't go through.
+  Future<void> sendEmail({
+    required String prospectId,
+    required String to,
+    required String subject,
+    required String body,
+  }) async {
+    await _functions.httpsCallable('sendBrandProspectEmail').call({
+      'prospectId': prospectId,
+      'to': to,
+      'subject': subject,
+      'body': body,
+    });
+  }
 }
 
 @Riverpod(keepAlive: true)
 BrandInternProspectsRepository brandInternProspectsRepository(Ref ref) {
-  return BrandInternProspectsRepository(ref.watch(firestoreProvider));
+  return BrandInternProspectsRepository(
+    ref.watch(firestoreProvider),
+    ref.watch(firebaseFunctionsProvider),
+  );
 }
 
 @Riverpod(keepAlive: true)

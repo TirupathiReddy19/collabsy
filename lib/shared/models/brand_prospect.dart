@@ -9,8 +9,12 @@
 /// `AdminBrandProspectsRepository.assignCategoryToIntern`), which is the
 /// only thing that sets `assignedTo`/`assignedToEmail`/`assignedAt` and
 /// flips `status` to `'assigned'`. The assigned intern can self-report
-/// `contacted` (one-way) but cannot touch anything else — this is a
-/// reference list, not a tracked-link funnel like `BrandLead`.
+/// `contacted` (one-way) via a plain Firestore write, or send a real
+/// outreach email through `sendBrandProspectEmail` (a Cloud Function, since
+/// it both owns the SMTP send and stamps `emailSentAt`/`emailSentCount` —
+/// fields no client write is allowed to touch directly) which also flips
+/// `contacted` as a side effect. Still a reference list, not a
+/// tracked-link funnel like `BrandLead` — no click tracking either way.
 typedef BrandProspect = ({
   String id,
   String brandName,
@@ -31,4 +35,6 @@ typedef BrandProspect = ({
   DateTime? assignedAt,
   bool contacted,
   DateTime? contactedAt,
+  DateTime? emailSentAt,
+  int emailSentCount,
 });
