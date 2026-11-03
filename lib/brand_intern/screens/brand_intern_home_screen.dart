@@ -1,3 +1,4 @@
+import 'package:cloud_functions/cloud_functions.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -18,7 +19,6 @@ import '../../shared/models/brand_prospect.dart';
 import '../../shared/utils/linkedin_url.dart';
 import '../providers/brand_intern_leads_providers.dart';
 import '../providers/brand_intern_prospects_providers.dart';
-import '../utils/webmail_compose.dart';
 
 const _linkBaseUrl = 'https://collabsy.online/bl/';
 
@@ -1348,11 +1348,13 @@ class _CopyableField extends StatelessWidget {
   }
 }
 
-/// Composes and sends a real outreach email for one prospect, through
-/// Collabsy's own mailbox (`sendBrandProspectEmail`) — not a `mailto:`
-/// link, so it works the same on every platform and the prospect's
-/// `emailSentAt`/`emailSentCount`/`contacted` update automatically once it
-/// goes through (this dialog itself only has to await the call).
+/// Composes and sends a real outreach email for one prospect, through the
+/// intern's own mail.collabsy.online mailbox (`sendBrandProspectEmail`) —
+/// mail.collabsy.online's webmail has no way to be prefilled by a plain
+/// link, so sending happens server-side instead, using mailbox credentials
+/// the intern connects once (`connectBrandMailbox`) and that stay connected
+/// for every send after. Shows the "connect your mailbox" step first if
+/// they haven't yet, otherwise goes straight to compose.
 class _ComposeEmailDialog extends ConsumerStatefulWidget {
   const _ComposeEmailDialog({required this.prospect});
 
@@ -1363,11 +1365,21 @@ class _ComposeEmailDialog extends ConsumerStatefulWidget {
       _ComposeEmailDialogState();
 }
 
+enum _ComposeStep { checkingMailbox, connectMailbox, compose }
+
 class _ComposeEmailDialogState extends ConsumerState<_ComposeEmailDialog> {
+  _ComposeStep _step = _ComposeStep.checkingMailbox;
+  String? _mailboxEmail;
+
+  final _mailboxEmailController = TextEditingController();
+  final _mailboxPasswordController = TextEditingController();
+  bool _isConnecting = false;
+  String? _connectError;
+
   late final TextEditingController _toController;
   late final TextEditingController _subjectController;
   late final TextEditingController _bodyController;
-  bool _isOpening = false;
+  bool _isSending = false;
 
   @override
   void initState() {
@@ -1393,17 +1405,73 @@ class _ComposeEmailDialogState extends ConsumerState<_ComposeEmailDialog> {
           .replaceAll('{{brandName}}', widget.prospect.brandName)
           .replaceAll('{{internName}}', internName),
     );
+
+    _loadMailboxStatus();
   }
 
   @override
   void dispose() {
+    _mailboxEmailController.dispose();
+    _mailboxPasswordController.dispose();
     _toController.dispose();
     _subjectController.dispose();
     _bodyController.dispose();
     super.dispose();
   }
 
-  Future<void> _openInWebmail() async {
+  Future<void> _loadMailboxStatus() async {
+    try {
+      final email = await ref
+          .read(brandInternProspectsRepositoryProvider)
+          .mailboxStatus();
+      if (!mounted) return;
+      setState(() {
+        _mailboxEmail = email;
+        _step = email == null
+            ? _ComposeStep.connectMailbox
+            : _ComposeStep.compose;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _step = _ComposeStep.connectMailbox);
+    }
+  }
+
+  Future<void> _connect() async {
+    final email = _mailboxEmailController.text.trim();
+    final password = _mailboxPasswordController.text;
+    if (Validators.email(email) != null || password.isEmpty) {
+      setState(() => _connectError = 'Enter a valid email and password.');
+      return;
+    }
+
+    setState(() {
+      _isConnecting = true;
+      _connectError = null;
+    });
+    try {
+      await ref
+          .read(brandInternProspectsRepositoryProvider)
+          .connectMailbox(email: email, password: password);
+      if (!mounted) return;
+      setState(() {
+        _mailboxEmail = email;
+        _step = _ComposeStep.compose;
+      });
+    } on FirebaseFunctionsException catch (e) {
+      if (!mounted) return;
+      setState(
+        () => _connectError = e.message ?? "Couldn't connect that mailbox.",
+      );
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _connectError = "Couldn't connect that mailbox.");
+    } finally {
+      if (mounted) setState(() => _isConnecting = false);
+    }
+  }
+
+  Future<void> _send() async {
     final to = _toController.text.trim();
     final subject = _subjectController.text.trim();
     final body = _bodyController.text.trim();
@@ -1415,11 +1483,25 @@ class _ComposeEmailDialogState extends ConsumerState<_ComposeEmailDialog> {
       return;
     }
 
-    setState(() => _isOpening = true);
-    openWebmailCompose(to: to, subject: subject, body: body);
+    setState(() => _isSending = true);
+    try {
+      await ref
+          .read(brandInternProspectsRepositoryProvider)
+          .sendProspectEmail(to: to, subject: subject, body: body);
+    } on FirebaseFunctionsException catch (e) {
+      if (!mounted) return;
+      setState(() => _isSending = false);
+      AppSnackbar.showError(context, e.message ?? "Couldn't send the email.");
+      return;
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _isSending = false);
+      AppSnackbar.showError(context, "Couldn't send the email.");
+      return;
+    }
 
-    // Best-effort — opening the compose tab is the real action; a failed
-    // self-report write (e.g. already contacted) shouldn't block it.
+    // Best-effort — the email already sent; a failed self-report write
+    // (e.g. already contacted) shouldn't surface as a failure.
     if (!widget.prospect.contacted) {
       try {
         await ref
@@ -1432,14 +1514,86 @@ class _ComposeEmailDialogState extends ConsumerState<_ComposeEmailDialog> {
 
     if (!mounted) return;
     Navigator.pop(context);
-    AppSnackbar.showSuccess(
-      context,
-      'Opened in webmail — finish and send it from there.',
-    );
+    AppSnackbar.showSuccess(context, 'Email sent.');
   }
 
   @override
   Widget build(BuildContext context) {
+    switch (_step) {
+      case _ComposeStep.checkingMailbox:
+        return const AlertDialog(
+          content: SizedBox(
+            height: 80,
+            child: Center(child: CircularProgressIndicator()),
+          ),
+        );
+      case _ComposeStep.connectMailbox:
+        return _buildConnectStep(context);
+      case _ComposeStep.compose:
+        return _buildComposeStep(context);
+    }
+  }
+
+  Widget _buildConnectStep(BuildContext context) {
+    return AlertDialog(
+      title: const Text('Connect your mailbox'),
+      content: SizedBox(
+        width: 420,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Outreach emails send through your own '
+              'mail.collabsy.online mailbox — connect it once and every '
+              'email after goes out with one click.',
+              style: AppTextStyles.bodyMedium,
+            ),
+            const SizedBox(height: AppSpacing.md),
+            AppTextField(
+              controller: _mailboxEmailController,
+              label: 'Mailbox email',
+              hintText: 'you@collabsy.online',
+              keyboardType: TextInputType.emailAddress,
+              enabled: !_isConnecting,
+            ),
+            const SizedBox(height: AppSpacing.sm),
+            AppTextField(
+              controller: _mailboxPasswordController,
+              label: 'Mailbox password',
+              obscureText: true,
+              enabled: !_isConnecting,
+              onSubmitted: (_) => _connect(),
+            ),
+            if (_connectError != null) ...[
+              const SizedBox(height: AppSpacing.sm),
+              Text(
+                _connectError!,
+                style: AppTextStyles.bodySmall.copyWith(
+                  color: AppColors.error,
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: _isConnecting ? null : () => Navigator.pop(context),
+          child: const Text('Cancel'),
+        ),
+        PrimaryButton(
+          width: 120,
+          height: 40,
+          text: 'Connect',
+          isLoading: _isConnecting,
+          onPressed: _isConnecting ? null : _connect,
+        ),
+      ],
+    );
+  }
+
+  Widget _buildComposeStep(BuildContext context) {
     final otherEmails = widget.prospect.emails
         .where((e) => e != _toController.text.trim())
         .toList();
@@ -1452,12 +1606,21 @@ class _ComposeEmailDialogState extends ConsumerState<_ComposeEmailDialog> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            if (_mailboxEmail != null) ...[
+              Text(
+                'Sending as $_mailboxEmail',
+                style: AppTextStyles.bodySmall.copyWith(
+                  color: AppColors.textSecondary,
+                ),
+              ),
+              const SizedBox(height: AppSpacing.sm),
+            ],
             AppTextField(
               controller: _toController,
               label: 'To',
               hintText: 'name@example.com',
               keyboardType: TextInputType.emailAddress,
-              enabled: !_isOpening,
+              enabled: !_isSending,
               onChanged: (_) => setState(() {}),
             ),
             if (otherEmails.isNotEmpty) ...[
@@ -1469,7 +1632,7 @@ class _ComposeEmailDialogState extends ConsumerState<_ComposeEmailDialog> {
                   for (final email in otherEmails)
                     ActionChip(
                       label: Text(email, style: AppTextStyles.bodySmall),
-                      onPressed: _isOpening
+                      onPressed: _isSending
                           ? null
                           : () => setState(() {
                               _toController.text = email;
@@ -1482,13 +1645,13 @@ class _ComposeEmailDialogState extends ConsumerState<_ComposeEmailDialog> {
             AppTextField(
               controller: _subjectController,
               label: 'Subject',
-              enabled: !_isOpening,
+              enabled: !_isSending,
             ),
             const SizedBox(height: AppSpacing.sm),
             TextField(
               controller: _bodyController,
               maxLines: 8,
-              enabled: !_isOpening,
+              enabled: !_isSending,
               decoration: const InputDecoration(
                 labelText: 'Message',
                 alignLabelWithHint: true,
@@ -1500,16 +1663,16 @@ class _ComposeEmailDialogState extends ConsumerState<_ComposeEmailDialog> {
       ),
       actions: [
         TextButton(
-          onPressed: _isOpening ? null : () => Navigator.pop(context),
+          onPressed: _isSending ? null : () => Navigator.pop(context),
           child: const Text('Cancel'),
         ),
         PrimaryButton(
-          width: 160,
+          width: 120,
           height: 40,
-          text: 'Open in webmail',
-          icon: Icons.open_in_new,
-          isLoading: _isOpening,
-          onPressed: _isOpening ? null : _openInWebmail,
+          text: 'Send',
+          icon: Icons.send_outlined,
+          isLoading: _isSending,
+          onPressed: _isSending ? null : _send,
         ),
       ],
     );

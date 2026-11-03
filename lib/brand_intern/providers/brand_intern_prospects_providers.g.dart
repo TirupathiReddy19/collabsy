@@ -58,7 +58,7 @@ final class BrandInternProspectsRepositoryProvider
 }
 
 String _$brandInternProspectsRepositoryHash() =>
-    r'b26362cef6380aeaa85c578d83e8c224c7692197';
+    r'8bcf5218d565e49a681362bf25a7ecbc882b7cb0';
 
 @ProviderFor(myBrandProspects)
 final myBrandProspectsProvider = MyBrandProspectsProvider._();

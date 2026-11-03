@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:cloud_functions/cloud_functions.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../../core/services/firebase_service.dart';
@@ -37,13 +38,16 @@ BrandProspect _prospectFromDoc(DocumentSnapshot<Map<String, dynamic>> doc) {
 /// The only place that talks to the `brandProspects` collection from the
 /// brand-intern tool's side — a reference list of admin-pushed prospects,
 /// never link generation (that's `BrandInternLeadsRepository`). Outreach
-/// email itself goes through the intern's own webmail (see
-/// `openWebmailCompose`), not this repository — there's nothing to send
-/// server-side.
+/// email itself sends through the intern's own connected mailbox (see
+/// `connectMailbox`/`sendProspectEmail`) via the `sendBrandProspectEmail`
+/// Cloud Function, since mail.collabsy.online's own webmail can't be
+/// prefilled by a plain link — its compose screen only ever loads content
+/// from a server-side draft it created itself.
 class BrandInternProspectsRepository {
-  BrandInternProspectsRepository(this._firestore);
+  BrandInternProspectsRepository(this._firestore, this._functions);
 
   final FirebaseFirestore _firestore;
+  final FirebaseFunctions _functions;
 
   Stream<List<BrandProspect>> watchMine(String internId) {
     return _firestore
@@ -69,11 +73,53 @@ class BrandInternProspectsRepository {
       'contactedAt': FieldValue.serverTimestamp(),
     });
   }
+
+  /// The intern's connected mailbox address, or `null` if they haven't
+  /// connected one yet — `brandMailCredentials/{uid}` itself is unreadable
+  /// to every client, so this is the only way to know.
+  Future<String?> mailboxStatus() async {
+    final result = await _functions
+        .httpsCallable('getBrandMailboxStatus')
+        .call<Map<String, dynamic>>();
+    return result.data['email'] as String?;
+  }
+
+  /// Verifies [email]/[password] against mail.collabsy.online and stores
+  /// them (password encrypted, server-side only) for future sends. Throws
+  /// [FirebaseFunctionsException] with a user-facing message on bad
+  /// credentials.
+  Future<void> connectMailbox({
+    required String email,
+    required String password,
+  }) {
+    return _functions.httpsCallable('connectBrandMailbox').call({
+      'email': email,
+      'password': password,
+    });
+  }
+
+  /// Sends a real outreach email through this intern's connected mailbox —
+  /// [connectMailbox] must have succeeded first, or this throws
+  /// [FirebaseFunctionsException] with code `failed-precondition`.
+  Future<void> sendProspectEmail({
+    required String to,
+    required String subject,
+    required String body,
+  }) {
+    return _functions.httpsCallable('sendBrandProspectEmail').call({
+      'to': to,
+      'subject': subject,
+      'body': body,
+    });
+  }
 }
 
 @Riverpod(keepAlive: true)
 BrandInternProspectsRepository brandInternProspectsRepository(Ref ref) {
-  return BrandInternProspectsRepository(ref.watch(firestoreProvider));
+  return BrandInternProspectsRepository(
+    ref.watch(firestoreProvider),
+    ref.watch(firebaseFunctionsProvider),
+  );
 }
 
 @Riverpod(keepAlive: true)

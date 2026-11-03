@@ -730,6 +730,17 @@ service cloud.firestore {
       allow delete: if false;
     }
 
+    // A brand intern's own mail.collabsy.online mailbox login (email +
+    // encrypted password), connected once via `connectBrandMailbox` so
+    // `sendBrandProspectEmail` can send outreach mail through their real
+    // mailbox. Closed to every client, including its own owner — Cloud
+    // Functions read/write it through the Admin SDK only, which bypasses
+    // these rules entirely; the intern-facing "connected as" status comes
+    // back from `getBrandMailboxStatus` instead of a direct read.
+    match /brandMailCredentials/{internUid} {
+      allow read, write: if false;
+    }
+
     // One doc per support *ticket* (auto-generated id, `userId` field says
     // who it belongs to) — a user can have many over time, so resolved
     // tickets stay as history instead of being overwritten. The admin is
