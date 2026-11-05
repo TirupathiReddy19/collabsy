@@ -3,7 +3,7 @@ import { Timestamp, getFirestore } from "firebase-admin/firestore";
 import { HttpsError, onCall } from "firebase-functions/v2/https";
 
 import { requireAdminOrPermission } from "../shared/adminAuth";
-import { smtpHost, smtpPort } from "../shared/emailConfig";
+import { mailCredentialEncryptionKey, smtpHost, smtpPort } from "../shared/emailConfig";
 import { encryptMailPassword } from "../shared/mailCredentialCrypto";
 
 interface ConnectBrandMailboxRequest {
@@ -21,7 +21,7 @@ interface ConnectBrandMailboxRequest {
  * intern's own real address, not a shared account.
  */
 export const connectBrandMailbox = onCall(
-  { secrets: [smtpHost, smtpPort] },
+  { secrets: [smtpHost, smtpPort, mailCredentialEncryptionKey] },
   async (request) => {
     await requireAdminOrPermission(request, "/brand-outreach-leads");
 

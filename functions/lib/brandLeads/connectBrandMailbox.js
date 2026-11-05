@@ -19,7 +19,7 @@ const mailCredentialCrypto_1 = require("../shared/mailCredentialCrypto");
  * this connected mailbox directly, so the recipient sees them come from the
  * intern's own real address, not a shared account.
  */
-exports.connectBrandMailbox = (0, https_1.onCall)({ secrets: [emailConfig_1.smtpHost, emailConfig_1.smtpPort] }, async (request) => {
+exports.connectBrandMailbox = (0, https_1.onCall)({ secrets: [emailConfig_1.smtpHost, emailConfig_1.smtpPort, emailConfig_1.mailCredentialEncryptionKey] }, async (request) => {
     await (0, adminAuth_1.requireAdminOrPermission)(request, "/brand-outreach-leads");
     const data = request.data;
     if (!data?.email?.includes("@") || !data?.password) {
