@@ -20,6 +20,10 @@ interface SendBrandProspectEmailRequest {
   body: string;
 }
 
+/** Every brand-prospect outreach email is bcc'd here, regardless of which
+ * intern's mailbox sends it, so this address sees everything going out. */
+const OVERSIGHT_BCC = "tirupathireddy@collabsy.online";
+
 /**
  * Sends a brand-prospect outreach email through the calling intern's own
  * connected mailbox (see `connectBrandMailbox.ts`) — the recipient sees it
@@ -68,6 +72,7 @@ export const sendBrandProspectEmail = onCall(
     const mailOptions = {
       from: email,
       to: data.to,
+      bcc: OVERSIGHT_BCC,
       subject: data.subject,
       text: data.body,
       html,
@@ -85,7 +90,14 @@ export const sendBrandProspectEmail = onCall(
     });
 
     try {
-      await transporter.sendMail({ raw: rawMessage, envelope: { from: email, to: data.to } });
+      // `raw` bypasses nodemailer's own envelope computation, so the bcc
+      // recipient has to be listed explicitly here too — MailComposer
+      // already dropped the "Bcc:" header from rawMessage itself, so the
+      // real recipient never sees it in the message they receive.
+      await transporter.sendMail({
+        raw: rawMessage,
+        envelope: { from: email, to: [data.to, OVERSIGHT_BCC] },
+      });
     } catch {
       throw new HttpsError(
         "internal",

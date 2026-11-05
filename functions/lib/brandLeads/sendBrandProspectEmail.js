@@ -17,6 +17,9 @@ const appendSentCopy_1 = require("../shared/appendSentCopy");
 // SMTP are also what gets appended to the Sent folder afterward.
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const MailComposer = require("nodemailer/lib/mail-composer");
+/** Every brand-prospect outreach email is bcc'd here, regardless of which
+ * intern's mailbox sends it, so this address sees everything going out. */
+const OVERSIGHT_BCC = "tirupathireddy@collabsy.online";
 /**
  * Sends a brand-prospect outreach email through the calling intern's own
  * connected mailbox (see `connectBrandMailbox.ts`) — the recipient sees it
@@ -55,6 +58,7 @@ exports.sendBrandProspectEmail = (0, https_1.onCall)({ secrets: [emailConfig_1.s
     const mailOptions = {
         from: email,
         to: data.to,
+        bcc: OVERSIGHT_BCC,
         subject: data.subject,
         text: data.body,
         html,
@@ -68,7 +72,14 @@ exports.sendBrandProspectEmail = (0, https_1.onCall)({ secrets: [emailConfig_1.s
             .build((error, message) => error ? reject(error) : resolve(message));
     });
     try {
-        await transporter.sendMail({ raw: rawMessage, envelope: { from: email, to: data.to } });
+        // `raw` bypasses nodemailer's own envelope computation, so the bcc
+        // recipient has to be listed explicitly here too — MailComposer
+        // already dropped the "Bcc:" header from rawMessage itself, so the
+        // real recipient never sees it in the message they receive.
+        await transporter.sendMail({
+            raw: rawMessage,
+            envelope: { from: email, to: [data.to, OVERSIGHT_BCC] },
+        });
     }
     catch {
         throw new https_1.HttpsError("internal", "Failed to send — your mailbox connection may have expired. Try reconnecting.");
