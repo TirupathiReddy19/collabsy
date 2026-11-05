@@ -162,7 +162,7 @@ class _BrandInternHomeScreenState extends ConsumerState<BrandInternHomeScreen>
     final today = DateTime.now();
     _end = DateTime(today.year, today.month, today.day);
     _start = _end.subtract(const Duration(days: 29));
-    _tabController = TabController(length: 2, vsync: this);
+    _tabController = TabController(length: 3, vsync: this);
   }
 
   @override
@@ -313,6 +313,7 @@ class _BrandInternHomeScreenState extends ConsumerState<BrandInternHomeScreen>
             tabs: [
               const Tab(text: 'Generate link'),
               Tab(text: 'My prospects (${myProspects.length})'),
+              const Tab(text: 'Bulk email'),
             ],
           ),
           Expanded(
@@ -395,6 +396,7 @@ class _BrandInternHomeScreenState extends ConsumerState<BrandInternHomeScreen>
                   ),
                 ),
                 _ProspectsTab(prospects: myProspects),
+                _BulkEmailTab(prospects: myProspects),
               ],
             ),
           ),
@@ -453,25 +455,11 @@ class _ProspectsTab extends ConsumerWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Row(
-                children: [
-                  Expanded(
-                    child: Text(
-                      '$contactedCount of ${prospects.length} contacted',
-                      style: AppTextStyles.bodyMedium.copyWith(
-                        color: AppColors.textSecondary,
-                      ),
-                    ),
-                  ),
-                  OutlinedButton.icon(
-                    onPressed: () => showDialog<void>(
-                      context: context,
-                      builder: (context) => _MassEmailDialog(prospects: prospects),
-                    ),
-                    icon: const Icon(Icons.mail_outline, size: 16),
-                    label: const Text('Email all prospects'),
-                  ),
-                ],
+              Text(
+                '$contactedCount of ${prospects.length} contacted',
+                style: AppTextStyles.bodyMedium.copyWith(
+                  color: AppColors.textSecondary,
+                ),
               ),
               const SizedBox(height: AppSpacing.md),
               for (final (index, prospect) in prospects.indexed)
@@ -483,6 +471,166 @@ class _ProspectsTab extends ConsumerWidget {
             ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+/// "Bulk email" — a dedicated destination for the one-click mass-email
+/// blast (`_MassEmailDialog`), separate from "My Prospects" since it's a
+/// distinct action (one email to everyone at once) rather than something
+/// you'd reach for per-prospect.
+class _BulkEmailTab extends StatelessWidget {
+  const _BulkEmailTab({required this.prospects});
+
+  final List<BrandProspect> prospects;
+
+  @override
+  Widget build(BuildContext context) {
+    final withEmail = prospects.where((p) => p.emails.isNotEmpty).length;
+    final contacted = prospects.where((p) => p.contacted).length;
+
+    return SingleChildScrollView(
+      padding: const EdgeInsets.fromLTRB(
+        AppSpacing.screenHorizontal,
+        AppSpacing.lg,
+        AppSpacing.screenHorizontal,
+        AppSpacing.xl,
+      ),
+      child: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 560),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(AppSpacing.lg),
+                decoration: BoxDecoration(
+                  color: AppColors.surface,
+                  borderRadius: BorderRadius.circular(AppRadius.xxl),
+                  boxShadow: [
+                    BoxShadow(
+                      color: AppColors.textPrimary.withValues(alpha: 0.06),
+                      blurRadius: 24,
+                      offset: const Offset(0, 8),
+                    ),
+                  ],
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Container(
+                          width: 36,
+                          height: 36,
+                          decoration: const BoxDecoration(
+                            color: AppColors.primaryLight,
+                            shape: BoxShape.circle,
+                          ),
+                          child: const Icon(
+                            Icons.campaign_outlined,
+                            size: 18,
+                            color: AppColors.primary,
+                          ),
+                        ),
+                        const SizedBox(width: AppSpacing.sm + 2),
+                        Expanded(
+                          child: Text(
+                            'Bulk email campaign',
+                            style: AppTextStyles.titleLarge,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: AppSpacing.xs),
+                    Text(
+                      'Send one email, Bcc\'d to every prospect assigned to '
+                      'you, through your own connected mailbox. Nobody sees '
+                      'who else received it.',
+                      style: AppTextStyles.bodyMedium,
+                    ),
+                    const SizedBox(height: AppSpacing.md),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: AppSpacing.md,
+                        vertical: AppSpacing.sm + 2,
+                      ),
+                      decoration: BoxDecoration(
+                        color: AppColors.background,
+                        borderRadius: BorderRadius.circular(AppRadius.lg),
+                      ),
+                      child: Row(
+                        children: [
+                          _BulkEmailStat(label: 'Prospects', value: prospects.length),
+                          _bulkStatDivider(),
+                          _BulkEmailStat(label: 'Have an email', value: withEmail),
+                          _bulkStatDivider(),
+                          _BulkEmailStat(label: 'Already contacted', value: contacted),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: AppSpacing.md),
+                    PrimaryButton(
+                      text: 'Compose bulk email',
+                      icon: Icons.campaign_outlined,
+                      onPressed: withEmail == 0
+                          ? null
+                          : () => showDialog<void>(
+                              context: context,
+                              builder: (context) =>
+                                  _MassEmailDialog(prospects: prospects),
+                            ),
+                    ),
+                    if (withEmail == 0) ...[
+                      const SizedBox(height: AppSpacing.sm),
+                      Text(
+                        prospects.isEmpty
+                            ? "You don't have any prospects assigned yet."
+                            : "None of your prospects have an email on file.",
+                        style: AppTextStyles.bodySmall.copyWith(
+                          color: AppColors.textSecondary,
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _bulkStatDivider() => Container(
+    width: 1,
+    height: 28,
+    color: AppColors.border,
+    margin: const EdgeInsets.symmetric(horizontal: AppSpacing.sm),
+  );
+}
+
+class _BulkEmailStat extends StatelessWidget {
+  const _BulkEmailStat({required this.label, required this.value});
+
+  final String label;
+  final int value;
+
+  @override
+  Widget build(BuildContext context) {
+    return Expanded(
+      child: Column(
+        children: [
+          Text('$value', style: AppTextStyles.heading2),
+          Text(
+            label,
+            style: AppTextStyles.bodySmall.copyWith(
+              color: AppColors.textSecondary,
+            ),
+            textAlign: TextAlign.center,
+          ),
+        ],
       ),
     );
   }
