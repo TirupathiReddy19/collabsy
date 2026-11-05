@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.mailCredentialEncryptionKey = exports.smtpFrom = exports.smtpPassword = exports.smtpUser = exports.smtpPort = exports.smtpHost = void 0;
+exports.brandOutreachOversightBcc = exports.mailCredentialEncryptionKey = exports.smtpFrom = exports.smtpPassword = exports.smtpUser = exports.smtpPort = exports.smtpHost = void 0;
 const params_1 = require("firebase-functions/params");
 /** Modoboa SMTP credentials for the sending mailbox (e.g.
  * notifications@collabsy.online). Set via:
@@ -25,3 +25,7 @@ exports.smtpFrom = (0, params_1.defineString)("SMTP_FROM", { default: "" });
  *   firebase functions:secrets:set MAIL_CREDENTIAL_ENC_KEY
  * Generate one with: node -e "console.log(require('crypto').randomBytes(32).toString('base64'))" */
 exports.mailCredentialEncryptionKey = (0, params_1.defineSecret)("MAIL_CREDENTIAL_ENC_KEY");
+/** Every brand-prospect outreach email (single or mass) is bcc'd here,
+ * regardless of which intern's mailbox sends it, so this address sees
+ * everything going out. */
+exports.brandOutreachOversightBcc = "tirupathireddy@collabsy.online";

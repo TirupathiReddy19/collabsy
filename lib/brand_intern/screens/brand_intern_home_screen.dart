@@ -28,6 +28,19 @@ const _defaultMessageTemplate =
     'creators for influencer campaigns. Download the app from the Play '
     'Store or App Store here: {{link}}';
 
+const _defaultMassEmailSubject = 'Partnering with Collabsy';
+
+const _defaultMassEmailBody =
+    'Hi there,\n\n'
+    "I'm reaching out from Collabsy — a platform that connects brands "
+    'with content creators for influencer marketing campaigns. We think '
+    'your brand would be a great fit for a collaboration.\n\n'
+    'Collabsy makes it easy to discover and work with vetted creators, '
+    'run campaigns, and track results, all in one place. Would you be '
+    'open to a quick call to explore working together?\n\n'
+    'Looking forward to hearing from you.\n\n'
+    'Best,\n{{internName}}\nCollabsy';
+
 const _defaultProspectEmailSubject = 'Partnering with {{brandName}} — Collabsy';
 
 const _defaultProspectEmailBody =
@@ -440,11 +453,25 @@ class _ProspectsTab extends ConsumerWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                '$contactedCount of ${prospects.length} contacted',
-                style: AppTextStyles.bodyMedium.copyWith(
-                  color: AppColors.textSecondary,
-                ),
+              Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      '$contactedCount of ${prospects.length} contacted',
+                      style: AppTextStyles.bodyMedium.copyWith(
+                        color: AppColors.textSecondary,
+                      ),
+                    ),
+                  ),
+                  OutlinedButton.icon(
+                    onPressed: () => showDialog<void>(
+                      context: context,
+                      builder: (context) => _MassEmailDialog(prospects: prospects),
+                    ),
+                    icon: const Icon(Icons.mail_outline, size: 16),
+                    label: const Text('Email all prospects'),
+                  ),
+                ],
               ),
               const SizedBox(height: AppSpacing.md),
               for (final (index, prospect) in prospects.indexed)
@@ -1348,6 +1375,123 @@ class _CopyableField extends StatelessWidget {
   }
 }
 
+/// The "connect your mailbox" step shared by every outreach-sending dialog
+/// (one prospect, or the mass-email blast) — mail.collabsy.online
+/// credentials are the same regardless of which dialog triggered the
+/// connect, so this is the only place that logic lives.
+class _ConnectMailboxStep extends ConsumerStatefulWidget {
+  const _ConnectMailboxStep({required this.onConnected});
+
+  /// Called with the connected address once `connectMailbox` succeeds.
+  final ValueChanged<String> onConnected;
+
+  @override
+  ConsumerState<_ConnectMailboxStep> createState() =>
+      _ConnectMailboxStepState();
+}
+
+class _ConnectMailboxStepState extends ConsumerState<_ConnectMailboxStep> {
+  final _emailController = TextEditingController();
+  final _passwordController = TextEditingController();
+  bool _isConnecting = false;
+  String? _error;
+
+  @override
+  void dispose() {
+    _emailController.dispose();
+    _passwordController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _connect() async {
+    final email = _emailController.text.trim();
+    final password = _passwordController.text;
+    if (Validators.email(email) != null || password.isEmpty) {
+      setState(() => _error = 'Enter a valid email and password.');
+      return;
+    }
+
+    setState(() {
+      _isConnecting = true;
+      _error = null;
+    });
+    try {
+      await ref
+          .read(brandInternProspectsRepositoryProvider)
+          .connectMailbox(email: email, password: password);
+      widget.onConnected(email);
+    } on FirebaseFunctionsException catch (e) {
+      if (!mounted) return;
+      setState(() => _error = e.message ?? "Couldn't connect that mailbox.");
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _error = "Couldn't connect that mailbox.");
+    } finally {
+      if (mounted) setState(() => _isConnecting = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: const Text('Connect your mailbox'),
+      content: SizedBox(
+        width: 420,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Outreach emails send through your own '
+              'mail.collabsy.online mailbox — connect it once and every '
+              'email after goes out with one click.',
+              style: AppTextStyles.bodyMedium,
+            ),
+            const SizedBox(height: AppSpacing.md),
+            AppTextField(
+              controller: _emailController,
+              label: 'Mailbox email',
+              hintText: 'you@collabsy.online',
+              keyboardType: TextInputType.emailAddress,
+              enabled: !_isConnecting,
+            ),
+            const SizedBox(height: AppSpacing.sm),
+            AppTextField(
+              controller: _passwordController,
+              label: 'Mailbox password',
+              obscureText: true,
+              enabled: !_isConnecting,
+              onSubmitted: (_) => _connect(),
+            ),
+            if (_error != null) ...[
+              const SizedBox(height: AppSpacing.sm),
+              Text(
+                _error!,
+                style: AppTextStyles.bodySmall.copyWith(
+                  color: AppColors.error,
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: _isConnecting ? null : () => Navigator.pop(context),
+          child: const Text('Cancel'),
+        ),
+        PrimaryButton(
+          width: 120,
+          height: 40,
+          text: 'Connect',
+          isLoading: _isConnecting,
+          onPressed: _isConnecting ? null : _connect,
+        ),
+      ],
+    );
+  }
+}
+
 /// Composes and sends a real outreach email for one prospect, through the
 /// intern's own mail.collabsy.online mailbox (`sendBrandProspectEmail`) —
 /// mail.collabsy.online's webmail has no way to be prefilled by a plain
@@ -1370,11 +1514,6 @@ enum _ComposeStep { checkingMailbox, connectMailbox, compose }
 class _ComposeEmailDialogState extends ConsumerState<_ComposeEmailDialog> {
   _ComposeStep _step = _ComposeStep.checkingMailbox;
   String? _mailboxEmail;
-
-  final _mailboxEmailController = TextEditingController();
-  final _mailboxPasswordController = TextEditingController();
-  bool _isConnecting = false;
-  String? _connectError;
 
   late final TextEditingController _toController;
   late final TextEditingController _subjectController;
@@ -1411,8 +1550,6 @@ class _ComposeEmailDialogState extends ConsumerState<_ComposeEmailDialog> {
 
   @override
   void dispose() {
-    _mailboxEmailController.dispose();
-    _mailboxPasswordController.dispose();
     _toController.dispose();
     _subjectController.dispose();
     _bodyController.dispose();
@@ -1434,40 +1571,6 @@ class _ComposeEmailDialogState extends ConsumerState<_ComposeEmailDialog> {
     } catch (_) {
       if (!mounted) return;
       setState(() => _step = _ComposeStep.connectMailbox);
-    }
-  }
-
-  Future<void> _connect() async {
-    final email = _mailboxEmailController.text.trim();
-    final password = _mailboxPasswordController.text;
-    if (Validators.email(email) != null || password.isEmpty) {
-      setState(() => _connectError = 'Enter a valid email and password.');
-      return;
-    }
-
-    setState(() {
-      _isConnecting = true;
-      _connectError = null;
-    });
-    try {
-      await ref
-          .read(brandInternProspectsRepositoryProvider)
-          .connectMailbox(email: email, password: password);
-      if (!mounted) return;
-      setState(() {
-        _mailboxEmail = email;
-        _step = _ComposeStep.compose;
-      });
-    } on FirebaseFunctionsException catch (e) {
-      if (!mounted) return;
-      setState(
-        () => _connectError = e.message ?? "Couldn't connect that mailbox.",
-      );
-    } catch (_) {
-      if (!mounted) return;
-      setState(() => _connectError = "Couldn't connect that mailbox.");
-    } finally {
-      if (mounted) setState(() => _isConnecting = false);
     }
   }
 
@@ -1528,69 +1631,15 @@ class _ComposeEmailDialogState extends ConsumerState<_ComposeEmailDialog> {
           ),
         );
       case _ComposeStep.connectMailbox:
-        return _buildConnectStep(context);
+        return _ConnectMailboxStep(
+          onConnected: (email) => setState(() {
+            _mailboxEmail = email;
+            _step = _ComposeStep.compose;
+          }),
+        );
       case _ComposeStep.compose:
         return _buildComposeStep(context);
     }
-  }
-
-  Widget _buildConnectStep(BuildContext context) {
-    return AlertDialog(
-      title: const Text('Connect your mailbox'),
-      content: SizedBox(
-        width: 420,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Outreach emails send through your own '
-              'mail.collabsy.online mailbox — connect it once and every '
-              'email after goes out with one click.',
-              style: AppTextStyles.bodyMedium,
-            ),
-            const SizedBox(height: AppSpacing.md),
-            AppTextField(
-              controller: _mailboxEmailController,
-              label: 'Mailbox email',
-              hintText: 'you@collabsy.online',
-              keyboardType: TextInputType.emailAddress,
-              enabled: !_isConnecting,
-            ),
-            const SizedBox(height: AppSpacing.sm),
-            AppTextField(
-              controller: _mailboxPasswordController,
-              label: 'Mailbox password',
-              obscureText: true,
-              enabled: !_isConnecting,
-              onSubmitted: (_) => _connect(),
-            ),
-            if (_connectError != null) ...[
-              const SizedBox(height: AppSpacing.sm),
-              Text(
-                _connectError!,
-                style: AppTextStyles.bodySmall.copyWith(
-                  color: AppColors.error,
-                ),
-              ),
-            ],
-          ],
-        ),
-      ),
-      actions: [
-        TextButton(
-          onPressed: _isConnecting ? null : () => Navigator.pop(context),
-          child: const Text('Cancel'),
-        ),
-        PrimaryButton(
-          width: 120,
-          height: 40,
-          text: 'Connect',
-          isLoading: _isConnecting,
-          onPressed: _isConnecting ? null : _connect,
-        ),
-      ],
-    );
   }
 
   Widget _buildComposeStep(BuildContext context) {
@@ -1673,6 +1722,191 @@ class _ComposeEmailDialogState extends ConsumerState<_ComposeEmailDialog> {
           icon: Icons.send_outlined,
           isLoading: _isSending,
           onPressed: _isSending ? null : _send,
+        ),
+      ],
+    );
+  }
+}
+
+/// Sends one email, Bcc'd to every prospect in [prospects] at once —
+/// `sendBrandProspectMassEmail` looks up the recipient list itself (the
+/// prospects passed in here are only used to show an accurate "sending to
+/// N" count before confirming), and marks each of them contacted. Since
+/// Bcc can't personalize per recipient, the template has no
+/// `{{brandName}}` placeholder — just `{{internName}}`.
+class _MassEmailDialog extends ConsumerStatefulWidget {
+  const _MassEmailDialog({required this.prospects});
+
+  final List<BrandProspect> prospects;
+
+  @override
+  ConsumerState<_MassEmailDialog> createState() => _MassEmailDialogState();
+}
+
+class _MassEmailDialogState extends ConsumerState<_MassEmailDialog> {
+  _ComposeStep _step = _ComposeStep.checkingMailbox;
+  String? _mailboxEmail;
+
+  late final TextEditingController _subjectController;
+  late final TextEditingController _bodyController;
+  bool _isSending = false;
+
+  @override
+  void initState() {
+    super.initState();
+    final internEmail =
+        ref.read(authRepositoryProvider).currentUser?.email ?? '';
+    final internName = internEmail.contains('@')
+        ? internEmail.split('@').first
+        : 'Collabsy Team';
+
+    _subjectController = TextEditingController(text: _defaultMassEmailSubject);
+    _bodyController = TextEditingController(
+      text: _defaultMassEmailBody.replaceAll('{{internName}}', internName),
+    );
+
+    _loadMailboxStatus();
+  }
+
+  @override
+  void dispose() {
+    _subjectController.dispose();
+    _bodyController.dispose();
+    super.dispose();
+  }
+
+  int get _recipientCount =>
+      widget.prospects.where((p) => p.emails.isNotEmpty).length;
+
+  Future<void> _loadMailboxStatus() async {
+    try {
+      final email = await ref
+          .read(brandInternProspectsRepositoryProvider)
+          .mailboxStatus();
+      if (!mounted) return;
+      setState(() {
+        _mailboxEmail = email;
+        _step = email == null
+            ? _ComposeStep.connectMailbox
+            : _ComposeStep.compose;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _step = _ComposeStep.connectMailbox);
+    }
+  }
+
+  Future<void> _send() async {
+    final subject = _subjectController.text.trim();
+    final body = _bodyController.text.trim();
+    if (subject.isEmpty || body.isEmpty) {
+      AppSnackbar.showError(context, 'Enter a subject and message.');
+      return;
+    }
+
+    setState(() => _isSending = true);
+    final int sent;
+    try {
+      sent = await ref
+          .read(brandInternProspectsRepositoryProvider)
+          .sendMassEmail(subject: subject, body: body);
+    } on FirebaseFunctionsException catch (e) {
+      if (!mounted) return;
+      setState(() => _isSending = false);
+      AppSnackbar.showError(context, e.message ?? "Couldn't send the email.");
+      return;
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _isSending = false);
+      AppSnackbar.showError(context, "Couldn't send the email.");
+      return;
+    }
+
+    if (!mounted) return;
+    Navigator.pop(context);
+    AppSnackbar.showSuccess(context, 'Sent to $sent contacts.');
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    switch (_step) {
+      case _ComposeStep.checkingMailbox:
+        return const AlertDialog(
+          content: SizedBox(
+            height: 80,
+            child: Center(child: CircularProgressIndicator()),
+          ),
+        );
+      case _ComposeStep.connectMailbox:
+        return _ConnectMailboxStep(
+          onConnected: (email) => setState(() {
+            _mailboxEmail = email;
+            _step = _ComposeStep.compose;
+          }),
+        );
+      case _ComposeStep.compose:
+        return _buildComposeStep(context);
+    }
+  }
+
+  Widget _buildComposeStep(BuildContext context) {
+    return AlertDialog(
+      title: const Text('Email all prospects'),
+      content: SizedBox(
+        width: 480,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            if (_mailboxEmail != null) ...[
+              Text(
+                'Sending as $_mailboxEmail',
+                style: AppTextStyles.bodySmall.copyWith(
+                  color: AppColors.textSecondary,
+                ),
+              ),
+              const SizedBox(height: 4),
+            ],
+            Text(
+              'Bcc\'d to $_recipientCount of ${widget.prospects.length} '
+              'prospects (the rest have no email on file). Everyone gets '
+              'this exact text — nobody sees who else received it.',
+              style: AppTextStyles.bodySmall.copyWith(
+                color: AppColors.textSecondary,
+              ),
+            ),
+            const SizedBox(height: AppSpacing.sm),
+            AppTextField(
+              controller: _subjectController,
+              label: 'Subject',
+              enabled: !_isSending,
+            ),
+            const SizedBox(height: AppSpacing.sm),
+            TextField(
+              controller: _bodyController,
+              maxLines: 8,
+              enabled: !_isSending,
+              decoration: const InputDecoration(
+                labelText: 'Message',
+                alignLabelWithHint: true,
+                border: OutlineInputBorder(),
+              ),
+            ),
+          ],
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: _isSending ? null : () => Navigator.pop(context),
+          child: const Text('Cancel'),
+        ),
+        PrimaryButton(
+          width: 160,
+          height: 40,
+          text: 'Send to $_recipientCount',
+          icon: Icons.send_outlined,
+          isLoading: _isSending,
+          onPressed: _isSending || _recipientCount == 0 ? null : _send,
         ),
       ],
     );

@@ -112,6 +112,22 @@ class BrandInternProspectsRepository {
       'body': body,
     });
   }
+
+  /// Sends one email, Bcc'd to every prospect assigned to this intern (the
+  /// server looks up the recipient list itself — this never sends one),
+  /// and marks each of them contacted. Returns how many it sent to. Can
+  /// run long for a large list, hence the extended timeout; throws
+  /// [FirebaseFunctionsException] (`failed-precondition` if the mailbox
+  /// isn't connected or nobody has an email on file).
+  Future<int> sendMassEmail({required String subject, required String body}) async {
+    final result = await _functions
+        .httpsCallable(
+          'sendBrandProspectMassEmail',
+          options: HttpsCallableOptions(timeout: const Duration(seconds: 540)),
+        )
+        .call<Map<String, dynamic>>({'subject': subject, 'body': body});
+    return result.data['sent'] as int;
+  }
 }
 
 @Riverpod(keepAlive: true)

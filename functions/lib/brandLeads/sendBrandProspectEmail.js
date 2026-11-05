@@ -12,14 +12,7 @@ const emailConfig_1 = require("../shared/emailConfig");
 const mailCredentialCrypto_1 = require("../shared/mailCredentialCrypto");
 const emailTemplate_1 = require("../shared/emailTemplate");
 const appendSentCopy_1 = require("../shared/appendSentCopy");
-// MailComposer has no published types; it's nodemailer's own internal
-// message builder, used here so the exact same raw MIME bytes sent over
-// SMTP are also what gets appended to the Sent folder afterward.
-// eslint-disable-next-line @typescript-eslint/no-var-requires
-const MailComposer = require("nodemailer/lib/mail-composer");
-/** Every brand-prospect outreach email is bcc'd here, regardless of which
- * intern's mailbox sends it, so this address sees everything going out. */
-const OVERSIGHT_BCC = "tirupathireddy@collabsy.online";
+const buildRawEmail_1 = require("../shared/buildRawEmail");
 /**
  * Sends a brand-prospect outreach email through the calling intern's own
  * connected mailbox (see `connectBrandMailbox.ts`) — the recipient sees it
@@ -58,19 +51,12 @@ exports.sendBrandProspectEmail = (0, https_1.onCall)({ secrets: [emailConfig_1.s
     const mailOptions = {
         from: email,
         to: data.to,
-        bcc: OVERSIGHT_BCC,
+        bcc: emailConfig_1.brandOutreachOversightBcc,
         subject: data.subject,
         text: data.body,
         html,
     };
-    // Built once up front so the exact same raw bytes that go out over
-    // SMTP are also what gets appended to Sent afterward. build() is
-    // callback-style — there's no promise-returning variant.
-    const rawMessage = await new Promise((resolve, reject) => {
-        new MailComposer(mailOptions)
-            .compile()
-            .build((error, message) => error ? reject(error) : resolve(message));
-    });
+    const rawMessage = await (0, buildRawEmail_1.buildRawEmail)(mailOptions);
     try {
         // `raw` bypasses nodemailer's own envelope computation, so the bcc
         // recipient has to be listed explicitly here too — MailComposer
@@ -78,7 +64,7 @@ exports.sendBrandProspectEmail = (0, https_1.onCall)({ secrets: [emailConfig_1.s
         // real recipient never sees it in the message they receive.
         await transporter.sendMail({
             raw: rawMessage,
-            envelope: { from: email, to: [data.to, OVERSIGHT_BCC] },
+            envelope: { from: email, to: [data.to, emailConfig_1.brandOutreachOversightBcc] },
         });
     }
     catch {

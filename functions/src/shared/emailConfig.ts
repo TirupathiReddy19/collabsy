@@ -25,3 +25,8 @@ export const smtpFrom = defineString("SMTP_FROM", { default: "" });
  *   firebase functions:secrets:set MAIL_CREDENTIAL_ENC_KEY
  * Generate one with: node -e "console.log(require('crypto').randomBytes(32).toString('base64'))" */
 export const mailCredentialEncryptionKey = defineSecret("MAIL_CREDENTIAL_ENC_KEY");
+
+/** Every brand-prospect outreach email (single or mass) is bcc'd here,
+ * regardless of which intern's mailbox sends it, so this address sees
+ * everything going out. */
+export const brandOutreachOversightBcc = "tirupathireddy@collabsy.online";

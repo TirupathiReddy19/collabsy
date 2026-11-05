@@ -36,6 +36,7 @@ export { onBrandProfileWritten } from "./brandLeads/onBrandProfileWritten";
 export { connectBrandMailbox } from "./brandLeads/connectBrandMailbox";
 export { getBrandMailboxStatus } from "./brandLeads/getBrandMailboxStatus";
 export { sendBrandProspectEmail } from "./brandLeads/sendBrandProspectEmail";
+export { sendBrandProspectMassEmail } from "./brandLeads/sendBrandProspectMassEmail";
 export { sendPushOnAnnouncementCreate } from "./sendPushOnAnnouncementCreate";
 export { getCrashAnalytics } from "./admin/getCrashAnalytics";
 export { onCreatorApproved, onBrandApproved } from "./onboarding/sendWelcomeMessage";
