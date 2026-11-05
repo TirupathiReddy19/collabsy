@@ -31,8 +31,12 @@ const RECIPIENTS_PER_MESSAGE = 50;
  * always reads its own recipient list from `brandProspects` — the client
  * only supplies subject/body, never who it goes to, since trusting a
  * client-sent recipient list would let a compromised client blast anyone.
- * Marks every included prospect `contacted` afterward, the same one-way
- * self-report `markContacted` already does per prospect, just bulk.
+ * Marks every included prospect `contacted` afterward (same one-way
+ * self-report `markContacted` already does per prospect, just bulk), and
+ * separately stamps `massEmailSentAt` on every recipient regardless of
+ * prior `contacted` state — that field exists specifically to answer "was
+ * this prospect in a bulk send", which `contacted` alone can't (it's also
+ * set by the single-send button and a manual mark).
  */
 export const sendBrandProspectMassEmail = onCall(
   {
@@ -125,18 +129,23 @@ export const sendBrandProspectMassEmail = onCall(
 
       // Marked right after this batch's send succeeds, not at the very
       // end — if a later batch's send then fails, the error above can
-      // honestly say earlier recipients are already marked contacted,
-      // and a retry won't double-email anyone who already went out.
+      // honestly say earlier recipients are already marked, and a retry
+      // won't double-email anyone who already went out.
       const batchRecipients = recipients.slice(start, start + RECIPIENTS_PER_MESSAGE);
-      const toMark = batchRecipients.filter((r) => !r.alreadyContacted);
+      const sentAt = Timestamp.now();
       const writeBatch = firestore.batch();
-      for (const recipient of toMark) {
-        writeBatch.update(firestore.collection("brandProspects").doc(recipient.docId), {
-          contacted: true,
-          contactedAt: Timestamp.now(),
-        });
+      for (const recipient of batchRecipients) {
+        const update: Record<string, unknown> = { massEmailSentAt: sentAt };
+        if (!recipient.alreadyContacted) {
+          update.contacted = true;
+          update.contactedAt = sentAt;
+        }
+        writeBatch.update(
+          firestore.collection("brandProspects").doc(recipient.docId),
+          update
+        );
       }
-      if (toMark.length > 0) await writeBatch.commit();
+      await writeBatch.commit();
     }
 
     return { sent: recipients.length };

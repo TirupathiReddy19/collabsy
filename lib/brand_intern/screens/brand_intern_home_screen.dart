@@ -596,6 +596,39 @@ class _BulkEmailTab extends StatelessWidget {
                   ],
                 ),
               ),
+              if (prospects.isNotEmpty) ...[
+                const SizedBox(height: AppSpacing.xl),
+                Text('Every contact', style: AppTextStyles.titleLarge),
+                const SizedBox(height: AppSpacing.md),
+                Container(
+                  decoration: BoxDecoration(
+                    color: AppColors.surface,
+                    borderRadius: BorderRadius.circular(AppRadius.lg),
+                    border: Border.all(color: AppColors.border),
+                  ),
+                  child: Column(
+                    children: [
+                      const _BulkEmailContactRow(
+                        email: 'Email',
+                        category: 'Category',
+                        sent: null,
+                        isHeader: true,
+                      ),
+                      for (final (index, prospect) in prospects.indexed) ...[
+                        if (index > 0)
+                          const Divider(height: 1, color: AppColors.border),
+                        _BulkEmailContactRow(
+                          email: prospect.emails.isEmpty
+                              ? '—'
+                              : prospect.emails.first,
+                          category: prospect.category ?? '—',
+                          sent: prospect.massEmailSentAt != null,
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+              ],
             ],
           ),
         ),
@@ -631,6 +664,97 @@ class _BulkEmailStat extends StatelessWidget {
             textAlign: TextAlign.center,
           ),
         ],
+      ),
+    );
+  }
+}
+
+/// One compact, single-line row in the Bulk Email tab's contact list —
+/// email, category, and whether `sendBrandProspectMassEmail` has ever
+/// stamped `massEmailSentAt` on this prospect. [sent] is `null` only for
+/// the header row, where it renders the column label instead of a pill.
+class _BulkEmailContactRow extends StatelessWidget {
+  const _BulkEmailContactRow({
+    required this.email,
+    required this.category,
+    required this.sent,
+    this.isHeader = false,
+  });
+
+  final String email;
+  final String category;
+  final bool? sent;
+  final bool isHeader;
+
+  @override
+  Widget build(BuildContext context) {
+    final labelStyle = isHeader
+        ? AppTextStyles.labelSmall.copyWith(color: AppColors.textSecondary)
+        : AppTextStyles.bodyMedium;
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.md,
+        vertical: AppSpacing.sm + 2,
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            flex: 3,
+            child: Text(
+              email,
+              style: labelStyle,
+              overflow: TextOverflow.ellipsis,
+              maxLines: 1,
+            ),
+          ),
+          const SizedBox(width: AppSpacing.sm),
+          Expanded(
+            flex: 2,
+            child: Text(
+              category,
+              style: labelStyle,
+              overflow: TextOverflow.ellipsis,
+              maxLines: 1,
+            ),
+          ),
+          const SizedBox(width: AppSpacing.sm),
+          SizedBox(
+            width: 64,
+            child: isHeader
+                ? Text('Mail sent', style: labelStyle)
+                : Align(
+                    alignment: Alignment.centerLeft,
+                    child: _YesNoPill(value: sent!),
+                  ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _YesNoPill extends StatelessWidget {
+  const _YesNoPill({required this.value});
+
+  final bool value;
+
+  @override
+  Widget build(BuildContext context) {
+    final color = value ? AppColors.success : AppColors.textSecondary;
+    final background = value ? AppColors.successLight : AppColors.background;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      decoration: BoxDecoration(
+        color: background,
+        borderRadius: BorderRadius.circular(AppRadius.full),
+      ),
+      child: Text(
+        value ? 'Yes' : 'No',
+        style: AppTextStyles.bodySmall.copyWith(
+          color: color,
+          fontWeight: FontWeight.w600,
+        ),
       ),
     );
   }

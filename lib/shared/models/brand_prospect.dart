@@ -9,11 +9,15 @@
 /// `AdminBrandProspectsRepository.assignCategoryToIntern`), which is the
 /// only thing that sets `assignedTo`/`assignedToEmail`/`assignedAt` and
 /// flips `status` to `'assigned'`. The assigned intern can self-report
-/// `contacted` (one-way) via a plain Firestore write — outreach email
-/// itself happens in the intern's own webmail (see `openWebmailCompose`),
-/// never through this app's own backend, so there's no send-tracking
-/// field here. Still a reference list, not a tracked-link funnel like
-/// `BrandLead` — no click tracking either way.
+/// `contacted` (one-way) via a plain Firestore write, or it's set
+/// automatically by a real send (`sendBrandProspectEmail`/
+/// `sendBrandProspectMassEmail`, both Cloud Functions). `massEmailSentAt`
+/// is deliberately separate from `contacted` — it only ever gets set by
+/// the bulk-email Cloud Function, never by the single-send button or a
+/// manual "Mark contacted", so it answers one narrower question: was this
+/// specific prospect actually included in a bulk send. Still a reference
+/// list, not a tracked-link funnel like `BrandLead` — no click tracking
+/// either way.
 typedef BrandProspect = ({
   String id,
   String brandName,
@@ -34,4 +38,5 @@ typedef BrandProspect = ({
   DateTime? assignedAt,
   bool contacted,
   DateTime? contactedAt,
+  DateTime? massEmailSentAt,
 });
