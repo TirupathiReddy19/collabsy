@@ -480,15 +480,60 @@ class _ProspectsTab extends ConsumerWidget {
 /// blast (`_MassEmailDialog`), separate from "My Prospects" since it's a
 /// distinct action (one email to everyone at once) rather than something
 /// you'd reach for per-prospect.
-class _BulkEmailTab extends StatelessWidget {
+class _BulkEmailTab extends StatefulWidget {
   const _BulkEmailTab({required this.prospects});
 
   final List<BrandProspect> prospects;
 
   @override
+  State<_BulkEmailTab> createState() => _BulkEmailTabState();
+}
+
+class _BulkEmailTabState extends State<_BulkEmailTab> {
+  /// Doc ids of prospects currently checked — empty by default, so a send
+  /// always reflects a deliberate choice rather than "everyone" by
+  /// default. Only ids of prospects that actually have an email are ever
+  /// added here (see [_selectableIds]), so this always matches what a
+  /// send would actually include.
+  final Set<String> _selectedIds = {};
+
+  List<BrandProspect> get prospects => widget.prospects;
+
+  List<BrandProspect> get _selectable =>
+      prospects.where((p) => p.emails.isNotEmpty).toList();
+
+  Set<String> get _selectableIds => _selectable.map((p) => p.id).toSet();
+
+  void _toggle(String prospectId, bool? checked) {
+    setState(() {
+      if (checked ?? false) {
+        _selectedIds.add(prospectId);
+      } else {
+        _selectedIds.remove(prospectId);
+      }
+    });
+  }
+
+  void _toggleAll(bool? checked) {
+    setState(() {
+      if (checked ?? false) {
+        _selectedIds
+          ..clear()
+          ..addAll(_selectableIds);
+      } else {
+        _selectedIds.clear();
+      }
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final withEmail = prospects.where((p) => p.emails.isNotEmpty).length;
+    final withEmail = _selectable.length;
     final contacted = prospects.where((p) => p.contacted).length;
+    final selectedCount = _selectedIds.length;
+    final allSelected =
+        withEmail > 0 && _selectedIds.length == _selectableIds.length;
+    final someSelected = _selectedIds.isNotEmpty && !allSelected;
 
     return SingleChildScrollView(
       padding: const EdgeInsets.fromLTRB(
@@ -545,9 +590,9 @@ class _BulkEmailTab extends StatelessWidget {
                     ),
                     const SizedBox(height: AppSpacing.xs),
                     Text(
-                      'Send one email, Bcc\'d to every prospect assigned to '
-                      'you, through your own connected mailbox. Nobody sees '
-                      'who else received it.',
+                      'Check off who should get it below, then send one '
+                      'email, Bcc\'d to everyone selected, through your own '
+                      'connected mailbox. Nobody sees who else received it.',
                       style: AppTextStyles.bodyMedium,
                     ),
                     const SizedBox(height: AppSpacing.md),
@@ -564,7 +609,7 @@ class _BulkEmailTab extends StatelessWidget {
                         children: [
                           _BulkEmailStat(label: 'Prospects', value: prospects.length),
                           _bulkStatDivider(),
-                          _BulkEmailStat(label: 'Have an email', value: withEmail),
+                          _BulkEmailStat(label: 'Selected', value: selectedCount),
                           _bulkStatDivider(),
                           _BulkEmailStat(label: 'Already contacted', value: contacted),
                         ],
@@ -572,14 +617,19 @@ class _BulkEmailTab extends StatelessWidget {
                     ),
                     const SizedBox(height: AppSpacing.md),
                     PrimaryButton(
-                      text: 'Compose bulk email',
+                      text: selectedCount == 0
+                          ? 'Compose bulk email'
+                          : 'Compose for $selectedCount selected',
                       icon: Icons.campaign_outlined,
-                      onPressed: withEmail == 0
+                      onPressed: selectedCount == 0
                           ? null
                           : () => showDialog<void>(
                               context: context,
-                              builder: (context) =>
-                                  _MassEmailDialog(prospects: prospects),
+                              builder: (context) => _MassEmailDialog(
+                                prospects: prospects
+                                    .where((p) => _selectedIds.contains(p.id))
+                                    .toList(),
+                              ),
                             ),
                     ),
                     if (withEmail == 0) ...[
@@ -598,8 +648,23 @@ class _BulkEmailTab extends StatelessWidget {
               ),
               if (prospects.isNotEmpty) ...[
                 const SizedBox(height: AppSpacing.xl),
-                Text('Every contact', style: AppTextStyles.titleLarge),
-                const SizedBox(height: AppSpacing.md),
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        'Every contact',
+                        style: AppTextStyles.titleLarge,
+                      ),
+                    ),
+                    TextButton(
+                      onPressed: withEmail == 0
+                          ? null
+                          : () => _toggleAll(!allSelected),
+                      child: Text(allSelected ? 'Select none' : 'Select all'),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: AppSpacing.sm),
                 Container(
                   decoration: BoxDecoration(
                     color: AppColors.surface,
@@ -608,11 +673,14 @@ class _BulkEmailTab extends StatelessWidget {
                   ),
                   child: Column(
                     children: [
-                      const _BulkEmailContactRow(
+                      _BulkEmailContactRow(
                         email: 'Email',
                         category: 'Category',
                         sent: null,
                         isHeader: true,
+                        checked: allSelected,
+                        tristate: someSelected,
+                        onChanged: withEmail == 0 ? null : _toggleAll,
                       ),
                       for (final (index, prospect) in prospects.indexed) ...[
                         if (index > 0)
@@ -623,6 +691,10 @@ class _BulkEmailTab extends StatelessWidget {
                               : prospect.emails.first,
                           category: prospect.category ?? '—',
                           sent: prospect.massEmailSentAt != null,
+                          checked: _selectedIds.contains(prospect.id),
+                          onChanged: prospect.emails.isEmpty
+                              ? null
+                              : (checked) => _toggle(prospect.id, checked),
                         ),
                       ],
                     ],
@@ -678,13 +750,28 @@ class _BulkEmailContactRow extends StatelessWidget {
     required this.email,
     required this.category,
     required this.sent,
+    required this.checked,
+    required this.onChanged,
     this.isHeader = false,
+    this.tristate = false,
   });
 
   final String email;
   final String category;
   final bool? sent;
   final bool isHeader;
+
+  /// Whether this row's checkbox is checked — for the header row, this is
+  /// "every selectable row is checked" ([_BulkEmailTabState.allSelected]).
+  final bool checked;
+
+  /// `true` only for the header row when some (not all) rows below are
+  /// checked, so its checkbox renders as a dash instead of a tick.
+  final bool tristate;
+
+  /// `null` disables the checkbox — used for a row with no email (nothing
+  /// to send to) or the header when nothing is selectable at all.
+  final ValueChanged<bool?>? onChanged;
 
   @override
   Widget build(BuildContext context) {
@@ -694,11 +781,19 @@ class _BulkEmailContactRow extends StatelessWidget {
 
     return Padding(
       padding: const EdgeInsets.symmetric(
-        horizontal: AppSpacing.md,
-        vertical: AppSpacing.sm + 2,
+        horizontal: AppSpacing.sm,
+        vertical: AppSpacing.sm,
       ),
       child: Row(
         children: [
+          SizedBox(
+            width: 36,
+            child: Checkbox(
+              value: tristate ? null : checked,
+              tristate: tristate,
+              onChanged: onChanged,
+            ),
+          ),
           Expanded(
             flex: 3,
             child: Text(
@@ -2000,12 +2095,12 @@ class _ComposeEmailDialogState extends ConsumerState<_ComposeEmailDialog> {
   }
 }
 
-/// Sends one email, Bcc'd to every prospect in [prospects] at once —
-/// `sendBrandProspectMassEmail` looks up the recipient list itself (the
-/// prospects passed in here are only used to show an accurate "sending to
-/// N" count before confirming), and marks each of them contacted. Since
-/// Bcc can't personalize per recipient, the template has no
-/// `{{brandName}}` placeholder — just `{{internName}}`.
+/// Sends one email, Bcc'd to every prospect in [prospects] at once — the
+/// caller (the Bulk Email tab's checkbox list) has already narrowed this
+/// down to the selected ones; `sendBrandProspectMassEmail` still
+/// re-validates each id server-side before including it. Marks each
+/// recipient contacted. Since Bcc can't personalize per recipient, the
+/// template has no `{{brandName}}` placeholder — just `{{internName}}`.
 class _MassEmailDialog extends ConsumerStatefulWidget {
   const _MassEmailDialog({required this.prospects});
 
@@ -2076,12 +2171,17 @@ class _MassEmailDialogState extends ConsumerState<_MassEmailDialog> {
       return;
     }
 
+    final ids = widget.prospects
+        .where((p) => p.emails.isNotEmpty)
+        .map((p) => p.id)
+        .toSet();
+
     setState(() => _isSending = true);
     final int sent;
     try {
       sent = await ref
           .read(brandInternProspectsRepositoryProvider)
-          .sendMassEmail(subject: subject, body: body);
+          .sendMassEmail(subject: subject, body: body, prospectIds: ids);
     } on FirebaseFunctionsException catch (e) {
       if (!mounted) return;
       setState(() => _isSending = false);
@@ -2140,9 +2240,14 @@ class _MassEmailDialogState extends ConsumerState<_MassEmailDialog> {
               const SizedBox(height: 4),
             ],
             Text(
-              'Bcc\'d to $_recipientCount of ${widget.prospects.length} '
-              'prospects (the rest have no email on file). Everyone gets '
-              'this exact text — nobody sees who else received it.',
+              widget.prospects.length == _recipientCount
+                  ? 'Bcc\'d to $_recipientCount selected prospects. Everyone '
+                        'gets this exact text — nobody sees who else '
+                        'received it.'
+                  : 'Bcc\'d to $_recipientCount of ${widget.prospects.length} '
+                        'selected prospects (the rest have no email on '
+                        'file). Everyone gets this exact text — nobody sees '
+                        'who else received it.',
               style: AppTextStyles.bodySmall.copyWith(
                 color: AppColors.textSecondary,
               ),

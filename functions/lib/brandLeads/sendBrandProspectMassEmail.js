@@ -18,12 +18,14 @@ const buildRawEmail_1 = require("../shared/buildRawEmail");
  * a large batch goes out as several smaller messages instead. */
 const RECIPIENTS_PER_MESSAGE = 50;
 /**
- * Sends one email to every prospect assigned to the calling intern, all in
- * Bcc so recipients never see each other's address. Unlike
- * `sendBrandProspectEmail` (one prospect, a client-supplied To), this
- * always reads its own recipient list from `brandProspects` — the client
- * only supplies subject/body, never who it goes to, since trusting a
- * client-sent recipient list would let a compromised client blast anyone.
+ * Sends one email to a chosen subset of prospects assigned to the calling
+ * intern (picked via checkboxes client-side), all in Bcc so recipients
+ * never see each other's address. Unlike `sendBrandProspectEmail` (one
+ * prospect, a client-supplied To), this never trusts the client's
+ * `prospectIds` on their own — it always re-reads `brandProspects` itself
+ * scoped to `assignedTo == uid` first, then keeps only the docs whose id
+ * was requested, so a compromised client can at most narrow its own
+ * send, never target a prospect it doesn't own.
  * Marks every included prospect `contacted` afterward (same one-way
  * self-report `markContacted` already does per prospect, just bulk), and
  * separately stamps `massEmailSentAt` on every recipient regardless of
@@ -41,6 +43,10 @@ exports.sendBrandProspectMassEmail = (0, https_1.onCall)({
     if (!data?.subject?.trim() || !data?.body?.trim()) {
         throw new https_1.HttpsError("invalid-argument", "subject and body are required.");
     }
+    if (!Array.isArray(data.prospectIds) || data.prospectIds.length === 0) {
+        throw new https_1.HttpsError("invalid-argument", "Select at least one prospect.");
+    }
+    const requestedIds = new Set(data.prospectIds);
     const firestore = (0, firestore_1.getFirestore)();
     const credDoc = await firestore.collection("brandMailCredentials").doc(uid).get();
     const creds = credDoc.data();
@@ -55,6 +61,8 @@ exports.sendBrandProspectMassEmail = (0, https_1.onCall)({
         .get();
     const recipients = [];
     for (const doc of prospectsSnapshot.docs) {
+        if (!requestedIds.has(doc.id))
+            continue;
         const prospectEmails = doc.data().emails ?? [];
         if (prospectEmails.length === 0)
             continue;
@@ -65,7 +73,7 @@ exports.sendBrandProspectMassEmail = (0, https_1.onCall)({
         });
     }
     if (recipients.length === 0) {
-        throw new https_1.HttpsError("failed-precondition", "None of your prospects have an email on file.");
+        throw new https_1.HttpsError("failed-precondition", "None of the selected prospects have an email on file.");
     }
     const transporter = nodemailer_1.default.createTransport({
         host: emailConfig_1.smtpHost.value(),

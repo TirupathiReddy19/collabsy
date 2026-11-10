@@ -114,19 +114,29 @@ class BrandInternProspectsRepository {
     });
   }
 
-  /// Sends one email, Bcc'd to every prospect assigned to this intern (the
-  /// server looks up the recipient list itself — this never sends one),
-  /// and marks each of them contacted. Returns how many it sent to. Can
-  /// run long for a large list, hence the extended timeout; throws
+  /// Sends one email, Bcc'd to every prospect in [prospectIds] (the server
+  /// re-checks each one actually belongs to this intern before including
+  /// it — this never trusts the id list on its own), and marks each of
+  /// them contacted. Returns how many it sent to. Can run long for a
+  /// large list, hence the extended timeout; throws
   /// [FirebaseFunctionsException] (`failed-precondition` if the mailbox
-  /// isn't connected or nobody has an email on file).
-  Future<int> sendMassEmail({required String subject, required String body}) async {
+  /// isn't connected or none of the selected prospects have an email on
+  /// file).
+  Future<int> sendMassEmail({
+    required String subject,
+    required String body,
+    required Set<String> prospectIds,
+  }) async {
     final result = await _functions
         .httpsCallable(
           'sendBrandProspectMassEmail',
           options: HttpsCallableOptions(timeout: const Duration(seconds: 540)),
         )
-        .call<Map<String, dynamic>>({'subject': subject, 'body': body});
+        .call<Map<String, dynamic>>({
+          'subject': subject,
+          'body': body,
+          'prospectIds': prospectIds.toList(),
+        });
     return result.data['sent'] as int;
   }
 }

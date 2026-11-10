@@ -17,6 +17,11 @@ import { buildRawEmail } from "../shared/buildRawEmail";
 interface SendBrandProspectMassEmailRequest {
   subject: string;
   body: string;
+  /** Which prospects to include, by doc id — chosen via checkboxes in the
+   * Bulk Email tab. Only ever narrows the set this function itself reads
+   * from `brandProspects` (see below); a client can never add a prospect
+   * it doesn't already own this way. */
+  prospectIds: string[];
 }
 
 /** Recipients per SMTP submission — a single message with hundreds of Bcc
@@ -25,12 +30,14 @@ interface SendBrandProspectMassEmailRequest {
 const RECIPIENTS_PER_MESSAGE = 50;
 
 /**
- * Sends one email to every prospect assigned to the calling intern, all in
- * Bcc so recipients never see each other's address. Unlike
- * `sendBrandProspectEmail` (one prospect, a client-supplied To), this
- * always reads its own recipient list from `brandProspects` — the client
- * only supplies subject/body, never who it goes to, since trusting a
- * client-sent recipient list would let a compromised client blast anyone.
+ * Sends one email to a chosen subset of prospects assigned to the calling
+ * intern (picked via checkboxes client-side), all in Bcc so recipients
+ * never see each other's address. Unlike `sendBrandProspectEmail` (one
+ * prospect, a client-supplied To), this never trusts the client's
+ * `prospectIds` on their own — it always re-reads `brandProspects` itself
+ * scoped to `assignedTo == uid` first, then keeps only the docs whose id
+ * was requested, so a compromised client can at most narrow its own
+ * send, never target a prospect it doesn't own.
  * Marks every included prospect `contacted` afterward (same one-way
  * self-report `markContacted` already does per prospect, just bulk), and
  * separately stamps `massEmailSentAt` on every recipient regardless of
@@ -51,6 +58,10 @@ export const sendBrandProspectMassEmail = onCall(
     if (!data?.subject?.trim() || !data?.body?.trim()) {
       throw new HttpsError("invalid-argument", "subject and body are required.");
     }
+    if (!Array.isArray(data.prospectIds) || data.prospectIds.length === 0) {
+      throw new HttpsError("invalid-argument", "Select at least one prospect.");
+    }
+    const requestedIds = new Set(data.prospectIds);
 
     const firestore = getFirestore();
 
@@ -69,6 +80,7 @@ export const sendBrandProspectMassEmail = onCall(
 
     const recipients: { docId: string; address: string; alreadyContacted: boolean }[] = [];
     for (const doc of prospectsSnapshot.docs) {
+      if (!requestedIds.has(doc.id)) continue;
       const prospectEmails = (doc.data().emails as string[] | undefined) ?? [];
       if (prospectEmails.length === 0) continue;
       recipients.push({
@@ -81,7 +93,7 @@ export const sendBrandProspectMassEmail = onCall(
     if (recipients.length === 0) {
       throw new HttpsError(
         "failed-precondition",
-        "None of your prospects have an email on file."
+        "None of the selected prospects have an email on file."
       );
     }
 
