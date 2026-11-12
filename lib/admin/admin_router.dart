@@ -13,6 +13,7 @@ import 'screens/admin_analytics_screen.dart';
 import 'screens/admin_audit_logs_screen.dart';
 import 'screens/admin_brand_detail_screen.dart';
 import 'screens/admin_brand_outreach_leads_screen.dart';
+import 'screens/admin_brand_outreach_reports_screen.dart';
 import 'screens/admin_brand_prospects_screen.dart';
 import 'screens/admin_broadcast_screen.dart';
 import 'screens/admin_brands_screen.dart';
@@ -97,6 +98,8 @@ final Map<String, GoRouterWidgetBuilder> _builtScreens = {
   '/campaign-requests': (context, state) => const AdminCampaignRequestsScreen(),
   '/intern-shift-report': (context, state) =>
       const AdminInternShiftReportScreen(),
+  '/brand-outreach-reports': (context, state) =>
+      const AdminBrandOutreachReportsScreen(),
   '/settings': (context, state) => const AdminSettingsScreen(),
   '/trust-safety': (context, state) => const AdminTrustSafetyScreen(),
 };
@@ -193,6 +196,18 @@ final adminRouterProvider = Provider<GoRouter>((ref) {
           state.matchedLocation == '/settings' ||
           state.matchedLocation.startsWith('/settings/');
       if (isSettingsRoute) {
+        return fallback ?? _noAccess;
+      }
+
+      // Brand Outreach Reports reads brandProspects across every intern,
+      // not just the caller's own assignedTo — firestore.rules only grants
+      // that cross-intern read to isAdmin(), never to a staff account
+      // regardless of its permission map, so this route is super-admin
+      // -only too (same reasoning as Reports/Roles/Settings above).
+      final isBrandOutreachReportsRoute =
+          state.matchedLocation == '/brand-outreach-reports' ||
+          state.matchedLocation.startsWith('/brand-outreach-reports/');
+      if (isBrandOutreachReportsRoute) {
         return fallback ?? _noAccess;
       }
 

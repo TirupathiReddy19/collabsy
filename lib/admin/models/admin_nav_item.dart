@@ -164,6 +164,11 @@ const adminNavGroups = [
         label: 'Intern Shift Report',
         icon: Icons.timer_outlined,
       ),
+      AdminNavItem(
+        path: '/brand-outreach-reports',
+        label: 'Brand Outreach Reports',
+        icon: Icons.insights_outlined,
+      ),
     ],
   ),
   AdminNavGroup(

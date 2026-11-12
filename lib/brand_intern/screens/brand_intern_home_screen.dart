@@ -162,7 +162,7 @@ class _BrandInternHomeScreenState extends ConsumerState<BrandInternHomeScreen>
     final today = DateTime.now();
     _end = DateTime(today.year, today.month, today.day);
     _start = _end.subtract(const Duration(days: 29));
-    _tabController = TabController(length: 3, vsync: this);
+    _tabController = TabController(length: 4, vsync: this);
   }
 
   @override
@@ -314,6 +314,7 @@ class _BrandInternHomeScreenState extends ConsumerState<BrandInternHomeScreen>
               const Tab(text: 'Generate link'),
               Tab(text: 'My prospects (${myProspects.length})'),
               const Tab(text: 'Bulk email'),
+              const Tab(text: 'Dashboard'),
             ],
           ),
           Expanded(
@@ -397,6 +398,7 @@ class _BrandInternHomeScreenState extends ConsumerState<BrandInternHomeScreen>
                 ),
                 _ProspectsTab(prospects: myProspects),
                 _BulkEmailTab(prospects: myProspects),
+                _DashboardTab(leads: myLeads, prospects: myProspects),
               ],
             ),
           ),
@@ -850,6 +852,130 @@ class _YesNoPill extends StatelessWidget {
           color: color,
           fontWeight: FontWeight.w600,
         ),
+      ),
+    );
+  }
+}
+
+/// One place that combines both of this intern's outreach funnels — the
+/// personally-generated `BrandLead` link funnel (sent -> clicked -> signed
+/// up -> onboarded) and the admin-pushed `BrandProspect` pool (assigned ->
+/// contacted -> ever included in a bulk send) — rather than leaving them
+/// scattered across the header chips and the other tabs' own stat rows.
+/// Admin sees the same two groups per intern, all at once, in
+/// AdminBrandOutreachReportsScreen.
+class _DashboardTab extends StatelessWidget {
+  const _DashboardTab({required this.leads, required this.prospects});
+
+  final List<BrandLead> leads;
+  final List<BrandProspect> prospects;
+
+  @override
+  Widget build(BuildContext context) {
+    final clicked = leads
+        .where(
+          (l) =>
+              l.status == 'clicked' ||
+              l.status == 'signedUp' ||
+              l.status == 'onboardingComplete',
+        )
+        .length;
+    final signedUp = leads
+        .where((l) => l.status == 'signedUp' || l.status == 'onboardingComplete')
+        .length;
+    final onboarded = leads.where((l) => l.status == 'onboardingComplete').length;
+
+    final contacted = prospects.where((p) => p.contacted).length;
+    final bulkEmailed = prospects.where((p) => p.massEmailSentAt != null).length;
+
+    return SingleChildScrollView(
+      padding: const EdgeInsets.fromLTRB(
+        AppSpacing.screenHorizontal,
+        AppSpacing.lg,
+        AppSpacing.screenHorizontal,
+        AppSpacing.xl,
+      ),
+      child: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 560),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _DashboardCard(
+                title: 'Outreach links',
+                icon: Icons.link_outlined,
+                stats: [
+                  _BulkEmailStat(label: 'Sent', value: leads.length),
+                  _BulkEmailStat(label: 'Clicked', value: clicked),
+                  _BulkEmailStat(label: 'Signed up', value: signedUp),
+                  _BulkEmailStat(label: 'Onboarded', value: onboarded),
+                ],
+              ),
+              const SizedBox(height: AppSpacing.lg),
+              _DashboardCard(
+                title: 'Prospect pool',
+                icon: Icons.inventory_2_outlined,
+                stats: [
+                  _BulkEmailStat(label: 'Assigned', value: prospects.length),
+                  _BulkEmailStat(label: 'Contacted', value: contacted),
+                  _BulkEmailStat(label: 'Bulk emailed', value: bulkEmailed),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _DashboardCard extends StatelessWidget {
+  const _DashboardCard({
+    required this.title,
+    required this.icon,
+    required this.stats,
+  });
+
+  final String title;
+  final IconData icon;
+  final List<Widget> stats;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(AppSpacing.lg),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(AppRadius.xxl),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.textPrimary.withValues(alpha: 0.06),
+            blurRadius: 24,
+            offset: const Offset(0, 8),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 36,
+                height: 36,
+                decoration: const BoxDecoration(
+                  color: AppColors.primaryLight,
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(icon, size: 18, color: AppColors.primary),
+              ),
+              const SizedBox(width: AppSpacing.sm + 2),
+              Text(title, style: AppTextStyles.titleLarge),
+            ],
+          ),
+          const SizedBox(height: AppSpacing.md),
+          Row(children: stats),
+        ],
       ),
     );
   }
