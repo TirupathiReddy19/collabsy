@@ -14,9 +14,11 @@ import '../../core/widgets/empty_state.dart';
 import '../../core/widgets/primary_button.dart';
 import '../../core/widgets/staggered_fade_in.dart';
 import '../../features/auth/providers/auth_providers.dart';
+import '../../shared/models/brand_email_campaign.dart';
 import '../../shared/models/brand_lead.dart';
 import '../../shared/models/brand_prospect.dart';
 import '../../shared/utils/linkedin_url.dart';
+import '../providers/brand_intern_campaigns_providers.dart';
 import '../providers/brand_intern_leads_providers.dart';
 import '../providers/brand_intern_prospects_providers.dart';
 
@@ -482,16 +484,20 @@ class _ProspectsTab extends ConsumerWidget {
 /// blast (`_MassEmailDialog`), separate from "My Prospects" since it's a
 /// distinct action (one email to everyone at once) rather than something
 /// you'd reach for per-prospect.
-class _BulkEmailTab extends StatefulWidget {
+class _BulkEmailTab extends ConsumerStatefulWidget {
   const _BulkEmailTab({required this.prospects});
 
   final List<BrandProspect> prospects;
 
   @override
-  State<_BulkEmailTab> createState() => _BulkEmailTabState();
+  ConsumerState<_BulkEmailTab> createState() => _BulkEmailTabState();
 }
 
-class _BulkEmailTabState extends State<_BulkEmailTab> {
+class _BulkEmailTabState extends ConsumerState<_BulkEmailTab> {
+  /// Which saved campaign (if any) pre-fills the compose dialog's subject
+  /// /body — `null` means the generic default template.
+  String? _selectedCampaignId;
+
   /// Doc ids of prospects currently checked — empty by default, so a send
   /// always reflects a deliberate choice rather than "everyone" by
   /// default. Only ids of prospects that actually have an email are ever
@@ -536,6 +542,11 @@ class _BulkEmailTabState extends State<_BulkEmailTab> {
     final allSelected =
         withEmail > 0 && _selectedIds.length == _selectableIds.length;
     final someSelected = _selectedIds.isNotEmpty && !allSelected;
+
+    final campaigns = ref.watch(myBrandEmailCampaignsProvider).value ?? const [];
+    final selectedCampaign = campaigns
+        .cast<BrandEmailCampaign?>()
+        .firstWhere((c) => c?.id == _selectedCampaignId, orElse: () => null);
 
     return SingleChildScrollView(
       padding: const EdgeInsets.fromLTRB(
@@ -598,6 +609,11 @@ class _BulkEmailTabState extends State<_BulkEmailTab> {
                       style: AppTextStyles.bodyMedium,
                     ),
                     const SizedBox(height: AppSpacing.md),
+                    _CampaignPicker(
+                      selectedCampaignId: _selectedCampaignId,
+                      onChanged: (id) => setState(() => _selectedCampaignId = id),
+                    ),
+                    const SizedBox(height: AppSpacing.md),
                     Container(
                       padding: const EdgeInsets.symmetric(
                         horizontal: AppSpacing.md,
@@ -631,6 +647,8 @@ class _BulkEmailTabState extends State<_BulkEmailTab> {
                                 prospects: prospects
                                     .where((p) => _selectedIds.contains(p.id))
                                     .toList(),
+                                initialSubject: selectedCampaign?.subject,
+                                initialBody: selectedCampaign?.body,
                               ),
                             ),
                     ),
@@ -739,6 +757,326 @@ class _BulkEmailStat extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+/// Lets an intern pick one of their saved campaigns to prefill the bulk
+/// -compose dialog's subject/body, or leave it as a one-off custom
+/// message — and jump into managing (creating/editing/deleting) those
+/// campaigns without leaving the Bulk Email tab.
+class _CampaignPicker extends ConsumerWidget {
+  const _CampaignPicker({
+    required this.selectedCampaignId,
+    required this.onChanged,
+  });
+
+  final String? selectedCampaignId;
+  final ValueChanged<String?> onChanged;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final campaigns = ref.watch(myBrandEmailCampaignsProvider).value ?? const [];
+    // A previously picked campaign may have just been deleted out from
+    // under this dropdown — fall back to "Custom message" rather than
+    // crash on a value DropdownButtonFormField no longer has an item for.
+    final validSelectedId = campaigns.any((c) => c.id == selectedCampaignId)
+        ? selectedCampaignId
+        : null;
+
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Expanded(
+          child: DropdownButtonFormField<String?>(
+            initialValue: validSelectedId,
+            decoration: const InputDecoration(
+              labelText: 'Campaign',
+              isDense: true,
+            ),
+            items: [
+              const DropdownMenuItem(value: null, child: Text('Custom message')),
+              for (final campaign in campaigns)
+                DropdownMenuItem(
+                  value: campaign.id,
+                  child: Text(campaign.name, overflow: TextOverflow.ellipsis),
+                ),
+            ],
+            onChanged: onChanged,
+          ),
+        ),
+        const SizedBox(width: AppSpacing.sm),
+        Padding(
+          padding: const EdgeInsets.only(top: 4),
+          child: TextButton.icon(
+            onPressed: () => showDialog<void>(
+              context: context,
+              builder: (context) => const _ManageCampaignsDialog(),
+            ),
+            icon: const Icon(Icons.edit_note_outlined, size: 18),
+            label: const Text('Manage'),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _ManageCampaignsDialog extends ConsumerWidget {
+  const _ManageCampaignsDialog();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final campaignsAsync = ref.watch(myBrandEmailCampaignsProvider);
+
+    return AlertDialog(
+      title: const Text('Campaigns'),
+      content: SizedBox(
+        width: 420,
+        child: campaignsAsync.when(
+          data: (campaigns) => Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              if (campaigns.isEmpty)
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: AppSpacing.md),
+                  child: Text(
+                    'No saved campaigns yet.',
+                    style: AppTextStyles.bodyMedium.copyWith(
+                      color: AppColors.textSecondary,
+                    ),
+                  ),
+                )
+              else
+                ConstrainedBox(
+                  constraints: const BoxConstraints(maxHeight: 320),
+                  child: ListView.separated(
+                    shrinkWrap: true,
+                    itemCount: campaigns.length,
+                    separatorBuilder: (context, _) =>
+                        const Divider(height: 1, color: AppColors.border),
+                    itemBuilder: (context, index) =>
+                        _CampaignListTile(campaign: campaigns[index]),
+                  ),
+                ),
+              const SizedBox(height: AppSpacing.sm),
+              OutlinedButton.icon(
+                onPressed: () => showDialog<void>(
+                  context: context,
+                  builder: (context) => const _CampaignFormDialog(),
+                ),
+                icon: const Icon(Icons.add, size: 16),
+                label: const Text('New campaign'),
+              ),
+            ],
+          ),
+          loading: () => const SizedBox(
+            height: 80,
+            child: Center(child: CircularProgressIndicator()),
+          ),
+          error: (_, _) => const Text('Could not load campaigns.'),
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('Done'),
+        ),
+      ],
+    );
+  }
+}
+
+class _CampaignListTile extends ConsumerWidget {
+  const _CampaignListTile({required this.campaign});
+
+  final BrandEmailCampaign campaign;
+
+  Future<void> _confirmDelete(BuildContext context, WidgetRef ref) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Delete campaign?'),
+        content: Text('"${campaign.name}" will be gone for good.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed == true) {
+      await ref
+          .read(brandInternCampaignsRepositoryProvider)
+          .delete(campaign.id);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    return ListTile(
+      contentPadding: EdgeInsets.zero,
+      title: Text(
+        campaign.name,
+        style: AppTextStyles.bodyMedium.copyWith(fontWeight: FontWeight.w600),
+      ),
+      subtitle: Text(
+        campaign.subject,
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+      ),
+      trailing: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          IconButton(
+            icon: const Icon(Icons.edit_outlined, size: 18),
+            tooltip: 'Edit',
+            onPressed: () => showDialog<void>(
+              context: context,
+              builder: (context) => _CampaignFormDialog(existing: campaign),
+            ),
+          ),
+          IconButton(
+            icon: const Icon(Icons.delete_outline, size: 18),
+            tooltip: 'Delete',
+            onPressed: () => _confirmDelete(context, ref),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Create (no [existing]) or edit (with [existing]) one saved campaign
+/// template.
+class _CampaignFormDialog extends ConsumerStatefulWidget {
+  const _CampaignFormDialog({this.existing});
+
+  final BrandEmailCampaign? existing;
+
+  @override
+  ConsumerState<_CampaignFormDialog> createState() =>
+      _CampaignFormDialogState();
+}
+
+class _CampaignFormDialogState extends ConsumerState<_CampaignFormDialog> {
+  late final TextEditingController _nameController;
+  late final TextEditingController _subjectController;
+  late final TextEditingController _bodyController;
+  bool _isSaving = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _nameController = TextEditingController(text: widget.existing?.name ?? '');
+    _subjectController = TextEditingController(
+      text: widget.existing?.subject ?? '',
+    );
+    _bodyController = TextEditingController(text: widget.existing?.body ?? '');
+  }
+
+  @override
+  void dispose() {
+    _nameController.dispose();
+    _subjectController.dispose();
+    _bodyController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _save() async {
+    final name = _nameController.text.trim();
+    final subject = _subjectController.text.trim();
+    final body = _bodyController.text.trim();
+    if (name.isEmpty || subject.isEmpty || body.isEmpty) {
+      AppSnackbar.showError(context, 'Enter a name, subject, and message.');
+      return;
+    }
+
+    setState(() => _isSaving = true);
+    try {
+      final repository = ref.read(brandInternCampaignsRepositoryProvider);
+      if (widget.existing != null) {
+        await repository.update(
+          campaignId: widget.existing!.id,
+          name: name,
+          subject: subject,
+          body: body,
+        );
+      } else {
+        final internId = ref.read(authRepositoryProvider).currentUser?.uid;
+        if (internId == null) return;
+        await repository.create(
+          internId: internId,
+          name: name,
+          subject: subject,
+          body: body,
+        );
+      }
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _isSaving = false);
+      AppSnackbar.showError(context, "Couldn't save the campaign.");
+      return;
+    }
+
+    if (!mounted) return;
+    Navigator.pop(context);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: Text(widget.existing == null ? 'New campaign' : 'Edit campaign'),
+      content: SizedBox(
+        width: 420,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            AppTextField(
+              controller: _nameController,
+              label: 'Campaign name',
+              enabled: !_isSaving,
+            ),
+            const SizedBox(height: AppSpacing.sm),
+            AppTextField(
+              controller: _subjectController,
+              label: 'Subject',
+              enabled: !_isSaving,
+            ),
+            const SizedBox(height: AppSpacing.sm),
+            TextField(
+              controller: _bodyController,
+              maxLines: 8,
+              enabled: !_isSaving,
+              decoration: const InputDecoration(
+                labelText: 'Message',
+                alignLabelWithHint: true,
+                border: OutlineInputBorder(),
+              ),
+            ),
+          ],
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: _isSaving ? null : () => Navigator.pop(context),
+          child: const Text('Cancel'),
+        ),
+        PrimaryButton(
+          width: 100,
+          height: 40,
+          text: 'Save',
+          isLoading: _isSaving,
+          onPressed: _isSaving ? null : _save,
+        ),
+      ],
     );
   }
 }
@@ -2227,10 +2565,19 @@ class _ComposeEmailDialogState extends ConsumerState<_ComposeEmailDialog> {
 /// re-validates each id server-side before including it. Marks each
 /// recipient contacted. Since Bcc can't personalize per recipient, the
 /// template has no `{{brandName}}` placeholder — just `{{internName}}`.
+/// [initialSubject]/[initialBody] prefill from a saved campaign when the
+/// intern picked one in the Bulk Email tab; `null` falls back to the
+/// generic default template.
 class _MassEmailDialog extends ConsumerStatefulWidget {
-  const _MassEmailDialog({required this.prospects});
+  const _MassEmailDialog({
+    required this.prospects,
+    this.initialSubject,
+    this.initialBody,
+  });
 
   final List<BrandProspect> prospects;
+  final String? initialSubject;
+  final String? initialBody;
 
   @override
   ConsumerState<_MassEmailDialog> createState() => _MassEmailDialogState();
@@ -2253,9 +2600,13 @@ class _MassEmailDialogState extends ConsumerState<_MassEmailDialog> {
         ? internEmail.split('@').first
         : 'Collabsy Team';
 
-    _subjectController = TextEditingController(text: _defaultMassEmailSubject);
+    _subjectController = TextEditingController(
+      text: widget.initialSubject ?? _defaultMassEmailSubject,
+    );
     _bodyController = TextEditingController(
-      text: _defaultMassEmailBody.replaceAll('{{internName}}', internName),
+      text:
+          widget.initialBody ??
+          _defaultMassEmailBody.replaceAll('{{internName}}', internName),
     );
 
     _loadMailboxStatus();

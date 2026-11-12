@@ -741,6 +741,37 @@ service cloud.firestore {
       allow read, write: if false;
     }
 
+    // A brand intern's own saved subject/body templates, picked from a
+    // dropdown in the Bulk Email tab instead of retyping the same outreach
+    // copy every send. Strictly owner-scoped — `internId` is set once at
+    // create and can never change (an update can touch everything except
+    // that field, same shape as `users/{userId}`'s own role-lock below).
+    match /brandEmailCampaigns/{campaignId} {
+      allow read: if isAdmin()
+        || (isActiveStaffWithPermission('/brand-outreach-leads')
+            && resource.data.internId == request.auth.uid);
+      allow create: if isAdmin()
+        || (isActiveStaffWithPermission('/brand-outreach-leads')
+            && request.resource.data.internId == request.auth.uid
+            && request.resource.data.keys().hasOnly(
+                 ['internId', 'name', 'subject', 'body', 'createdAt', 'updatedAt'])
+            && request.resource.data.name is string
+            && request.resource.data.subject is string
+            && request.resource.data.body is string
+            && request.resource.data.createdAt == request.time
+            && request.resource.data.updatedAt == request.time);
+      allow update: if isAdmin()
+        || (isActiveStaffWithPermission('/brand-outreach-leads')
+            && resource.data.internId == request.auth.uid
+            && request.resource.data.internId == resource.data.internId
+            && request.resource.data.diff(resource.data).affectedKeys()
+                .hasOnly(['name', 'subject', 'body', 'updatedAt'])
+            && request.resource.data.updatedAt == request.time);
+      allow delete: if isAdmin()
+        || (isActiveStaffWithPermission('/brand-outreach-leads')
+            && resource.data.internId == request.auth.uid);
+    }
+
     // One doc per support *ticket* (auto-generated id, `userId` field says
     // who it belongs to) — a user can have many over time, so resolved
     // tickets stay as history instead of being overwritten. The admin is

@@ -97,6 +97,7 @@ async function seed() {
       brandId: 'brandA', status: 'active', title: 'Viewed', viewCount: 3, viewedByCreatorIds: ['creatorB'],
     });
     await put('staffAccounts/brandInternUid', perms({ '/brand-outreach-leads': true }));
+    await put('staffAccounts/brandInternUid2', perms({ '/brand-outreach-leads': true }));
 
     await put('applications/app1', {
       creatorId: 'creatorA', brandId: 'brandA', campaignId: 'cActive', status: 'pending',
@@ -970,6 +971,68 @@ describe('brandProspects (bulk-imported, admin-assigned)', () => {
         brandName: 'Hacked',
       }),
     );
+  });
+});
+
+describe('brandEmailCampaigns (per-intern saved outreach templates)', () => {
+  const seedOwnedBy = (uid) =>
+    testEnv.withSecurityRulesDisabled((ctx) =>
+      setDoc(doc(ctx.firestore(), 'brandEmailCampaigns/c1'), {
+        internId: uid, name: 'Intro pitch', subject: 'Hi', body: 'Hello there',
+      }),
+    );
+
+  it('an intern can create their own campaign, not one owned by someone else', async () => {
+    const payload = {
+      internId: 'brandInternUid', name: 'Intro pitch', subject: 'Hi',
+      body: 'Hello there', createdAt: serverTimestamp(), updatedAt: serverTimestamp(),
+    };
+    await ok(setDoc(doc(staff('brandInternUid'), 'brandEmailCampaigns/c1'), payload));
+    await fails(
+      setDoc(doc(staff('brandInternUid'), 'brandEmailCampaigns/c2'), {
+        ...payload, internId: 'brandInternUid2',
+      }),
+    );
+  });
+
+  it('a campaign is only readable by its own owner and admin, nobody else', async () => {
+    await seedOwnedBy('brandInternUid');
+    await ok(getDoc(doc(staff('brandInternUid'), 'brandEmailCampaigns/c1')));
+    await ok(getDoc(doc(admin(), 'brandEmailCampaigns/c1')));
+    await fails(getDoc(doc(staff('brandInternUid2'), 'brandEmailCampaigns/c1')));
+    await fails(getDoc(doc(as('creatorA'), 'brandEmailCampaigns/c1')));
+  });
+
+  it('the owner can edit name/subject/body but never reassign internId', async () => {
+    await seedOwnedBy('brandInternUid');
+    const db = staff('brandInternUid');
+    await ok(
+      updateDoc(doc(db, 'brandEmailCampaigns/c1'), {
+        name: 'Follow-up', subject: 'Checking in', body: 'Just following up',
+        updatedAt: serverTimestamp(),
+      }),
+    );
+    await fails(
+      updateDoc(doc(db, 'brandEmailCampaigns/c1'), {
+        internId: 'brandInternUid2', updatedAt: serverTimestamp(),
+      }),
+    );
+  });
+
+  it('a different intern (even with the same permission) cannot edit or delete someone else\'s campaign', async () => {
+    await seedOwnedBy('brandInternUid');
+    const other = staff('brandInternUid2');
+    await fails(
+      updateDoc(doc(other, 'brandEmailCampaigns/c1'), {
+        name: 'Hijacked', updatedAt: serverTimestamp(),
+      }),
+    );
+    await fails(deleteDoc(doc(other, 'brandEmailCampaigns/c1')));
+  });
+
+  it('the owner can delete their own campaign', async () => {
+    await seedOwnedBy('brandInternUid');
+    await ok(deleteDoc(doc(staff('brandInternUid'), 'brandEmailCampaigns/c1')));
   });
 });
 
