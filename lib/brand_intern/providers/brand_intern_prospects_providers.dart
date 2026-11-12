@@ -117,15 +117,19 @@ class BrandInternProspectsRepository {
   /// Sends one email, Bcc'd to every prospect in [prospectIds] (the server
   /// re-checks each one actually belongs to this intern before including
   /// it — this never trusts the id list on its own), and marks each of
-  /// them contacted. Returns how many it sent to. Can run long for a
-  /// large list, hence the extended timeout; throws
-  /// [FirebaseFunctionsException] (`failed-precondition` if the mailbox
-  /// isn't connected or none of the selected prospects have an email on
-  /// file).
+  /// them contacted. [campaignId]/[campaignName] are purely a label for
+  /// the resulting `brandEmailSends` history record (`campaignId` null
+  /// for a one-off "Custom message"), never looked up or trusted for
+  /// anything else. Returns how many it sent to. Can run long for a large
+  /// list, hence the extended timeout; throws [FirebaseFunctionsException]
+  /// (`failed-precondition` if the mailbox isn't connected or none of the
+  /// selected prospects have an email on file).
   Future<int> sendMassEmail({
     required String subject,
     required String body,
     required Set<String> prospectIds,
+    String? campaignId,
+    String? campaignName,
   }) async {
     final result = await _functions
         .httpsCallable(
@@ -136,6 +140,8 @@ class BrandInternProspectsRepository {
           'subject': subject,
           'body': body,
           'prospectIds': prospectIds.toList(),
+          if (campaignId != null) 'campaignId': campaignId,
+          if (campaignName != null) 'campaignName': campaignName,
         });
     return result.data['sent'] as int;
   }

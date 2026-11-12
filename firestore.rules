@@ -772,6 +772,18 @@ service cloud.firestore {
             && resource.data.internId == request.auth.uid);
     }
 
+    // One record per bulk send (see `sendBrandProspectMassEmail`, the only
+    // writer — Admin SDK, bypasses these rules), not per recipient: which
+    // campaign went out, to how many people, and when — shown in the
+    // intern's own Dashboard tab and admin's Brand Outreach Reports.
+    // Read-only here, same owner-or-admin shape as the collections above.
+    match /brandEmailSends/{sendId} {
+      allow read: if isAdmin()
+        || (isActiveStaffWithPermission('/brand-outreach-leads')
+            && resource.data.internId == request.auth.uid);
+      allow write: if false;
+    }
+
     // One doc per support *ticket* (auto-generated id, `userId` field says
     // who it belongs to) — a user can have many over time, so resolved
     // tickets stay as history instead of being overwritten. The admin is

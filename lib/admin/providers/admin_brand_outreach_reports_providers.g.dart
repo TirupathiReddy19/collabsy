@@ -82,3 +82,56 @@ final class BrandOutreachInternSummariesProvider
 
 String _$brandOutreachInternSummariesHash() =>
     r'6c778579e050491a3a0faed59608092b23215fcf';
+
+/// The most recent bulk sends across every intern, newest first — which
+/// campaign went out, by whom, to how many people, and when. One doc per
+/// send (not per recipient), so this is cheap even over a long history.
+
+@ProviderFor(allBrandEmailSends)
+final allBrandEmailSendsProvider = AllBrandEmailSendsProvider._();
+
+/// The most recent bulk sends across every intern, newest first — which
+/// campaign went out, by whom, to how many people, and when. One doc per
+/// send (not per recipient), so this is cheap even over a long history.
+
+final class AllBrandEmailSendsProvider
+    extends
+        $FunctionalProvider<
+          AsyncValue<List<BrandEmailSend>>,
+          List<BrandEmailSend>,
+          Stream<List<BrandEmailSend>>
+        >
+    with
+        $FutureModifier<List<BrandEmailSend>>,
+        $StreamProvider<List<BrandEmailSend>> {
+  /// The most recent bulk sends across every intern, newest first — which
+  /// campaign went out, by whom, to how many people, and when. One doc per
+  /// send (not per recipient), so this is cheap even over a long history.
+  AllBrandEmailSendsProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'allBrandEmailSendsProvider',
+        isAutoDispose: true,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$allBrandEmailSendsHash();
+
+  @$internal
+  @override
+  $StreamProviderElement<List<BrandEmailSend>> $createElement(
+    $ProviderPointer pointer,
+  ) => $StreamProviderElement(pointer);
+
+  @override
+  Stream<List<BrandEmailSend>> create(Ref ref) {
+    return allBrandEmailSends(ref);
+  }
+}
+
+String _$allBrandEmailSendsHash() =>
+    r'45c896e4b9af12ed3b8d1e67fce60c22ec1dcfb7';

@@ -6,10 +6,21 @@ import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_text_styles.dart';
 import '../../core/widgets/empty_state.dart';
 import '../../core/widgets/staggered_fade_in.dart';
+import '../../shared/models/brand_email_send.dart';
 import '../providers/admin_brand_outreach_reports_providers.dart';
 import '../theme/admin_colors.dart';
 import '../widgets/admin_row_skeleton.dart';
 import '../widgets/admin_top_bar.dart';
+
+const _months = [
+  'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+  'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
+];
+
+String _fmtDateTime(DateTime? time) {
+  if (time == null) return '—';
+  return '${_months[time.month - 1]} ${time.day}, ${time.year}';
+}
 
 /// All-time, per-intern view across both brand-outreach funnels: the
 /// personally-generated `BrandLead` link funnel and the admin-pushed
@@ -26,6 +37,7 @@ class AdminBrandOutreachReportsScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final summariesAsync = ref.watch(brandOutreachInternSummariesProvider);
+    final sends = ref.watch(allBrandEmailSendsProvider).value ?? const [];
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -76,6 +88,30 @@ class AdminBrandOutreachReportsScreen extends ConsumerWidget {
                         child: _InternReportCard(summary: summary),
                       ),
                     ),
+                  if (sends.isNotEmpty) ...[
+                    const SizedBox(height: AppSpacing.md),
+                    Text('Recent bulk sends', style: AppTextStyles.titleLarge),
+                    const SizedBox(height: AppSpacing.md),
+                    Container(
+                      decoration: BoxDecoration(
+                        color: AdminColors.surface(context),
+                        borderRadius: BorderRadius.circular(AppRadius.lg),
+                        border: Border.all(color: AdminColors.border(context)),
+                      ),
+                      child: Column(
+                        children: [
+                          for (final (index, send) in sends.indexed) ...[
+                            if (index > 0)
+                              Divider(
+                                height: 1,
+                                color: AdminColors.border(context),
+                              ),
+                            _SendHistoryRow(send: send),
+                          ],
+                        ],
+                      ),
+                    ),
+                  ],
                 ],
               );
             },
@@ -188,6 +224,68 @@ class _InternReportCard extends StatelessWidget {
               _ReportStat(
                 label: 'Bulk emailed',
                 value: summary.prospectsBulkEmailed,
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// One bulk send, across every intern — which campaign, by whom, to how
+/// many people, and when. Admin's own copy of the brand-intern Dashboard
+/// tab's row, since this one also needs to show whose send it was.
+class _SendHistoryRow extends StatelessWidget {
+  const _SendHistoryRow({required this.send});
+
+  final BrandEmailSend send;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.md,
+        vertical: AppSpacing.sm + 2,
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  send.campaignName,
+                  style: AppTextStyles.bodyMedium.copyWith(
+                    fontWeight: FontWeight.w600,
+                  ),
+                  overflow: TextOverflow.ellipsis,
+                ),
+                Text(
+                  '${send.internEmail} · ${send.subject}',
+                  style: AppTextStyles.bodySmall.copyWith(
+                    color: AdminColors.textSecondary(context),
+                  ),
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: AppSpacing.sm),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              Text(
+                '${send.recipientCount} sent',
+                style: AppTextStyles.bodySmall.copyWith(
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              Text(
+                _fmtDateTime(send.sentAt),
+                style: AppTextStyles.bodySmall.copyWith(
+                  color: AdminColors.textSecondary(context),
+                ),
               ),
             ],
           ),

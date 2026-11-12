@@ -1036,6 +1036,34 @@ describe('brandEmailCampaigns (per-intern saved outreach templates)', () => {
   });
 });
 
+describe('brandEmailSends (bulk-send history, Cloud Function writes only)', () => {
+  const seedOwnedBy = (uid) =>
+    testEnv.withSecurityRulesDisabled((ctx) =>
+      setDoc(doc(ctx.firestore(), 'brandEmailSends/s1'), {
+        internId: uid, internEmail: 'intern@collabsy.online',
+        campaignId: null, campaignName: 'Custom message',
+        subject: 'Hi', recipientCount: 3,
+      }),
+    );
+
+  it('no client, staff or admin, can write a send record directly', async () => {
+    const payload = {
+      internId: 'brandInternUid', internEmail: 'intern@collabsy.online',
+      campaignId: null, campaignName: 'Custom message', subject: 'Hi', recipientCount: 1,
+    };
+    await fails(setDoc(doc(staff('brandInternUid'), 'brandEmailSends/s1'), payload));
+    await fails(setDoc(doc(admin(), 'brandEmailSends/s1'), payload));
+  });
+
+  it('only the owning intern and admin can read a send record', async () => {
+    await seedOwnedBy('brandInternUid');
+    await ok(getDoc(doc(staff('brandInternUid'), 'brandEmailSends/s1')));
+    await ok(getDoc(doc(admin(), 'brandEmailSends/s1')));
+    await fails(getDoc(doc(staff('brandInternUid2'), 'brandEmailSends/s1')));
+    await fails(getDoc(doc(as('creatorA'), 'brandEmailSends/s1')));
+  });
+});
+
 describe('campaign ownership', () => {
   it('an owner cannot reassign a campaign to a different brand', async () => {
     await fails(updateDoc(doc(as('brandA'), 'campaigns/cActive'), { brandId: 'brandB' }));

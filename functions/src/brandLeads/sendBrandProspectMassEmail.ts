@@ -22,6 +22,12 @@ interface SendBrandProspectMassEmailRequest {
    * from `brandProspects` (see below); a client can never add a prospect
    * it doesn't already own this way. */
   prospectIds: string[];
+  /** The saved campaign this send used, if any (the Bulk Email tab's
+   * "Custom message" option sends neither) — purely a label for the
+   * `brandEmailSends` history record below, never looked up or trusted
+   * for anything else. */
+  campaignId?: string;
+  campaignName?: string;
 }
 
 /** Recipients per SMTP submission — a single message with hundreds of Bcc
@@ -159,6 +165,20 @@ export const sendBrandProspectMassEmail = onCall(
       }
       await writeBatch.commit();
     }
+
+    // One history record for the whole send (not per batch) — what the
+    // Bulk Email tab's own "recipients per message" chunking looks like
+    // to this intern (and admin) should be irrelevant; what they care
+    // about is "I sent campaign X to N people on this date".
+    await firestore.collection("brandEmailSends").add({
+      internId: uid,
+      internEmail: email,
+      campaignId: data.campaignId ?? null,
+      campaignName: data.campaignName?.trim() || "Custom message",
+      subject: data.subject,
+      recipientCount: recipients.length,
+      sentAt: Timestamp.now(),
+    });
 
     return { sent: recipients.length };
   }

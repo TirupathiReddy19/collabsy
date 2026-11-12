@@ -1,9 +1,26 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../../core/services/firebase_service.dart';
+import '../../shared/models/brand_email_send.dart';
 import 'admin_role_providers.dart';
 
 part 'admin_brand_outreach_reports_providers.g.dart';
+
+BrandEmailSend _emailSendFromDoc(DocumentSnapshot<Map<String, dynamic>> doc) {
+  final data = doc.data()!;
+  final sentAt = data['sentAt'];
+  return (
+    id: doc.id,
+    internId: data['internId'] as String? ?? '',
+    internEmail: data['internEmail'] as String? ?? '',
+    campaignId: data['campaignId'] as String?,
+    campaignName: data['campaignName'] as String? ?? 'Custom message',
+    subject: data['subject'] as String? ?? '',
+    recipientCount: data['recipientCount'] as int? ?? 0,
+    sentAt: sentAt is Timestamp ? sentAt.toDate() : null,
+  );
+}
 
 typedef BrandOutreachInternSummary = ({
   String internId,
@@ -88,4 +105,18 @@ Future<List<BrandOutreachInternSummary>> brandOutreachInternSummaries(
 
   summaries.sort((a, b) => a.internEmail.compareTo(b.internEmail));
   return summaries;
+}
+
+/// The most recent bulk sends across every intern, newest first — which
+/// campaign went out, by whom, to how many people, and when. One doc per
+/// send (not per recipient), so this is cheap even over a long history.
+@riverpod
+Stream<List<BrandEmailSend>> allBrandEmailSends(Ref ref) {
+  return ref
+      .watch(firestoreProvider)
+      .collection('brandEmailSends')
+      .orderBy('sentAt', descending: true)
+      .limit(50)
+      .snapshots()
+      .map((snapshot) => snapshot.docs.map(_emailSendFromDoc).toList());
 }

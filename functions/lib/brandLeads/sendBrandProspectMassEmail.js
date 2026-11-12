@@ -126,5 +126,18 @@ exports.sendBrandProspectMassEmail = (0, https_1.onCall)({
         }
         await writeBatch.commit();
     }
+    // One history record for the whole send (not per batch) — what the
+    // Bulk Email tab's own "recipients per message" chunking looks like
+    // to this intern (and admin) should be irrelevant; what they care
+    // about is "I sent campaign X to N people on this date".
+    await firestore.collection("brandEmailSends").add({
+        internId: uid,
+        internEmail: email,
+        campaignId: data.campaignId ?? null,
+        campaignName: data.campaignName?.trim() || "Custom message",
+        subject: data.subject,
+        recipientCount: recipients.length,
+        sentAt: firestore_1.Timestamp.now(),
+    });
     return { sent: recipients.length };
 });

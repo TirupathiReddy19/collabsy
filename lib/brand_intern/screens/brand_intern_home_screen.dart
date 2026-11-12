@@ -15,10 +15,12 @@ import '../../core/widgets/primary_button.dart';
 import '../../core/widgets/staggered_fade_in.dart';
 import '../../features/auth/providers/auth_providers.dart';
 import '../../shared/models/brand_email_campaign.dart';
+import '../../shared/models/brand_email_send.dart';
 import '../../shared/models/brand_lead.dart';
 import '../../shared/models/brand_prospect.dart';
 import '../../shared/utils/linkedin_url.dart';
 import '../providers/brand_intern_campaigns_providers.dart';
+import '../providers/brand_intern_email_sends_providers.dart';
 import '../providers/brand_intern_leads_providers.dart';
 import '../providers/brand_intern_prospects_providers.dart';
 
@@ -649,6 +651,9 @@ class _BulkEmailTabState extends ConsumerState<_BulkEmailTab> {
                                     .toList(),
                                 initialSubject: selectedCampaign?.subject,
                                 initialBody: selectedCampaign?.body,
+                                campaignId: selectedCampaign?.id,
+                                campaignName:
+                                    selectedCampaign?.name ?? 'Custom message',
                               ),
                             ),
                     ),
@@ -1202,14 +1207,15 @@ class _YesNoPill extends StatelessWidget {
 /// scattered across the header chips and the other tabs' own stat rows.
 /// Admin sees the same two groups per intern, all at once, in
 /// AdminBrandOutreachReportsScreen.
-class _DashboardTab extends StatelessWidget {
+class _DashboardTab extends ConsumerWidget {
   const _DashboardTab({required this.leads, required this.prospects});
 
   final List<BrandLead> leads;
   final List<BrandProspect> prospects;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final sends = ref.watch(myBrandEmailSendsProvider).value ?? const [];
     final clicked = leads
         .where(
           (l) =>
@@ -1259,9 +1265,89 @@ class _DashboardTab extends StatelessWidget {
                   _BulkEmailStat(label: 'Bulk emailed', value: bulkEmailed),
                 ],
               ),
+              if (sends.isNotEmpty) ...[
+                const SizedBox(height: AppSpacing.lg),
+                Text('Recent bulk sends', style: AppTextStyles.titleLarge),
+                const SizedBox(height: AppSpacing.md),
+                Container(
+                  decoration: BoxDecoration(
+                    color: AppColors.surface,
+                    borderRadius: BorderRadius.circular(AppRadius.lg),
+                    border: Border.all(color: AppColors.border),
+                  ),
+                  child: Column(
+                    children: [
+                      for (final (index, send) in sends.indexed) ...[
+                        if (index > 0)
+                          const Divider(height: 1, color: AppColors.border),
+                        _SendHistoryRow(send: send),
+                      ],
+                    ],
+                  ),
+                ),
+              ],
             ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+/// One row in a bulk-send history list — which campaign, how many people,
+/// and when. Shared shape between the intern's own Dashboard tab
+/// (`myBrandEmailSendsProvider`) and admin's cross-intern Brand Outreach
+/// Reports screen, which has its own copy of this since it also shows
+/// whose send it was.
+class _SendHistoryRow extends StatelessWidget {
+  const _SendHistoryRow({required this.send});
+
+  final BrandEmailSend send;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.md,
+        vertical: AppSpacing.sm + 2,
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  send.campaignName,
+                  style: AppTextStyles.bodyMedium.copyWith(
+                    fontWeight: FontWeight.w600,
+                  ),
+                  overflow: TextOverflow.ellipsis,
+                ),
+                Text(
+                  send.subject,
+                  style: AppTextStyles.bodySmall.copyWith(
+                    color: AppColors.textSecondary,
+                  ),
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: AppSpacing.sm),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              Text(
+                '${send.recipientCount} sent',
+                style: AppTextStyles.bodySmall.copyWith(
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              Text(_relativeTime(send.sentAt), style: AppTextStyles.bodySmall),
+            ],
+          ),
+        ],
       ),
     );
   }
@@ -2567,17 +2653,23 @@ class _ComposeEmailDialogState extends ConsumerState<_ComposeEmailDialog> {
 /// template has no `{{brandName}}` placeholder — just `{{internName}}`.
 /// [initialSubject]/[initialBody] prefill from a saved campaign when the
 /// intern picked one in the Bulk Email tab; `null` falls back to the
-/// generic default template.
+/// generic default template. [campaignId]/[campaignName] travel through to
+/// the resulting `brandEmailSends` history record unchanged — purely a
+/// label, so reports can show which campaign a given send actually used.
 class _MassEmailDialog extends ConsumerStatefulWidget {
   const _MassEmailDialog({
     required this.prospects,
     this.initialSubject,
     this.initialBody,
+    this.campaignId,
+    this.campaignName,
   });
 
   final List<BrandProspect> prospects;
   final String? initialSubject;
   final String? initialBody;
+  final String? campaignId;
+  final String? campaignName;
 
   @override
   ConsumerState<_MassEmailDialog> createState() => _MassEmailDialogState();
@@ -2658,7 +2750,13 @@ class _MassEmailDialogState extends ConsumerState<_MassEmailDialog> {
     try {
       sent = await ref
           .read(brandInternProspectsRepositoryProvider)
-          .sendMassEmail(subject: subject, body: body, prospectIds: ids);
+          .sendMassEmail(
+            subject: subject,
+            body: body,
+            prospectIds: ids,
+            campaignId: widget.campaignId,
+            campaignName: widget.campaignName,
+          );
     } on FirebaseFunctionsException catch (e) {
       if (!mounted) return;
       setState(() => _isSending = false);
