@@ -14,6 +14,7 @@ BrandEmailSend _emailSendFromDoc(DocumentSnapshot<Map<String, dynamic>> doc) {
     id: doc.id,
     internId: data['internId'] as String? ?? '',
     internEmail: data['internEmail'] as String? ?? '',
+    type: data['type'] as String? ?? 'bulk',
     campaignId: data['campaignId'] as String?,
     campaignName: data['campaignName'] as String? ?? 'Custom message',
     subject: data['subject'] as String? ?? '',

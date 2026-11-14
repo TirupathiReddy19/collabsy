@@ -71,5 +71,19 @@ exports.sendBrandProspectEmail = (0, https_1.onCall)({ secrets: [emailConfig_1.s
         throw new https_1.HttpsError("internal", "Failed to send — your mailbox connection may have expired. Try reconnecting.");
     }
     await (0, appendSentCopy_1.appendToSentFolder)({ host: emailConfig_1.smtpHost.value(), email, password, rawMessage });
+    // One history record per send, same collection sendBrandProspectMassEmail
+    // writes to — `type: 'direct'` (vs its 'bulk') is what lets reports
+    // count the two marketing targets (250 campaign emails, 250 direct
+    // -contact emails per intern per day) separately.
+    await (0, firestore_1.getFirestore)().collection("brandEmailSends").add({
+        internId: request.auth.uid,
+        internEmail: email,
+        type: "direct",
+        campaignId: null,
+        campaignName: "Direct contact",
+        subject: data.subject,
+        recipientCount: 1,
+        sentAt: firestore_1.Timestamp.now(),
+    });
     return { success: true };
 });

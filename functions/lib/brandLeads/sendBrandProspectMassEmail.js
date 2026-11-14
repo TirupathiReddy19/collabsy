@@ -133,6 +133,7 @@ exports.sendBrandProspectMassEmail = (0, https_1.onCall)({
     await firestore.collection("brandEmailSends").add({
         internId: uid,
         internEmail: email,
+        type: "bulk",
         campaignId: data.campaignId ?? null,
         campaignName: data.campaignName?.trim() || "Custom message",
         subject: data.subject,

@@ -1,5 +1,5 @@
 import nodemailer from "nodemailer";
-import { getFirestore } from "firebase-admin/firestore";
+import { Timestamp, getFirestore } from "firebase-admin/firestore";
 import { HttpsError, onCall } from "firebase-functions/v2/https";
 
 import { requireAdminOrPermission } from "../shared/adminAuth";
@@ -93,6 +93,21 @@ export const sendBrandProspectEmail = onCall(
     }
 
     await appendToSentFolder({ host: smtpHost.value(), email, password, rawMessage });
+
+    // One history record per send, same collection sendBrandProspectMassEmail
+    // writes to — `type: 'direct'` (vs its 'bulk') is what lets reports
+    // count the two marketing targets (250 campaign emails, 250 direct
+    // -contact emails per intern per day) separately.
+    await getFirestore().collection("brandEmailSends").add({
+      internId: request.auth!.uid,
+      internEmail: email,
+      type: "direct",
+      campaignId: null,
+      campaignName: "Direct contact",
+      subject: data.subject,
+      recipientCount: 1,
+      sentAt: Timestamp.now(),
+    });
 
     return { success: true };
   }

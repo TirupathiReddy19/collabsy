@@ -1064,6 +1064,71 @@ describe('brandEmailSends (bulk-send history, Cloud Function writes only)', () =
   });
 });
 
+describe('marketingTasks (Jira-style tracker, collabsy-marketing)', () => {
+  const seedAssignedTo = (uid) =>
+    testEnv.withSecurityRulesDisabled((ctx) =>
+      setDoc(doc(ctx.firestore(), 'marketingTasks/t1'), {
+        title: 'Send 200 DMs', description: 'Daily creator DM target',
+        assigneeId: uid, assigneeEmail: 'intern@collabsy.online',
+        status: 'todo', targetCount: 200, currentCount: 0,
+      }),
+    );
+
+  it('any active staff account (no specific permission needed) can read the board', async () => {
+    await seedAssignedTo('brandInternUid');
+    // supportStaff only has the unrelated /support permission.
+    await ok(getDoc(doc(staff('supportStaff'), 'marketingTasks/t1')));
+    await ok(getDoc(doc(admin(), 'marketingTasks/t1')));
+    await fails(getDoc(doc(as('creatorA'), 'marketingTasks/t1')));
+  });
+
+  it('only admin can create or delete a task', async () => {
+    const payload = {
+      title: 'Send 200 DMs', description: '', assigneeId: 'brandInternUid',
+      assigneeEmail: 'intern@collabsy.online', status: 'todo',
+      targetCount: 200, currentCount: 0,
+    };
+    await fails(setDoc(doc(staff('brandInternUid'), 'marketingTasks/t1'), payload));
+    await ok(setDoc(doc(admin(), 'marketingTasks/t1'), payload));
+    await fails(deleteDoc(doc(staff('brandInternUid'), 'marketingTasks/t1')));
+    await ok(deleteDoc(doc(admin(), 'marketingTasks/t1')));
+  });
+
+  it('the assignee can update status/currentCount but nothing else', async () => {
+    await seedAssignedTo('brandInternUid');
+    const db = staff('brandInternUid');
+    await ok(
+      updateDoc(doc(db, 'marketingTasks/t1'), {
+        status: 'in_progress', currentCount: 150, updatedAt: serverTimestamp(),
+      }),
+    );
+    await fails(
+      updateDoc(doc(db, 'marketingTasks/t1'), {
+        title: 'Hijacked', updatedAt: serverTimestamp(),
+      }),
+    );
+  });
+
+  it('a different staff account (even if active) cannot update someone else\'s task', async () => {
+    await seedAssignedTo('brandInternUid');
+    await fails(
+      updateDoc(doc(staff('supportStaff'), 'marketingTasks/t1'), {
+        status: 'done', updatedAt: serverTimestamp(),
+      }),
+    );
+  });
+
+  it('admin can edit any field, including reassigning the task', async () => {
+    await seedAssignedTo('brandInternUid');
+    await ok(
+      updateDoc(doc(admin(), 'marketingTasks/t1'), {
+        assigneeId: 'brandInternUid2', title: 'Send 250 emails',
+        updatedAt: serverTimestamp(),
+      }),
+    );
+  });
+});
+
 describe('campaign ownership', () => {
   it('an owner cannot reassign a campaign to a different brand', async () => {
     await fails(updateDoc(doc(as('brandA'), 'campaigns/cActive'), { brandId: 'brandB' }));

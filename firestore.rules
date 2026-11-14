@@ -784,6 +784,26 @@ service cloud.firestore {
       allow write: if false;
     }
 
+    // Lightweight Jira-style ticket for the marketing tracker
+    // (collabsy-marketing) — a standalone site, separate from Admin/Brand
+    // Intern/Outreach, that reuses the same staffAccounts logins but has
+    // no nav-permission gating of its own: any active staff account can
+    // see the whole board (it's a small team working the same plan), but
+    // can only touch status/currentCount on a task actually assigned to
+    // them — title, description, assignee, target, due date, and
+    // create/delete are all admin-only, same as a real Jira board where
+    // only a lead reassigns or deletes tickets.
+    match /marketingTasks/{taskId} {
+      allow read: if isAdmin() || isActiveStaff();
+      allow create, delete: if isAdmin();
+      allow update: if isAdmin()
+        || (isActiveStaff()
+            && resource.data.assigneeId == request.auth.uid
+            && request.resource.data.diff(resource.data).affectedKeys()
+                .hasOnly(['status', 'currentCount', 'updatedAt'])
+            && request.resource.data.updatedAt == request.time);
+    }
+
     // One doc per support *ticket* (auto-generated id, `userId` field says
     // who it belongs to) — a user can have many over time, so resolved
     // tickets stay as history instead of being overwritten. The admin is

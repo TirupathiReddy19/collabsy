@@ -19,6 +19,9 @@
         ],
         "admin": [
           "collabsy-admin"
+        ],
+        "marketing": [
+          "collabsy-marketing"
         ]
       }
     }
