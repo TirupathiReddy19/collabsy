@@ -15,7 +15,7 @@ class MarketingApp extends ConsumerWidget {
 
     return MaterialApp.router(
       debugShowCheckedModeBanner: false,
-      title: 'Collabsy Marketing Tracker',
+      title: 'Collabsy TaskFlow',
       theme: AppTheme.lightTheme,
       darkTheme: AppTheme.darkTheme,
       themeMode: themeMode,

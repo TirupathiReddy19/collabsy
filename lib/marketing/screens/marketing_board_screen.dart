@@ -136,7 +136,7 @@ class _Header extends StatelessWidget {
       ),
       child: Row(
         children: [
-          Text('Marketing Tracker', style: AppTextStyles.titleLarge),
+          Text('Collabsy TaskFlow', style: AppTextStyles.titleLarge),
           const Spacer(),
           if (isAdmin) ...[
             PrimaryButton(

@@ -121,7 +121,7 @@ class _MarketingLoginScreenState extends ConsumerState<MarketingLoginScreen> {
                         ),
                         const SizedBox(height: 4),
                         Text(
-                          'Marketing Tracker',
+                          'TaskFlow',
                           style: AppTextStyles.bodyMedium.copyWith(
                             color: AppColors.textSecondary,
                           ),
