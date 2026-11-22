@@ -15,6 +15,22 @@
         { "fieldPath": "internId", "order": "ASCENDING" },
         { "fieldPath": "sentAt", "order": "DESCENDING" }
       ]
+    },
+    {
+      "collectionGroup": "creatorProfiles",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "verificationStatus", "order": "ASCENDING" },
+        { "fieldPath": "verificationRequestedAt", "order": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "brandProfiles",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "verificationStatus", "order": "ASCENDING" },
+        { "fieldPath": "verificationRequestedAt", "order": "ASCENDING" }
+      ]
     }
   ],
   "fieldOverrides": [
