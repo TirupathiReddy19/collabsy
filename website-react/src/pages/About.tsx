@@ -1,5 +1,7 @@
 import { useScrollReveal } from '../lib/useScrollReveal'
 import { SectionHeading } from '../components/SectionHeading'
+import { BreadcrumbSchema } from '../components/BreadcrumbSchema'
+import { Seo } from '../components/Seo'
 import { LazyCanvas } from '../three/LazyCanvas'
 
 const VALUES = [
@@ -30,6 +32,12 @@ export function About() {
 
   return (
     <>
+      <Seo
+        title="About Collabsy — Why We Built This"
+        description="Collabsy connects D2C brands and micro-influencers directly, with verified profiles on both sides and campaigns judged on sales, not vanity metrics."
+        path="/about"
+      />
+      <BreadcrumbSchema items={[{ name: 'Home', path: '/' }, { name: 'About', path: '/about' }]} />
       <section className="page-hero">
         <LazyCanvas loader={() => import('../three/JourneyCanvasScene')} />
         <div className="container">

@@ -1,13 +1,16 @@
 import { Link } from 'react-router-dom'
 import { CollabsyMark } from './CollabsyMark'
-import { waitlistUrl } from './WaitlistButton'
 import './Footer.css'
+
+// Same WhatsApp number the Flutter site's footer and Contact page use.
+const WHATSAPP_URL = 'https://wa.me/919381487811'
 
 const COMPANY_LINKS = [
   { path: '/', label: 'Home' },
   { path: '/creators', label: 'Creators' },
   { path: '/brands', label: 'Brands' },
   { path: '/about', label: 'About' },
+  { path: '/blog', label: 'Blog' },
   { path: '/contact', label: 'Contact' },
 ]
 
@@ -60,7 +63,7 @@ export function Footer() {
             </a>
             <a
               className="footer-link footer-contact-line"
-              href={waitlistUrl()}
+              href={WHATSAPP_URL}
               target="_blank"
               rel="noopener noreferrer"
             >

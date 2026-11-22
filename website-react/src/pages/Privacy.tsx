@@ -2,7 +2,11 @@ import { LegalPage, LegalH2, LegalP, LegalBullets, MailLink } from '../component
 
 export function Privacy() {
   return (
-    <LegalPage title="Privacy Policy" effectiveDate="August 4, 2026">
+    <LegalPage
+      title="Privacy Policy"
+      description="How Collabsy collects, uses, and protects your information as a Creator or a Brand using the app."
+      effectiveDate="August 4, 2026"
+    >
       <LegalP>
         Collabsy connects Creators and Brands for influencer marketing campaigns.
         This policy explains what information we collect through the Collabsy

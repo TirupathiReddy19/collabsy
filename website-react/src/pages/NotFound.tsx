@@ -6,6 +6,8 @@ export function NotFound() {
       className="section"
       style={{ minHeight: '60vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
     >
+      <title>Page Not Found | Collabsy</title>
+      <meta name="robots" content="noindex" />
       <div style={{ textAlign: 'center' }}>
         <h1 className="display-heading" style={{ fontSize: 64, margin: '0 0 8px' }}>
           404

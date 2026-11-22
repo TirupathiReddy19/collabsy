@@ -4,40 +4,68 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
-    <title>Collabsy — Influencer Marketing Platform for D2C Brands in India</title>
-    <meta
-      name="description"
-      content="Collabsy connects D2C brands with verified micro-influencers across India for campaigns that convert — discover, apply, chat, and collaborate, or let our team run it end to end."
-    />
+    <!-- No static <title>/<meta name="description"> here on purpose: every
+         route renders its own via <Seo> (src/components/Seo.tsx). React's
+         title/meta hoisting adds tags, it doesn't remove ones already in
+         this file, so a static fallback here would leave two <title> and
+         two description tags in the live DOM on every page, permanently,
+         not just during the brief pre-hydration moment. -->
     <meta
       name="keywords"
       content="influencer marketing, influencer marketing agency, D2C influencer marketing, creator marketing, UGC, influencer campaigns India, micro-influencers"
     />
-    <link rel="canonical" href="https://collabsy.online/" />
 
-    <!-- Open Graph -->
+    <!-- Open Graph / Twitter fields that don't vary by page; title/description/url come from each page's <Seo> -->
     <meta property="og:type" content="website" />
     <meta property="og:site_name" content="Collabsy" />
-    <meta property="og:title" content="Collabsy — Influencer Marketing Platform for D2C Brands in India" />
-    <meta
-      property="og:description"
-      content="Connect with verified micro-influencers for campaigns that convert. Get sales, not just views."
-    />
-    <meta property="og:url" content="https://collabsy.online/" />
     <meta property="og:image" content="https://collabsy.online/collabsy-icon.png" />
-
-    <!-- Twitter -->
     <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:title" content="Collabsy — Influencer Marketing Platform for D2C Brands in India" />
-    <meta
-      name="twitter:description"
-      content="Connect with verified micro-influencers for campaigns that convert. Get sales, not just views."
-    />
     <meta name="twitter:image" content="https://collabsy.online/collabsy-icon.png" />
 
     <link rel="icon" type="image/png" href="/collabsy-icon.png" />
     <link rel="apple-touch-icon" href="/collabsy-icon.png" />
     <meta name="theme-color" content="#F97316" />
+
+    <!-- Structured data: only facts already published elsewhere on the site
+         (Contact page / footer) — no invented ratings, reviews, or social
+         profiles that don't exist. -->
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@graph": [
+          {
+            "@type": "Organization",
+            "@id": "https://collabsy.online/#organization",
+            "name": "Collabsy",
+            "url": "https://collabsy.online/",
+            "logo": "https://collabsy.online/collabsy-icon.png",
+            "description": "Collabsy connects D2C brands with verified micro-influencers across India for campaigns that convert — discover, apply, chat, and collaborate, or let our team run it end to end.",
+            "email": "hello@collabsy.online",
+            "address": {
+              "@type": "PostalAddress",
+              "addressLocality": "Bangalore",
+              "addressCountry": "IN"
+            },
+            "contactPoint": {
+              "@type": "ContactPoint",
+              "contactType": "customer service",
+              "email": "hello@collabsy.online",
+              "telephone": "+91-93814-87811",
+              "areaServed": "IN"
+            }
+          },
+          {
+            "@type": "WebSite",
+            "@id": "https://collabsy.online/#website",
+            "url": "https://collabsy.online/",
+            "name": "Collabsy",
+            "description": "Collabsy connects D2C brands with verified micro-influencers across India for campaigns that convert.",
+            "publisher": { "@id": "https://collabsy.online/#organization" },
+            "inLanguage": "en"
+          }
+        ]
+      }
+    </script>
 
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />

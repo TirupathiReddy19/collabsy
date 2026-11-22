@@ -1,5 +1,6 @@
 import { initializeApp } from 'firebase/app'
 import { getFirestore } from 'firebase/firestore'
+import { getAnalytics, isSupported, logEvent, type Analytics } from 'firebase/analytics'
 
 // Same project/config the Flutter app's web build uses (lib/firebase_options.dart
 // → DefaultFirebaseOptions.web) — Firebase web API keys are not secrets, they're
@@ -17,3 +18,16 @@ const firebaseConfig = {
 
 const app = initializeApp(firebaseConfig)
 export const db = getFirestore(app)
+
+// isSupported() guards environments without IndexedDB/cookie support where
+// getAnalytics() would otherwise throw — never assumed true.
+let analytics: Analytics | undefined
+isSupported()
+  .then((supported) => {
+    if (supported) analytics = getAnalytics(app)
+  })
+  .catch(() => {})
+
+export function trackEvent(name: string, params?: Record<string, string>) {
+  if (analytics) logEvent(analytics, name, params)
+}

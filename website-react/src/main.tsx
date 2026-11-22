@@ -20,6 +20,8 @@ const DeleteAccount = lazy(() =>
   import('./pages/DeleteAccount').then((m) => ({ default: m.DeleteAccount })),
 )
 const NotFound = lazy(() => import('./pages/NotFound').then((m) => ({ default: m.NotFound })))
+const BlogIndex = lazy(() => import('./pages/blog/BlogIndex').then((m) => ({ default: m.BlogIndex })))
+const BlogPost = lazy(() => import('./pages/blog/BlogPost').then((m) => ({ default: m.BlogPost })))
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
@@ -35,6 +37,8 @@ createRoot(document.getElementById('root')!).render(
             <Route path="/privacy" element={<Privacy />} />
             <Route path="/terms" element={<Terms />} />
             <Route path="/delete-account" element={<DeleteAccount />} />
+            <Route path="/blog" element={<BlogIndex />} />
+            <Route path="/blog/:slug" element={<BlogPost />} />
             <Route path="*" element={<NotFound />} />
           </Route>
         </Routes>

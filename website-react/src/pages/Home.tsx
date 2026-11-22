@@ -5,7 +5,8 @@ import { useScrollReveal } from '../lib/useScrollReveal'
 import { HeroCanvas } from '../three/HeroCanvas'
 import { LazyCanvas } from '../three/LazyCanvas'
 import { SectionHeading } from '../components/SectionHeading'
-import { WaitlistButton } from '../components/WaitlistButton'
+import { GetAppButton } from '../components/GetAppButton'
+import { Seo } from '../components/Seo'
 import './Home.css'
 
 const FLOW_STEPS = ['Profile', 'Match', 'Chat', 'Collaborate']
@@ -88,6 +89,11 @@ export function Home() {
 
   return (
     <>
+      <Seo
+        title="Collabsy — Influencer Marketing Platform for D2C Brands in India"
+        description="Collabsy connects D2C brands with verified micro-influencers across India for campaigns that convert — discover, apply, chat, and collaborate, or let our team run it end to end."
+        path="/"
+      />
       <section className="home-hero section-dark" ref={heroRef}>
         <HeroCanvas />
         <div className="home-hero-scrim" aria-hidden="true" />
@@ -199,10 +205,10 @@ export function Home() {
         <div className="container home-final-inner">
           <h2 className="display-heading home-final-title">Ready to get started?</h2>
           <p className="body-lead on-dark">
-            Creators and Brands both start the same way — join the waitlist and
-            we'll bring you in as we roll out.
+            Creators and Brands both start the same way — download the app and
+            create your account in minutes.
           </p>
-          <WaitlistButton />
+          <GetAppButton />
         </div>
       </section>
     </>

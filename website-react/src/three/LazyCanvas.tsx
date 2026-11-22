@@ -7,12 +7,19 @@ export interface ScenePropsBase {
 
 /** Shared mount/unmount machinery for every 3D scene on the site — each
  * scene is its own lazy-loaded chunk, only fetched and mounted once its
- * section actually scrolls near the viewport (`rootMargin` gives it a
- * head start so the canvas is ready by the time it's visible), and fully
- * unmounted (WebGL context released) once scrolled away. This is what
- * keeps having 3D on every section affordable — there is never more than
- * one or two live WebGL contexts on screen at once, regardless of how
- * many sections use one somewhere on the page. */
+ * section actually scrolls into the viewport, and fully unmounted (WebGL
+ * context released) once scrolled away. This is what keeps having 3D on
+ * every section affordable — there is never more than one live WebGL
+ * context on screen at once, regardless of how many sections use one
+ * somewhere on the page.
+ *
+ * No rootMargin preload: on Home, the hero is close to full-viewport
+ * height, so a 250px preload margin put the *next* section's canvas
+ * within the "nearly visible" zone from the very first frame — two full
+ * WebGL contexts with their own render loops running concurrently before
+ * the user had scrolled at all, which is what blew up Total Blocking
+ * Time (confirmed via PageSpeed Insights: ~8s TBT, two canvases mounted
+ * on a fresh, unscrolled load). */
 export function LazyCanvas({
   loader,
   glow,
@@ -33,7 +40,7 @@ export function LazyCanvas({
     if (!el) return
     const observer = new IntersectionObserver(
       ([entry]) => setVisible(entry.isIntersecting),
-      { threshold: 0.05, rootMargin: '250px 0px' },
+      { threshold: 0.05 },
     )
     observer.observe(el)
     return () => observer.disconnect()

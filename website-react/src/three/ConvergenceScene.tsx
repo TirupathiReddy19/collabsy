@@ -17,6 +17,11 @@ function seededRandom(seed: number) {
   }
 }
 
+// Pulled down and back from dead-centre so the bright core sits low in the
+// frame, clear of the headline/button column every usage centres in the
+// middle of — it used to project straight onto that text.
+const ANCHOR = new THREE.Vector3(0, -1.35, -0.4)
+
 export function ConvergenceScene({
   lowPower = false,
   color = '#f97316',
@@ -24,7 +29,11 @@ export function ConvergenceScene({
   lowPower?: boolean
   color?: string
 }) {
-  const count = lowPower ? 60 : 140
+  // Halved from 60/140 — every one of these particles' position is
+  // recomputed every single frame (see useFrame below), so this count is a
+  // direct, continuous tax on every page using this scene, not just a
+  // one-time setup cost. See NetworkScene.tsx for the measured TBT context.
+  const count = lowPower ? 35 : 75
   const pointsRef = useRef<THREE.Points>(null)
   const coreRef = useRef<THREE.Mesh>(null)
   const groupRef = useRef<THREE.Group>(null)
@@ -79,7 +88,7 @@ export function ConvergenceScene({
   })
 
   return (
-    <group ref={groupRef}>
+    <group ref={groupRef} position={ANCHOR}>
       <points ref={pointsRef}>
         <bufferGeometry>
           <bufferAttribute attach="attributes-position" args={[positions, 3]} />
@@ -95,16 +104,24 @@ export function ConvergenceScene({
         />
       </points>
 
+      {/* Three nested, low-opacity shells instead of one solid ball — reads
+          as a soft glow with no hard silhouette, so it never looks like a
+          stray disc wherever it ends up relative to text (a single opaque
+          sphere here used to look like a floating spotlight). */}
       <mesh ref={coreRef}>
-        <sphereGeometry args={[0.22, 32, 32]} />
-        <meshBasicMaterial color="#ffffff" />
+        <sphereGeometry args={[0.07, 24, 24]} />
+        <meshBasicMaterial color="#ffffff" transparent opacity={0.45} blending={THREE.AdditiveBlending} depthWrite={false} />
       </mesh>
       <mesh>
-        <sphereGeometry args={[0.5, 32, 32]} />
+        <sphereGeometry args={[0.32, 32, 32]} />
+        <meshBasicMaterial color={color} transparent opacity={0.14} blending={THREE.AdditiveBlending} depthWrite={false} />
+      </mesh>
+      <mesh>
+        <sphereGeometry args={[0.75, 32, 32]} />
         <meshBasicMaterial
           color={color}
           transparent
-          opacity={0.3}
+          opacity={0.06}
           blending={THREE.AdditiveBlending}
           depthWrite={false}
         />

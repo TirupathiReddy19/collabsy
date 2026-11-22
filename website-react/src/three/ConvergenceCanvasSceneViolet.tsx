@@ -7,7 +7,7 @@ import type { ScenePropsBase } from './LazyCanvas'
 export default function ConvergenceCanvasSceneViolet({ lowPower }: ScenePropsBase) {
   return (
     <Canvas
-      dpr={[1, lowPower ? 1.5 : 2]}
+      dpr={[1, lowPower ? 1.25 : 1.5]}
       gl={{ antialias: true, alpha: true }}
       camera={{ position: [0, 0, 6], fov: 42 }}
       style={{ position: 'absolute', inset: 0 }}

@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import gsap from 'gsap'
 import { CollabsyMark } from './CollabsyMark'
-import { WaitlistButton } from './WaitlistButton'
+import { GetAppButton } from './GetAppButton'
 import './Header.css'
 
 const NAV_ITEMS = [
@@ -10,6 +10,7 @@ const NAV_ITEMS = [
   { path: '/creators', label: 'Creators' },
   { path: '/brands', label: 'Brands' },
   { path: '/about', label: 'About' },
+  { path: '/blog', label: 'Blog' },
   { path: '/contact', label: 'Contact' },
 ]
 
@@ -69,7 +70,7 @@ export function Header() {
         </nav>
 
         <div className="header-cta">
-          <WaitlistButton compact label="Get the App" />
+          <GetAppButton compact label="Get the App" />
         </div>
 
         <button
@@ -97,7 +98,7 @@ export function Header() {
             ))}
           </nav>
           <div className="header-menu-cta">
-            <WaitlistButton />
+            <GetAppButton />
           </div>
         </div>
       )}

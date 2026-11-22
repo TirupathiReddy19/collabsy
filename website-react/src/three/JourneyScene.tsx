@@ -37,7 +37,10 @@ export function JourneyScene({
   const curve = useMemo(() => new THREE.CatmullRomCurve3(WAYPOINTS, false, 'catmullrom', 0.5), [])
   const tubeGeometry = useMemo(() => new THREE.TubeGeometry(curve, 64, 0.008, 6, false), [curve])
 
-  const trailCount = lowPower ? 24 : 48
+  // Halved from 24/48 — each trail point's position is recomputed via
+  // curve.getPoint() every frame (see useFrame below), so this is a
+  // continuous per-frame cost, not just initial setup.
+  const trailCount = lowPower ? 14 : 28
   const trailPositions = useMemo(() => new Float32Array(trailCount * 3), [trailCount])
 
   const { gl } = useThree()

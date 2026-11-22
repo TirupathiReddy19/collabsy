@@ -65,3 +65,6 @@ node_modules/
 
 # Debug scratch files
 ui_dump*.xml
+
+# Local MCP server config — contains a live (read-only, localhost-only) API token
+.mcp.json

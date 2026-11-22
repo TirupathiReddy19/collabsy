@@ -49,12 +49,21 @@ function buildNodes(count: number): NodeDef[] {
 const CREATOR_COLOR = new THREE.Color('#8b5cf6')
 const BRAND_COLOR = new THREE.Color('#0ea5e9')
 const BRIDGE_COLOR = new THREE.Color('#f97316')
-const CONVERGENCE = new THREE.Vector3(0, -1.6, 0.6)
+// Pushed further down and back than the headline/CTA column ever reaches
+// at any viewport width — it used to land right on top of the "For Brands"
+// button.
+const CONVERGENCE = new THREE.Vector3(0, -2.6, -0.8)
 
 export function NetworkScene({ lowPower = false }: { lowPower?: boolean }) {
-  const nodeCount = lowPower ? 16 : 34
+  // Halved from the original 16/34 and 90/220 (DustField below) — this scene
+  // is always mounted on Home (it's the hero, never lazy), so its ongoing
+  // per-frame cost is a fixed tax on every visit. PageSpeed Insights showed
+  // ~8s of Total Blocking Time with this scene alone running; fewer meshes
+  // and points directly cuts both the one-time setup cost and the continuous
+  // per-frame work, while keeping the same visual language.
+  const nodeCount = lowPower ? 10 : 20
   const nodes = useMemo(() => buildNodes(nodeCount), [nodeCount])
-  const bridgeCount = lowPower ? 5 : 9
+  const bridgeCount = lowPower ? 3 : 6
   const bridges = useMemo(() => {
     const rand = seededRandom(7)
     const creators = nodes.filter((n) => n.side === 'creator')
@@ -107,7 +116,7 @@ export function NetworkScene({ lowPower = false }: { lowPower?: boolean }) {
   return (
     <group ref={groupRef}>
       {/* ambient depth particles */}
-      <DustField count={lowPower ? 90 : 220} />
+      <DustField count={lowPower ? 50 : 110} />
 
       {nodes.map((node, i) => (
         <mesh key={i} position={node.position} scale={node.scale}>
@@ -139,20 +148,32 @@ export function NetworkScene({ lowPower = false }: { lowPower?: boolean }) {
       ))}
 
       {!prefersReducedMotion && (
-        <TravelingSparks bridges={bridges} count={lowPower ? 6 : 14} />
+        <TravelingSparks bridges={bridges} count={lowPower ? 4 : 8} />
       )}
 
-      {/* the convergence point — where every bridge visually resolves */}
+      {/* the convergence point — where every bridge visually resolves.
+          Nested low-opacity shells instead of one solid ball, so it reads
+          as soft ambient light rather than a hard disc wherever it lands. */}
       <mesh position={CONVERGENCE}>
-        <sphereGeometry args={[0.14, 24, 24]} />
-        <meshBasicMaterial color="#ffffff" />
+        <sphereGeometry args={[0.05, 20, 20]} />
+        <meshBasicMaterial color="#ffffff" transparent opacity={0.5} blending={THREE.AdditiveBlending} depthWrite={false} />
       </mesh>
       <mesh position={CONVERGENCE}>
-        <sphereGeometry args={[0.34, 24, 24]} />
+        <sphereGeometry args={[0.22, 24, 24]} />
         <meshBasicMaterial
           color={BRIDGE_COLOR}
           transparent
-          opacity={0.35}
+          opacity={0.14}
+          blending={THREE.AdditiveBlending}
+          depthWrite={false}
+        />
+      </mesh>
+      <mesh position={CONVERGENCE}>
+        <sphereGeometry args={[0.5, 24, 24]} />
+        <meshBasicMaterial
+          color={BRIDGE_COLOR}
+          transparent
+          opacity={0.05}
           blending={THREE.AdditiveBlending}
           depthWrite={false}
         />

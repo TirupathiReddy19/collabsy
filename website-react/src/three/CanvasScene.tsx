@@ -4,7 +4,7 @@ import { NetworkScene } from './NetworkScene'
 export default function CanvasScene({ lowPower }: { lowPower: boolean }) {
   return (
     <Canvas
-      dpr={[1, lowPower ? 1.5 : 2]}
+      dpr={[1, lowPower ? 1.25 : 1.5]}
       gl={{ antialias: true, alpha: true, powerPreference: 'high-performance' }}
       camera={{ position: [0, 0, 7.5], fov: 42 }}
       style={{ position: 'absolute', inset: 0 }}

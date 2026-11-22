@@ -2,8 +2,10 @@ import { useRef } from 'react'
 import { useScrollReveal } from '../lib/useScrollReveal'
 import { SectionHeading } from '../components/SectionHeading'
 import { Bullet } from '../components/Bullet'
-import { WaitlistButton } from '../components/WaitlistButton'
+import { GetAppButton } from '../components/GetAppButton'
 import { CampaignRequestForm } from '../components/CampaignRequestForm'
+import { BreadcrumbSchema } from '../components/BreadcrumbSchema'
+import { Seo } from '../components/Seo'
 import { LazyCanvas } from '../three/LazyCanvas'
 import './Brands.css'
 
@@ -75,6 +77,12 @@ export function Brands() {
 
   return (
     <>
+      <Seo
+        title="For Brands — Influencer Marketing That Converts | Collabsy"
+        description="Get sales, not just views. Run self-serve influencer campaigns with verified micro-influencers, or let Collabsy's team plan and execute it for you end to end."
+        path="/brands"
+      />
+      <BreadcrumbSchema items={[{ name: 'Home', path: '/' }, { name: 'Brands', path: '/brands' }]} />
       <section className="page-hero">
         <LazyCanvas loader={() => import('../three/ConvergenceCanvasScene')} />
         <div className="container">
@@ -99,7 +107,7 @@ export function Brands() {
                 <Bullet>Review applications and message creators directly</Bullet>
                 <Bullet>Full control, no management fee</Bullet>
               </ul>
-              <WaitlistButton />
+              <GetAppButton />
             </div>
             <div className="plan-card plan-card-highlight">
               <span className="plan-tag plan-tag-managed">MANAGED</span>

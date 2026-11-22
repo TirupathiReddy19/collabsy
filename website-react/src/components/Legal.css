@@ -1,3 +1,11 @@
+/* Nested one level inside the standard, already-centered `.container` —
+   this just caps the reading width and stays flush to that container's
+   own left (padded) edge, the same edge the header/footer sit on. Giving
+   *this* div its own `margin: auto` (instead of overriding the outer
+   `.container`'s centering) used to center a narrower column inside the
+   viewport directly, drifting away from the header/footer at wide
+   viewports where `.container`'s max-width leaves it with room to center
+   in. */
 .legal-container {
   max-width: 760px;
 }

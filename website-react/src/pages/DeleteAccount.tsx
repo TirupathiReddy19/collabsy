@@ -1,5 +1,7 @@
 import { useState } from 'react'
 import { submitDeleteAccountRequest } from '../lib/requests'
+import { BreadcrumbSchema } from '../components/BreadcrumbSchema'
+import { Seo } from '../components/Seo'
 import '../components/Form.css'
 import './DeleteAccount.css'
 
@@ -32,7 +34,18 @@ export function DeleteAccount() {
 
   return (
     <section className="section">
-      <div className="container" style={{ maxWidth: 640 }}>
+      <Seo
+        title="Delete Your Account | Collabsy"
+        description="Request deletion of your Collabsy account and personal data within 30 days — no app install required."
+        path="/delete-account"
+      />
+      <BreadcrumbSchema items={[{ name: 'Home', path: '/' }, { name: 'Delete Account', path: '/delete-account' }]} />
+      <div className="container">
+      {/* Nested inside the standard, already-centered `.container` — this
+          just caps the reading width and stays flush to that container's
+          own left edge, the same edge the header/footer sit on, at any
+          viewport width. */}
+      <div style={{ maxWidth: 640 }}>
         <h1 className="display-heading" style={{ fontSize: 34, marginBottom: 8 }}>
           Request account deletion
         </h1>
@@ -103,6 +116,7 @@ export function DeleteAccount() {
           removed the same way they would be through the in-app deletion. Questions?
           Email support@collabsy.online.
         </p>
+      </div>
       </div>
     </section>
   )

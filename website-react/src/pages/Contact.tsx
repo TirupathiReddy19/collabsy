@@ -1,10 +1,20 @@
 import { SectionHeading } from '../components/SectionHeading'
-import { waitlistUrl } from '../components/WaitlistButton'
+import { BreadcrumbSchema } from '../components/BreadcrumbSchema'
+import { Seo } from '../components/Seo'
 import './Contact.css'
+
+// Same WhatsApp number the Flutter site's Contact page and footer use.
+const WHATSAPP_URL = 'https://wa.me/919381487811'
 
 export function Contact() {
   return (
     <section className="section">
+      <Seo
+        title="Contact Collabsy"
+        description="Get in touch with Collabsy by email or WhatsApp, or use the Brands page form to request a full campaign plan."
+        path="/contact"
+      />
+      <BreadcrumbSchema items={[{ name: 'Home', path: '/' }, { name: 'Contact', path: '/contact' }]} />
       <div className="container">
         <SectionHeading
           title="Get in touch"
@@ -20,7 +30,7 @@ export function Contact() {
           </a>
           <a
             className="contact-card"
-            href={waitlistUrl()}
+            href={WHATSAPP_URL}
             target="_blank"
             rel="noopener noreferrer"
           >

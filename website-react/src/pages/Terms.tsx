@@ -2,7 +2,11 @@ import { LegalPage, LegalH2, LegalP, LegalBullets, MailLink } from '../component
 
 export function Terms() {
   return (
-    <LegalPage title="Terms of Service" effectiveDate="August 4, 2026">
+    <LegalPage
+      title="Terms of Service"
+      description="The terms governing your use of Collabsy as a Creator or a Brand, including account, conduct, and campaign rules."
+      effectiveDate="August 4, 2026"
+    >
       <LegalP>
         These Terms govern your use of Collabsy as a Creator or a Brand. By
         creating an account or using the app, you agree to them.

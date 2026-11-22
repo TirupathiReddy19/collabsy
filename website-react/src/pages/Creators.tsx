@@ -1,7 +1,9 @@
 import { useScrollReveal } from '../lib/useScrollReveal'
 import { SectionHeading } from '../components/SectionHeading'
 import { Bullet } from '../components/Bullet'
-import { WaitlistButton } from '../components/WaitlistButton'
+import { GetAppButton } from '../components/GetAppButton'
+import { BreadcrumbSchema } from '../components/BreadcrumbSchema'
+import { Seo } from '../components/Seo'
 import { LazyCanvas } from '../three/LazyCanvas'
 import './Creators.css'
 
@@ -33,6 +35,12 @@ export function Creators() {
 
   return (
     <>
+      <Seo
+        title="For Creators — Find Brand Partnerships | Collabsy"
+        description="Discover paid campaigns from real D2C brands, apply in a tap, and chat directly with brands — built around micro-influencers with 10K–50K followers."
+        path="/creators"
+      />
+      <BreadcrumbSchema items={[{ name: 'Home', path: '/' }, { name: 'Creators', path: '/creators' }]} />
       <section className="page-hero">
         <LazyCanvas loader={() => import('../three/ConvergenceCanvasSceneViolet')} />
         <div className="container">
@@ -48,7 +56,7 @@ export function Creators() {
           </p>
           <div style={{ display: 'flex', justifyContent: 'center' }}>
             <div style={{ width: 260 }}>
-              <WaitlistButton />
+              <GetAppButton />
             </div>
           </div>
         </div>
@@ -110,9 +118,9 @@ export function Creators() {
             Ready to find your next brand partner?
           </h2>
           <p className="body-lead on-dark" style={{ margin: '12px auto 28px' }}>
-            Join the waitlist and we'll let you know the moment you're in.
+            Download the app and start getting matched with brands today.
           </p>
-          <WaitlistButton />
+          <GetAppButton />
         </div>
       </section>
     </>

@@ -43,6 +43,11 @@
 
 html {
   scroll-behavior: smooth;
+  /* Reserves the scrollbar's width always, whether or not a given page is
+     tall enough to need one — without this, a short page (no scrollbar)
+     renders ~15px wider than a tall one, and every centered element
+     (header, content, footer) shifts sideways by half that between routes. */
+  scrollbar-gutter: stable;
 }
 
 @media (prefers-reduced-motion: reduce) {
