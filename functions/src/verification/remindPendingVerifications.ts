@@ -28,15 +28,21 @@ interface ReminderCandidate {
    * profile actually has; falls back to the uid so the email is never
    * blank-looking if a profile is mid-onboarding with no name yet. */
   label: string;
-  waitingSince: Timestamp;
+  /** Absent for a profile that was already pending before this feature
+   * existed — `stampVerificationRequestedAt` only fires on a write, so a
+   * backlog profile nobody has touched since never got the field. Treated
+   * as immediately eligible (it's genuinely been waiting at least this long,
+   * we just don't know exactly how long) rather than silently never
+   * reminding about it. */
+  waitingSince: Timestamp | null;
 }
 
 /** One pass of the pending-review queue: finds every creator/brand profile
- * that's been sitting at `verificationStatus: pending` for at least
- * [REMINDER_THRESHOLD_MINUTES] and hasn't already been reminded about
- * (`reminderSentAt` unset), emails `hello@collabsy.online` once per profile
- * with a direct link into the admin portal's detail screen, and marks it
- * reminded so this never nags twice for the same wait.
+ * sitting at `verificationStatus: pending` that's either been waiting at
+ * least [REMINDER_THRESHOLD_MINUTES] (per its `verificationRequestedAt`
+ * stamp) or has no stamp at all (a pre-existing backlog profile from before
+ * this feature shipped — treated as overdue immediately rather than ignored
+ * forever), and hasn't already been reminded about (`reminderSentAt` unset).
  *
  * This is a single, one-time reminder per pending period — not a repeating
  * nag every 5 minutes until someone acts. If a profile is later rejected and
@@ -44,12 +50,12 @@ interface ReminderCandidate {
  * `stampVerificationRequestedAt` starts the clock over and this can remind
  * again for that new wait.
  *
- * Deliberately filters `reminderSentAt` in memory rather than in the Firestore
- * query: Firestore can't combine a range filter on `verificationRequestedAt`
- * with a "field doesn't exist" filter on `reminderSentAt` in one query, and
- * the pending queue is small enough (tens, not thousands, of profiles) that
- * fetching the time-eligible set and filtering the rest client-side is simpler
- * than a second denormalized field just to make the query possible.
+ * Deliberately a single equality `where` (no range filter) with the time/
+ * reminder-sent logic done in memory: Firestore can't combine a range filter
+ * on `verificationRequestedAt` with a "field doesn't exist" filter in one
+ * query, and the pending queue is small enough (tens, not thousands, of
+ * profiles) that fetching every pending doc and filtering client-side is
+ * simpler than a second denormalized field just to make the query possible.
  */
 async function findReminderCandidates(
   threshold: Timestamp
@@ -60,32 +66,34 @@ async function findReminderCandidates(
   const creatorSnap = await firestore
     .collection("creatorProfiles")
     .where("verificationStatus", "==", "pending")
-    .where("verificationRequestedAt", "<=", threshold)
     .get();
   for (const doc of creatorSnap.docs) {
     const data = doc.data();
     if (data.reminderSentAt) continue;
+    const requestedAt = (data.verificationRequestedAt as Timestamp | undefined) ?? null;
+    if (requestedAt && requestedAt.toMillis() > threshold.toMillis()) continue;
     candidates.push({
       id: doc.id,
       kind: "creator",
       label: (data.displayName as string | undefined) || doc.id,
-      waitingSince: data.verificationRequestedAt as Timestamp,
+      waitingSince: requestedAt,
     });
   }
 
   const brandSnap = await firestore
     .collection("brandProfiles")
     .where("verificationStatus", "==", "pending")
-    .where("verificationRequestedAt", "<=", threshold)
     .get();
   for (const doc of brandSnap.docs) {
     const data = doc.data();
     if (data.reminderSentAt) continue;
+    const requestedAt = (data.verificationRequestedAt as Timestamp | undefined) ?? null;
+    if (requestedAt && requestedAt.toMillis() > threshold.toMillis()) continue;
     candidates.push({
       id: doc.id,
       kind: "brand",
       label: (data.companyName as string | undefined) || doc.id,
-      waitingSince: data.verificationRequestedAt as Timestamp,
+      waitingSince: requestedAt,
     });
   }
 
@@ -96,17 +104,18 @@ function buildReminderEmailHtml(candidate: ReminderCandidate): string {
   const path = candidate.kind === "creator" ? "creators" : "brands";
   const link = `${adminPortalUrl.value()}/${path}/${candidate.id}`;
   const kindLabel = candidate.kind === "creator" ? "Creator" : "Brand";
-  const waitedMinutes = Math.round(
-    (Date.now() - candidate.waitingSince.toMillis()) / 60000
-  );
+  const waitedLine = candidate.waitingSince
+    ? `has been pending for about ${Math.round(
+        (Date.now() - candidate.waitingSince.toMillis()) / 60000
+      )} minutes with no admin decision yet.`
+    : "has been pending with no admin decision yet.";
 
   return wrapEmailHtml(`
     <p style="font-size: 16px; font-weight: 600; margin: 0 0 12px;">
       ${kindLabel} profile waiting on review
     </p>
     <p style="margin: 0 0 16px;">
-      <strong>${escapeHtml(candidate.label)}</strong> has been pending for
-      about ${waitedMinutes} minutes with no admin decision yet.
+      <strong>${escapeHtml(candidate.label)}</strong> ${waitedLine}
     </p>
     <a href="${link}"
        style="display: inline-block; background: #F97316; color: #ffffff; text-decoration: none; padding: 10px 20px; border-radius: 8px; font-weight: 600;">
@@ -152,10 +161,17 @@ export const remindPendingVerifications = onSchedule(
 
       const collection =
         candidate.kind === "creator" ? "creatorProfiles" : "brandProfiles";
-      await firestore
-        .collection(collection)
-        .doc(candidate.id)
-        .set({ reminderSentAt: Timestamp.now() }, { merge: true });
+      await firestore.collection(collection).doc(candidate.id).set(
+        {
+          reminderSentAt: Timestamp.now(),
+          // Backlog profile from before this feature existed — give it a
+          // real stamp now so every future read of this doc has one,
+          // instead of relying on this function's "missing = overdue"
+          // fallback forever.
+          ...(candidate.waitingSince ? {} : { verificationRequestedAt: Timestamp.now() }),
+        },
+        { merge: true }
+      );
     }
   }
 );
