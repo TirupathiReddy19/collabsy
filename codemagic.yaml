@@ -11,7 +11,17 @@ workflows:
       vars:
         BUNDLE_ID: "online.collabsy.app"
         APP_STORE_APPLE_ID: 6808197823
-      flutter: stable
+      # Pinned, not "stable" - floating stable moved to Dart 3.14.0, whose
+      # flutter_test pins different matcher/test_api versions than 3.13.x
+      # did, which exposes a real version-solving conflict between our
+      # freezed ^3.2.6-dev.1 (a dev/prerelease pin) and riverpod_generator
+      # ^4.0.4 that doesn't occur on this known-good version (verified via
+      # `flutter pub get` succeeding locally on it). Revisit once freezed
+      # has a stable 4.x release and the app's generated code is migrated
+      # to it - see the "Try upgrading your constraint on freezed" hint in
+      # pub's own error output.
+      flutter: 3.47.9
+
       xcode: latest
       cocoapods: default
     triggering:
