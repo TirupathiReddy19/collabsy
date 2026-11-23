@@ -7,6 +7,7 @@ const params_1 = require("firebase-functions/params");
 const firebase_functions_1 = require("firebase-functions");
 const sendEmail_1 = require("../shared/sendEmail");
 const emailTemplate_1 = require("../shared/emailTemplate");
+const emailConfig_1 = require("../shared/emailConfig");
 /** Base URL of the admin portal (Flutter web, hosting target "admin").
  * Defaults to the Firebase-provided domain; override with:
  *   firebase functions:config:set — no, this project uses params, so:
@@ -38,15 +39,27 @@ const REMINDER_RECIPIENT = "hello@collabsy.online";
  * profiles) that fetching every pending doc and filtering client-side is
  * simpler than a second denormalized field just to make the query possible.
  */
+/** Mirrors the Flutter app's own `@Default(VerificationStatus.pending)` —
+ * a document with no `verificationStatus` field at all (never written,
+ * e.g. an older profile from before every write path set it explicitly) is
+ * "pending" to the app's own `CreatorProfile.fromJson`/`BrandProfile.fromJson`,
+ * so it must be "pending" here too. A Firestore equality `where` can never
+ * match a missing field, which is exactly why an earlier version of this
+ * query silently missed profiles like this. */
+function isPending(data) {
+    return data.verificationStatus === "pending" || data.verificationStatus === undefined;
+}
 async function findReminderCandidates(threshold) {
     const firestore = (0, firestore_1.getFirestore)();
     const candidates = [];
-    const creatorSnap = await firestore
-        .collection("creatorProfiles")
-        .where("verificationStatus", "==", "pending")
-        .get();
-    firebase_functions_1.logger.info(`findReminderCandidates: ${creatorSnap.size} creatorProfiles pending`);
-    for (const doc of creatorSnap.docs) {
+    // No `where` on verificationStatus here on purpose — see isPending above.
+    // Fetching the whole collection is fine at this app's current scale (tens
+    // of profiles, not thousands); revisit with a denormalized/backfilled
+    // field if that stops being true.
+    const creatorSnap = await firestore.collection("creatorProfiles").get();
+    const creatorPending = creatorSnap.docs.filter((doc) => isPending(doc.data()));
+    firebase_functions_1.logger.info(`findReminderCandidates: ${creatorPending.length} creatorProfiles pending`);
+    for (const doc of creatorPending) {
         const data = doc.data();
         if (data.reminderSentAt)
             continue;
@@ -60,12 +73,10 @@ async function findReminderCandidates(threshold) {
             waitingSince: requestedAt,
         });
     }
-    const brandSnap = await firestore
-        .collection("brandProfiles")
-        .where("verificationStatus", "==", "pending")
-        .get();
-    firebase_functions_1.logger.info(`findReminderCandidates: ${brandSnap.size} brandProfiles pending`);
-    for (const doc of brandSnap.docs) {
+    const brandSnap = await firestore.collection("brandProfiles").get();
+    const brandPending = brandSnap.docs.filter((doc) => isPending(doc.data()));
+    firebase_functions_1.logger.info(`findReminderCandidates: ${brandPending.length} brandProfiles pending`);
+    for (const doc of brandPending) {
         const data = doc.data();
         if (data.reminderSentAt)
             continue;
@@ -115,7 +126,13 @@ async function sendReminder(candidate) {
 /** Runs every 5 minutes so the 15-minute SLA is never missed by more than a
  * few minutes; cheap to run this often since a quiet queue is just two
  * Firestore reads. */
-exports.remindPendingVerifications = (0, scheduler_1.onSchedule)("every 5 minutes", async () => {
+exports.remindPendingVerifications = (0, scheduler_1.onSchedule)({
+    schedule: "every 5 minutes",
+    // Without this, sendEmail's smtpHost/Port/User/Password.value() calls
+    // never get real values at runtime — the earlier version of this
+    // function silently never sent anything because of exactly this.
+    secrets: [emailConfig_1.smtpHost, emailConfig_1.smtpPort, emailConfig_1.smtpUser, emailConfig_1.smtpPassword],
+}, async () => {
     const firestore = (0, firestore_1.getFirestore)();
     const threshold = firestore_1.Timestamp.fromMillis(Date.now() - REMINDER_THRESHOLD_MINUTES * 60 * 1000);
     const candidates = await findReminderCandidates(threshold);

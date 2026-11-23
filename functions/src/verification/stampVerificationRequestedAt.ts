@@ -18,7 +18,11 @@ async function stampIfNewlyPending(
   const doc = await ref.get();
   const data = doc.data();
   if (!data) return;
-  if (data.verificationStatus !== "pending") return;
+  // Mirrors the Flutter app's @Default(VerificationStatus.pending): a
+  // document with no verificationStatus field at all is "pending" to the
+  // app's own deserialization just as much as one that explicitly says so.
+  const isPending = data.verificationStatus === "pending" || data.verificationStatus === undefined;
+  if (!isPending) return;
   if (data.verificationRequestedAt) return;
 
   await ref.set(
