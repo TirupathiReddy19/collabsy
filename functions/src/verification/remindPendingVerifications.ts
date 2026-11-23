@@ -67,6 +67,7 @@ async function findReminderCandidates(
     .collection("creatorProfiles")
     .where("verificationStatus", "==", "pending")
     .get();
+  logger.info(`findReminderCandidates: ${creatorSnap.size} creatorProfiles pending`);
   for (const doc of creatorSnap.docs) {
     const data = doc.data();
     if (data.reminderSentAt) continue;
@@ -84,6 +85,7 @@ async function findReminderCandidates(
     .collection("brandProfiles")
     .where("verificationStatus", "==", "pending")
     .get();
+  logger.info(`findReminderCandidates: ${brandSnap.size} brandProfiles pending`);
   for (const doc of brandSnap.docs) {
     const data = doc.data();
     if (data.reminderSentAt) continue;
@@ -148,6 +150,10 @@ export const remindPendingVerifications = onSchedule(
     );
 
     const candidates = await findReminderCandidates(threshold);
+    logger.info(
+      `remindPendingVerifications: ${candidates.length} candidate(s) this run`,
+      { candidates: candidates.map((c) => ({ id: c.id, kind: c.kind, waitingSince: c.waitingSince?.toDate() ?? null })) }
+    );
     if (candidates.length === 0) return;
 
     for (const candidate of candidates) {
