@@ -68,3 +68,7 @@ ui_dump*.xml
 
 # Local MCP server config — contains a live (read-only, localhost-only) API token
 .mcp.json
+
+# Scraped D2C brand prospect data (34,880 entries, 11.8MB) — not read by any
+# code in this repo, kept local-only rather than bloating git history
+brand_prospects.json
