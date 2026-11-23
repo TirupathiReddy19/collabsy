@@ -927,33 +927,66 @@ class _CampaignListTile extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     return ListTile(
       contentPadding: EdgeInsets.zero,
-      title: Text(
-        campaign.name,
-        style: AppTextStyles.bodyMedium.copyWith(fontWeight: FontWeight.w600),
+      title: Row(
+        children: [
+          Flexible(
+            child: Text(
+              campaign.name,
+              style: AppTextStyles.bodyMedium.copyWith(
+                fontWeight: FontWeight.w600,
+              ),
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+          if (campaign.shared) ...[
+            const SizedBox(width: 8),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+              decoration: BoxDecoration(
+                color: AppColors.info.withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(999),
+              ),
+              child: Text(
+                'Shared',
+                style: AppTextStyles.bodySmall.copyWith(
+                  color: AppColors.info,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+          ],
+        ],
       ),
       subtitle: Text(
         campaign.subject,
         maxLines: 1,
         overflow: TextOverflow.ellipsis,
       ),
-      trailing: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          IconButton(
-            icon: const Icon(Icons.edit_outlined, size: 18),
-            tooltip: 'Edit',
-            onPressed: () => showDialog<void>(
-              context: context,
-              builder: (context) => _CampaignFormDialog(existing: campaign),
+      // A shared (company-wide) template is read-only here on purpose — only
+      // an admin can create/edit/delete one (firestore.rules has no client
+      // write path for `shared: true` at all), so showing edit/delete
+      // buttons that would just fail on tap would be actively misleading.
+      trailing: campaign.shared
+          ? null
+          : Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                IconButton(
+                  icon: const Icon(Icons.edit_outlined, size: 18),
+                  tooltip: 'Edit',
+                  onPressed: () => showDialog<void>(
+                    context: context,
+                    builder: (context) =>
+                        _CampaignFormDialog(existing: campaign),
+                  ),
+                ),
+                IconButton(
+                  icon: const Icon(Icons.delete_outline, size: 18),
+                  tooltip: 'Delete',
+                  onPressed: () => _confirmDelete(context, ref),
+                ),
+              ],
             ),
-          ),
-          IconButton(
-            icon: const Icon(Icons.delete_outline, size: 18),
-            tooltip: 'Delete',
-            onPressed: () => _confirmDelete(context, ref),
-          ),
-        ],
-      ),
     );
   }
 }

@@ -746,10 +746,16 @@ service cloud.firestore {
     // copy every send. Strictly owner-scoped — `internId` is set once at
     // create and can never change (an update can touch everything except
     // that field, same shape as `users/{userId}`'s own role-lock below).
+    // `shared: true` is the one exception: a company-wide template every
+    // intern can read (and use) but only an admin can create/edit/delete —
+    // there's no client write path for it at all, since it's absent from
+    // every `hasOnly()` list below, so it only ever exists via an admin
+    // write (which `isAdmin()` already lets bypass the schema entirely).
     match /brandEmailCampaigns/{campaignId} {
       allow read: if isAdmin()
         || (isActiveStaffWithPermission('/brand-outreach-leads')
-            && resource.data.internId == request.auth.uid);
+            && (resource.data.internId == request.auth.uid
+                || resource.data.shared == true));
       allow create: if isAdmin()
         || (isActiveStaffWithPermission('/brand-outreach-leads')
             && request.resource.data.internId == request.auth.uid

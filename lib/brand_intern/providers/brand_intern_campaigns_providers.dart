@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
@@ -19,34 +21,67 @@ BrandEmailCampaign _campaignFromDoc(
     name: data['name'] as String? ?? '',
     subject: data['subject'] as String? ?? '',
     body: data['body'] as String? ?? '',
+    shared: data['shared'] as bool? ?? false,
     createdAt: _asDate(data['createdAt']),
     updatedAt: _asDate(data['updatedAt']),
   );
 }
 
 /// The only place that talks to the `brandEmailCampaigns` collection —
-/// each intern's own saved subject/body templates, picked from a dropdown
-/// in the Bulk Email tab instead of retyping the same outreach copy every
-/// send.
+/// each intern's own saved subject/body templates, plus any company-wide
+/// `shared` ones every intern can use, picked from a dropdown in the Bulk
+/// Email tab instead of retyping the same outreach copy every send.
 class BrandInternCampaignsRepository {
   BrandInternCampaignsRepository(this._firestore);
 
   final FirebaseFirestore _firestore;
 
+  /// Own campaigns (`internId == internId`) plus every `shared` one,
+  /// combined and kept live. Two separate queries rather than one Firestore
+  /// `or()` filter — simpler to reason about, and this collection is small
+  /// enough per intern that merging two snapshots client-side costs
+  /// nothing. Each source's own [_CombinedCampaigns] slot updates
+  /// independently; the combined list is only emitted once both sources
+  /// have reported at least once, so the dropdown never flashes
+  /// "own-only" before the shared templates arrive a moment later.
   Stream<List<BrandEmailCampaign>> watchMine(String internId) {
-    return _firestore
+    final controller = StreamController<List<BrandEmailCampaign>>.broadcast();
+    List<BrandEmailCampaign>? own;
+    List<BrandEmailCampaign>? shared;
+
+    void emitIfReady() {
+      if (own == null || shared == null) return;
+      final combined = [...own!, ...shared!]
+        ..sort(
+          (a, b) => (b.updatedAt ?? DateTime(0)).compareTo(
+            a.updatedAt ?? DateTime(0),
+          ),
+        );
+      controller.add(combined);
+    }
+
+    final ownSub = _firestore
         .collection('brandEmailCampaigns')
         .where('internId', isEqualTo: internId)
         .snapshots()
-        .map((snapshot) {
-          final campaigns = snapshot.docs.map(_campaignFromDoc).toList()
-            ..sort(
-              (a, b) => (b.updatedAt ?? DateTime(0)).compareTo(
-                a.updatedAt ?? DateTime(0),
-              ),
-            );
-          return campaigns;
-        });
+        .listen((snapshot) {
+          own = snapshot.docs.map(_campaignFromDoc).toList();
+          emitIfReady();
+        }, onError: controller.addError);
+    final sharedSub = _firestore
+        .collection('brandEmailCampaigns')
+        .where('shared', isEqualTo: true)
+        .snapshots()
+        .listen((snapshot) {
+          shared = snapshot.docs.map(_campaignFromDoc).toList();
+          emitIfReady();
+        }, onError: controller.addError);
+
+    controller.onCancel = () {
+      ownSub.cancel();
+      sharedSub.cancel();
+    };
+    return controller.stream;
   }
 
   Future<void> create({
