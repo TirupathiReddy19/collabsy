@@ -423,6 +423,14 @@ class _AdminCreatorDetailScreenState
                                 label: 'Posts',
                                 value: '${instagram.mediaCount}',
                               ),
+                              AdminDetailRow(
+                                icon: Icons.favorite_border,
+                                label: 'Engagement rate',
+                                value: instagram.engagementRate != null
+                                    ? '${instagram.engagementRate!.toStringAsFixed(1)}% '
+                                          '(last ${instagram.engagementSampleSize} posts)'
+                                    : 'Not computed yet',
+                              ),
                               if ((instagram.biography ?? '').isNotEmpty)
                                 AdminDetailRow(
                                   icon: Icons.notes_outlined,

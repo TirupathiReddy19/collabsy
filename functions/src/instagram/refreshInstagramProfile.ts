@@ -1,6 +1,7 @@
 import { Timestamp } from "firebase-admin/firestore";
 import { HttpsError, onCall } from "firebase-functions/v2/https";
 
+import { refreshEngagementRate } from "./engagementRate";
 import {
   markStatus,
   saveProfile,
@@ -57,6 +58,7 @@ export const refreshInstagramProfile = onCall(async (request) => {
   try {
     const profile = await fetchProfile(accessToken);
     await saveProfile(uid, profile);
+    await refreshEngagementRate(uid, accessToken, profile.followers_count ?? 0);
     return { success: true };
   } catch (error) {
     if (error instanceof InstagramApiError) {

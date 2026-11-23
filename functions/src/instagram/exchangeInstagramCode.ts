@@ -2,6 +2,7 @@ import { Timestamp, getFirestore } from "firebase-admin/firestore";
 import { HttpsError, onCall } from "firebase-functions/v2/https";
 
 import { instagramAppId, instagramAppSecret, instagramRedirectUri } from "./config";
+import { refreshEngagementRate } from "./engagementRate";
 import { saveProfile, saveTokens } from "./firestoreHelpers";
 import {
   InstagramApiError,
@@ -64,6 +65,7 @@ export const exchangeInstagramCode = onCall(
 
       await saveTokens(uid, longLived);
       await saveProfile(uid, profile, { connectedAt: Timestamp.now() });
+      await refreshEngagementRate(uid, longLived.access_token, profile.followers_count ?? 0);
 
       return { success: true };
     } catch (error) {

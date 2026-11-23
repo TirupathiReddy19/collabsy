@@ -22,6 +22,11 @@ _InstagramAccount _$InstagramAccountFromJson(
   followersCount: (json['followersCount'] as num?)?.toInt() ?? 0,
   followsCount: (json['followsCount'] as num?)?.toInt() ?? 0,
   mediaCount: (json['mediaCount'] as num?)?.toInt() ?? 0,
+  engagementRate: (json['engagementRate'] as num?)?.toDouble(),
+  engagementSampleSize: (json['engagementSampleSize'] as num?)?.toInt() ?? 0,
+  engagementComputedAt: const NullableTimestampConverter().fromJson(
+    json['engagementComputedAt'],
+  ),
   connectedAt: const NullableTimestampConverter().fromJson(json['connectedAt']),
   lastSyncedAt: const NullableTimestampConverter().fromJson(
     json['lastSyncedAt'],
@@ -41,6 +46,11 @@ Map<String, dynamic> _$InstagramAccountToJson(_InstagramAccount instance) =>
       'followersCount': instance.followersCount,
       'followsCount': instance.followsCount,
       'mediaCount': instance.mediaCount,
+      'engagementRate': instance.engagementRate,
+      'engagementSampleSize': instance.engagementSampleSize,
+      'engagementComputedAt': const NullableTimestampConverter().toJson(
+        instance.engagementComputedAt,
+      ),
       'connectedAt': const NullableTimestampConverter().toJson(
         instance.connectedAt,
       ),

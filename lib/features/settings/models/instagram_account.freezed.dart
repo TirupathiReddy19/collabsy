@@ -15,7 +15,7 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$InstagramAccount {
 
- String get id; InstagramConnectionStatus get status; String? get instagramUserId; String? get username; String? get name; String? get profilePictureUrl; String? get biography; String? get website; int get followersCount; int get followsCount; int get mediaCount;@NullableTimestampConverter() DateTime? get connectedAt;@NullableTimestampConverter() DateTime? get lastSyncedAt;
+ String get id; InstagramConnectionStatus get status; String? get instagramUserId; String? get username; String? get name; String? get profilePictureUrl; String? get biography; String? get website; int get followersCount; int get followsCount; int get mediaCount; double? get engagementRate; int get engagementSampleSize;@NullableTimestampConverter() DateTime? get engagementComputedAt;@NullableTimestampConverter() DateTime? get connectedAt;@NullableTimestampConverter() DateTime? get lastSyncedAt;
 /// Create a copy of InstagramAccount
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -28,16 +28,16 @@ $InstagramAccountCopyWith<InstagramAccount> get copyWith => _$InstagramAccountCo
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is InstagramAccount&&(identical(other.id, id) || other.id == id)&&(identical(other.status, status) || other.status == status)&&(identical(other.instagramUserId, instagramUserId) || other.instagramUserId == instagramUserId)&&(identical(other.username, username) || other.username == username)&&(identical(other.name, name) || other.name == name)&&(identical(other.profilePictureUrl, profilePictureUrl) || other.profilePictureUrl == profilePictureUrl)&&(identical(other.biography, biography) || other.biography == biography)&&(identical(other.website, website) || other.website == website)&&(identical(other.followersCount, followersCount) || other.followersCount == followersCount)&&(identical(other.followsCount, followsCount) || other.followsCount == followsCount)&&(identical(other.mediaCount, mediaCount) || other.mediaCount == mediaCount)&&(identical(other.connectedAt, connectedAt) || other.connectedAt == connectedAt)&&(identical(other.lastSyncedAt, lastSyncedAt) || other.lastSyncedAt == lastSyncedAt));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is InstagramAccount&&(identical(other.id, id) || other.id == id)&&(identical(other.status, status) || other.status == status)&&(identical(other.instagramUserId, instagramUserId) || other.instagramUserId == instagramUserId)&&(identical(other.username, username) || other.username == username)&&(identical(other.name, name) || other.name == name)&&(identical(other.profilePictureUrl, profilePictureUrl) || other.profilePictureUrl == profilePictureUrl)&&(identical(other.biography, biography) || other.biography == biography)&&(identical(other.website, website) || other.website == website)&&(identical(other.followersCount, followersCount) || other.followersCount == followersCount)&&(identical(other.followsCount, followsCount) || other.followsCount == followsCount)&&(identical(other.mediaCount, mediaCount) || other.mediaCount == mediaCount)&&(identical(other.engagementRate, engagementRate) || other.engagementRate == engagementRate)&&(identical(other.engagementSampleSize, engagementSampleSize) || other.engagementSampleSize == engagementSampleSize)&&(identical(other.engagementComputedAt, engagementComputedAt) || other.engagementComputedAt == engagementComputedAt)&&(identical(other.connectedAt, connectedAt) || other.connectedAt == connectedAt)&&(identical(other.lastSyncedAt, lastSyncedAt) || other.lastSyncedAt == lastSyncedAt));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,status,instagramUserId,username,name,profilePictureUrl,biography,website,followersCount,followsCount,mediaCount,connectedAt,lastSyncedAt);
+int get hashCode => Object.hash(runtimeType,id,status,instagramUserId,username,name,profilePictureUrl,biography,website,followersCount,followsCount,mediaCount,engagementRate,engagementSampleSize,engagementComputedAt,connectedAt,lastSyncedAt);
 
 @override
 String toString() {
-  return 'InstagramAccount(id: $id, status: $status, instagramUserId: $instagramUserId, username: $username, name: $name, profilePictureUrl: $profilePictureUrl, biography: $biography, website: $website, followersCount: $followersCount, followsCount: $followsCount, mediaCount: $mediaCount, connectedAt: $connectedAt, lastSyncedAt: $lastSyncedAt)';
+  return 'InstagramAccount(id: $id, status: $status, instagramUserId: $instagramUserId, username: $username, name: $name, profilePictureUrl: $profilePictureUrl, biography: $biography, website: $website, followersCount: $followersCount, followsCount: $followsCount, mediaCount: $mediaCount, engagementRate: $engagementRate, engagementSampleSize: $engagementSampleSize, engagementComputedAt: $engagementComputedAt, connectedAt: $connectedAt, lastSyncedAt: $lastSyncedAt)';
 }
 
 
@@ -48,7 +48,7 @@ abstract mixin class $InstagramAccountCopyWith<$Res>  {
   factory $InstagramAccountCopyWith(InstagramAccount value, $Res Function(InstagramAccount) _then) = _$InstagramAccountCopyWithImpl;
 @useResult
 $Res call({
- String id, InstagramConnectionStatus status, String? instagramUserId, String? username, String? name, String? profilePictureUrl, String? biography, String? website, int followersCount, int followsCount, int mediaCount,@NullableTimestampConverter() DateTime? connectedAt,@NullableTimestampConverter() DateTime? lastSyncedAt
+ String id, InstagramConnectionStatus status, String? instagramUserId, String? username, String? name, String? profilePictureUrl, String? biography, String? website, int followersCount, int followsCount, int mediaCount, double? engagementRate, int engagementSampleSize,@NullableTimestampConverter() DateTime? engagementComputedAt,@NullableTimestampConverter() DateTime? connectedAt,@NullableTimestampConverter() DateTime? lastSyncedAt
 });
 
 
@@ -65,7 +65,7 @@ class _$InstagramAccountCopyWithImpl<$Res>
 
 /// Create a copy of InstagramAccount
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? status = null,Object? instagramUserId = freezed,Object? username = freezed,Object? name = freezed,Object? profilePictureUrl = freezed,Object? biography = freezed,Object? website = freezed,Object? followersCount = null,Object? followsCount = null,Object? mediaCount = null,Object? connectedAt = freezed,Object? lastSyncedAt = freezed,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? status = null,Object? instagramUserId = freezed,Object? username = freezed,Object? name = freezed,Object? profilePictureUrl = freezed,Object? biography = freezed,Object? website = freezed,Object? followersCount = null,Object? followsCount = null,Object? mediaCount = null,Object? engagementRate = freezed,Object? engagementSampleSize = null,Object? engagementComputedAt = freezed,Object? connectedAt = freezed,Object? lastSyncedAt = freezed,}) {
   return _then(_self.copyWith(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,status: null == status ? _self.status : status // ignore: cast_nullable_to_non_nullable
@@ -78,7 +78,10 @@ as String?,website: freezed == website ? _self.website : website // ignore: cast
 as String?,followersCount: null == followersCount ? _self.followersCount : followersCount // ignore: cast_nullable_to_non_nullable
 as int,followsCount: null == followsCount ? _self.followsCount : followsCount // ignore: cast_nullable_to_non_nullable
 as int,mediaCount: null == mediaCount ? _self.mediaCount : mediaCount // ignore: cast_nullable_to_non_nullable
-as int,connectedAt: freezed == connectedAt ? _self.connectedAt : connectedAt // ignore: cast_nullable_to_non_nullable
+as int,engagementRate: freezed == engagementRate ? _self.engagementRate : engagementRate // ignore: cast_nullable_to_non_nullable
+as double?,engagementSampleSize: null == engagementSampleSize ? _self.engagementSampleSize : engagementSampleSize // ignore: cast_nullable_to_non_nullable
+as int,engagementComputedAt: freezed == engagementComputedAt ? _self.engagementComputedAt : engagementComputedAt // ignore: cast_nullable_to_non_nullable
+as DateTime?,connectedAt: freezed == connectedAt ? _self.connectedAt : connectedAt // ignore: cast_nullable_to_non_nullable
 as DateTime?,lastSyncedAt: freezed == lastSyncedAt ? _self.lastSyncedAt : lastSyncedAt // ignore: cast_nullable_to_non_nullable
 as DateTime?,
   ));
@@ -165,10 +168,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  InstagramConnectionStatus status,  String? instagramUserId,  String? username,  String? name,  String? profilePictureUrl,  String? biography,  String? website,  int followersCount,  int followsCount,  int mediaCount, @NullableTimestampConverter()  DateTime? connectedAt, @NullableTimestampConverter()  DateTime? lastSyncedAt)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  InstagramConnectionStatus status,  String? instagramUserId,  String? username,  String? name,  String? profilePictureUrl,  String? biography,  String? website,  int followersCount,  int followsCount,  int mediaCount,  double? engagementRate,  int engagementSampleSize, @NullableTimestampConverter()  DateTime? engagementComputedAt, @NullableTimestampConverter()  DateTime? connectedAt, @NullableTimestampConverter()  DateTime? lastSyncedAt)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _InstagramAccount() when $default != null:
-return $default(_that.id,_that.status,_that.instagramUserId,_that.username,_that.name,_that.profilePictureUrl,_that.biography,_that.website,_that.followersCount,_that.followsCount,_that.mediaCount,_that.connectedAt,_that.lastSyncedAt);case _:
+return $default(_that.id,_that.status,_that.instagramUserId,_that.username,_that.name,_that.profilePictureUrl,_that.biography,_that.website,_that.followersCount,_that.followsCount,_that.mediaCount,_that.engagementRate,_that.engagementSampleSize,_that.engagementComputedAt,_that.connectedAt,_that.lastSyncedAt);case _:
   return orElse();
 
 }
@@ -186,10 +189,10 @@ return $default(_that.id,_that.status,_that.instagramUserId,_that.username,_that
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  InstagramConnectionStatus status,  String? instagramUserId,  String? username,  String? name,  String? profilePictureUrl,  String? biography,  String? website,  int followersCount,  int followsCount,  int mediaCount, @NullableTimestampConverter()  DateTime? connectedAt, @NullableTimestampConverter()  DateTime? lastSyncedAt)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  InstagramConnectionStatus status,  String? instagramUserId,  String? username,  String? name,  String? profilePictureUrl,  String? biography,  String? website,  int followersCount,  int followsCount,  int mediaCount,  double? engagementRate,  int engagementSampleSize, @NullableTimestampConverter()  DateTime? engagementComputedAt, @NullableTimestampConverter()  DateTime? connectedAt, @NullableTimestampConverter()  DateTime? lastSyncedAt)  $default,) {final _that = this;
 switch (_that) {
 case _InstagramAccount():
-return $default(_that.id,_that.status,_that.instagramUserId,_that.username,_that.name,_that.profilePictureUrl,_that.biography,_that.website,_that.followersCount,_that.followsCount,_that.mediaCount,_that.connectedAt,_that.lastSyncedAt);case _:
+return $default(_that.id,_that.status,_that.instagramUserId,_that.username,_that.name,_that.profilePictureUrl,_that.biography,_that.website,_that.followersCount,_that.followsCount,_that.mediaCount,_that.engagementRate,_that.engagementSampleSize,_that.engagementComputedAt,_that.connectedAt,_that.lastSyncedAt);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -206,10 +209,10 @@ return $default(_that.id,_that.status,_that.instagramUserId,_that.username,_that
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  InstagramConnectionStatus status,  String? instagramUserId,  String? username,  String? name,  String? profilePictureUrl,  String? biography,  String? website,  int followersCount,  int followsCount,  int mediaCount, @NullableTimestampConverter()  DateTime? connectedAt, @NullableTimestampConverter()  DateTime? lastSyncedAt)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  InstagramConnectionStatus status,  String? instagramUserId,  String? username,  String? name,  String? profilePictureUrl,  String? biography,  String? website,  int followersCount,  int followsCount,  int mediaCount,  double? engagementRate,  int engagementSampleSize, @NullableTimestampConverter()  DateTime? engagementComputedAt, @NullableTimestampConverter()  DateTime? connectedAt, @NullableTimestampConverter()  DateTime? lastSyncedAt)?  $default,) {final _that = this;
 switch (_that) {
 case _InstagramAccount() when $default != null:
-return $default(_that.id,_that.status,_that.instagramUserId,_that.username,_that.name,_that.profilePictureUrl,_that.biography,_that.website,_that.followersCount,_that.followsCount,_that.mediaCount,_that.connectedAt,_that.lastSyncedAt);case _:
+return $default(_that.id,_that.status,_that.instagramUserId,_that.username,_that.name,_that.profilePictureUrl,_that.biography,_that.website,_that.followersCount,_that.followsCount,_that.mediaCount,_that.engagementRate,_that.engagementSampleSize,_that.engagementComputedAt,_that.connectedAt,_that.lastSyncedAt);case _:
   return null;
 
 }
@@ -221,7 +224,7 @@ return $default(_that.id,_that.status,_that.instagramUserId,_that.username,_that
 @JsonSerializable()
 
 class _InstagramAccount implements InstagramAccount {
-  const _InstagramAccount({required this.id, this.status = InstagramConnectionStatus.disconnected, this.instagramUserId, this.username, this.name, this.profilePictureUrl, this.biography, this.website, this.followersCount = 0, this.followsCount = 0, this.mediaCount = 0, @NullableTimestampConverter() this.connectedAt, @NullableTimestampConverter() this.lastSyncedAt});
+  const _InstagramAccount({required this.id, this.status = InstagramConnectionStatus.disconnected, this.instagramUserId, this.username, this.name, this.profilePictureUrl, this.biography, this.website, this.followersCount = 0, this.followsCount = 0, this.mediaCount = 0, this.engagementRate, this.engagementSampleSize = 0, @NullableTimestampConverter() this.engagementComputedAt, @NullableTimestampConverter() this.connectedAt, @NullableTimestampConverter() this.lastSyncedAt});
   factory _InstagramAccount.fromJson(Map<String, dynamic> json) => _$InstagramAccountFromJson(json);
 
 @override final  String id;
@@ -235,6 +238,9 @@ class _InstagramAccount implements InstagramAccount {
 @override@JsonKey() final  int followersCount;
 @override@JsonKey() final  int followsCount;
 @override@JsonKey() final  int mediaCount;
+@override final  double? engagementRate;
+@override@JsonKey() final  int engagementSampleSize;
+@override@NullableTimestampConverter() final  DateTime? engagementComputedAt;
 @override@NullableTimestampConverter() final  DateTime? connectedAt;
 @override@NullableTimestampConverter() final  DateTime? lastSyncedAt;
 
@@ -251,16 +257,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _InstagramAccount&&(identical(other.id, id) || other.id == id)&&(identical(other.status, status) || other.status == status)&&(identical(other.instagramUserId, instagramUserId) || other.instagramUserId == instagramUserId)&&(identical(other.username, username) || other.username == username)&&(identical(other.name, name) || other.name == name)&&(identical(other.profilePictureUrl, profilePictureUrl) || other.profilePictureUrl == profilePictureUrl)&&(identical(other.biography, biography) || other.biography == biography)&&(identical(other.website, website) || other.website == website)&&(identical(other.followersCount, followersCount) || other.followersCount == followersCount)&&(identical(other.followsCount, followsCount) || other.followsCount == followsCount)&&(identical(other.mediaCount, mediaCount) || other.mediaCount == mediaCount)&&(identical(other.connectedAt, connectedAt) || other.connectedAt == connectedAt)&&(identical(other.lastSyncedAt, lastSyncedAt) || other.lastSyncedAt == lastSyncedAt));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _InstagramAccount&&(identical(other.id, id) || other.id == id)&&(identical(other.status, status) || other.status == status)&&(identical(other.instagramUserId, instagramUserId) || other.instagramUserId == instagramUserId)&&(identical(other.username, username) || other.username == username)&&(identical(other.name, name) || other.name == name)&&(identical(other.profilePictureUrl, profilePictureUrl) || other.profilePictureUrl == profilePictureUrl)&&(identical(other.biography, biography) || other.biography == biography)&&(identical(other.website, website) || other.website == website)&&(identical(other.followersCount, followersCount) || other.followersCount == followersCount)&&(identical(other.followsCount, followsCount) || other.followsCount == followsCount)&&(identical(other.mediaCount, mediaCount) || other.mediaCount == mediaCount)&&(identical(other.engagementRate, engagementRate) || other.engagementRate == engagementRate)&&(identical(other.engagementSampleSize, engagementSampleSize) || other.engagementSampleSize == engagementSampleSize)&&(identical(other.engagementComputedAt, engagementComputedAt) || other.engagementComputedAt == engagementComputedAt)&&(identical(other.connectedAt, connectedAt) || other.connectedAt == connectedAt)&&(identical(other.lastSyncedAt, lastSyncedAt) || other.lastSyncedAt == lastSyncedAt));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,status,instagramUserId,username,name,profilePictureUrl,biography,website,followersCount,followsCount,mediaCount,connectedAt,lastSyncedAt);
+int get hashCode => Object.hash(runtimeType,id,status,instagramUserId,username,name,profilePictureUrl,biography,website,followersCount,followsCount,mediaCount,engagementRate,engagementSampleSize,engagementComputedAt,connectedAt,lastSyncedAt);
 
 @override
 String toString() {
-  return 'InstagramAccount(id: $id, status: $status, instagramUserId: $instagramUserId, username: $username, name: $name, profilePictureUrl: $profilePictureUrl, biography: $biography, website: $website, followersCount: $followersCount, followsCount: $followsCount, mediaCount: $mediaCount, connectedAt: $connectedAt, lastSyncedAt: $lastSyncedAt)';
+  return 'InstagramAccount(id: $id, status: $status, instagramUserId: $instagramUserId, username: $username, name: $name, profilePictureUrl: $profilePictureUrl, biography: $biography, website: $website, followersCount: $followersCount, followsCount: $followsCount, mediaCount: $mediaCount, engagementRate: $engagementRate, engagementSampleSize: $engagementSampleSize, engagementComputedAt: $engagementComputedAt, connectedAt: $connectedAt, lastSyncedAt: $lastSyncedAt)';
 }
 
 
@@ -271,7 +277,7 @@ abstract mixin class _$InstagramAccountCopyWith<$Res> implements $InstagramAccou
   factory _$InstagramAccountCopyWith(_InstagramAccount value, $Res Function(_InstagramAccount) _then) = __$InstagramAccountCopyWithImpl;
 @override @useResult
 $Res call({
- String id, InstagramConnectionStatus status, String? instagramUserId, String? username, String? name, String? profilePictureUrl, String? biography, String? website, int followersCount, int followsCount, int mediaCount,@NullableTimestampConverter() DateTime? connectedAt,@NullableTimestampConverter() DateTime? lastSyncedAt
+ String id, InstagramConnectionStatus status, String? instagramUserId, String? username, String? name, String? profilePictureUrl, String? biography, String? website, int followersCount, int followsCount, int mediaCount, double? engagementRate, int engagementSampleSize,@NullableTimestampConverter() DateTime? engagementComputedAt,@NullableTimestampConverter() DateTime? connectedAt,@NullableTimestampConverter() DateTime? lastSyncedAt
 });
 
 
@@ -288,7 +294,7 @@ class __$InstagramAccountCopyWithImpl<$Res>
 
 /// Create a copy of InstagramAccount
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? status = null,Object? instagramUserId = freezed,Object? username = freezed,Object? name = freezed,Object? profilePictureUrl = freezed,Object? biography = freezed,Object? website = freezed,Object? followersCount = null,Object? followsCount = null,Object? mediaCount = null,Object? connectedAt = freezed,Object? lastSyncedAt = freezed,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? status = null,Object? instagramUserId = freezed,Object? username = freezed,Object? name = freezed,Object? profilePictureUrl = freezed,Object? biography = freezed,Object? website = freezed,Object? followersCount = null,Object? followsCount = null,Object? mediaCount = null,Object? engagementRate = freezed,Object? engagementSampleSize = null,Object? engagementComputedAt = freezed,Object? connectedAt = freezed,Object? lastSyncedAt = freezed,}) {
   return _then(_InstagramAccount(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,status: null == status ? _self.status : status // ignore: cast_nullable_to_non_nullable
@@ -301,7 +307,10 @@ as String?,website: freezed == website ? _self.website : website // ignore: cast
 as String?,followersCount: null == followersCount ? _self.followersCount : followersCount // ignore: cast_nullable_to_non_nullable
 as int,followsCount: null == followsCount ? _self.followsCount : followsCount // ignore: cast_nullable_to_non_nullable
 as int,mediaCount: null == mediaCount ? _self.mediaCount : mediaCount // ignore: cast_nullable_to_non_nullable
-as int,connectedAt: freezed == connectedAt ? _self.connectedAt : connectedAt // ignore: cast_nullable_to_non_nullable
+as int,engagementRate: freezed == engagementRate ? _self.engagementRate : engagementRate // ignore: cast_nullable_to_non_nullable
+as double?,engagementSampleSize: null == engagementSampleSize ? _self.engagementSampleSize : engagementSampleSize // ignore: cast_nullable_to_non_nullable
+as int,engagementComputedAt: freezed == engagementComputedAt ? _self.engagementComputedAt : engagementComputedAt // ignore: cast_nullable_to_non_nullable
+as DateTime?,connectedAt: freezed == connectedAt ? _self.connectedAt : connectedAt // ignore: cast_nullable_to_non_nullable
 as DateTime?,lastSyncedAt: freezed == lastSyncedAt ? _self.lastSyncedAt : lastSyncedAt // ignore: cast_nullable_to_non_nullable
 as DateTime?,
   ));

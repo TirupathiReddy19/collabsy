@@ -4,6 +4,7 @@ exports.exchangeInstagramCode = void 0;
 const firestore_1 = require("firebase-admin/firestore");
 const https_1 = require("firebase-functions/v2/https");
 const config_1 = require("./config");
+const engagementRate_1 = require("./engagementRate");
 const firestoreHelpers_1 = require("./firestoreHelpers");
 const instagramApiService_1 = require("./instagramApiService");
 /** Callable from Flutter with `{ code }` — the authorization code from the
@@ -47,6 +48,7 @@ exports.exchangeInstagramCode = (0, https_1.onCall)({ secrets: [config_1.instagr
         }
         await (0, firestoreHelpers_1.saveTokens)(uid, longLived);
         await (0, firestoreHelpers_1.saveProfile)(uid, profile, { connectedAt: firestore_1.Timestamp.now() });
+        await (0, engagementRate_1.refreshEngagementRate)(uid, longLived.access_token, profile.followers_count ?? 0);
         return { success: true };
     }
     catch (error) {

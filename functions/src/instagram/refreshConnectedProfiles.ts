@@ -2,6 +2,7 @@ import { getFirestore } from "firebase-admin/firestore";
 import { logger } from "firebase-functions";
 import { onSchedule } from "firebase-functions/v2/scheduler";
 
+import { refreshEngagementRate } from "./engagementRate";
 import { saveProfile, tokensDoc } from "./firestoreHelpers";
 import { fetchProfile } from "./instagramApiService";
 
@@ -39,6 +40,7 @@ export const refreshConnectedInstagramProfiles = onSchedule(
 
         const profile = await fetchProfile(accessToken);
         await saveProfile(userId, profile);
+        await refreshEngagementRate(userId, accessToken, profile.followers_count ?? 0);
       } catch (error) {
         logger.error("Skipped a connected-profile refresh", {
           userId,

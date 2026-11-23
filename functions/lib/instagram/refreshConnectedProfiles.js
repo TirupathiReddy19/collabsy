@@ -4,6 +4,7 @@ exports.refreshConnectedInstagramProfiles = void 0;
 const firestore_1 = require("firebase-admin/firestore");
 const firebase_functions_1 = require("firebase-functions");
 const scheduler_1 = require("firebase-functions/v2/scheduler");
+const engagementRate_1 = require("./engagementRate");
 const firestoreHelpers_1 = require("./firestoreHelpers");
 const instagramApiService_1 = require("./instagramApiService");
 /** Keeps every connected creator's follower/media counts, name, bio, and
@@ -35,6 +36,7 @@ exports.refreshConnectedInstagramProfiles = (0, scheduler_1.onSchedule)("every 2
                 continue;
             const profile = await (0, instagramApiService_1.fetchProfile)(accessToken);
             await (0, firestoreHelpers_1.saveProfile)(userId, profile);
+            await (0, engagementRate_1.refreshEngagementRate)(userId, accessToken, profile.followers_count ?? 0);
         }
         catch (error) {
             firebase_functions_1.logger.error("Skipped a connected-profile refresh", {

@@ -41,6 +41,14 @@ abstract class InstagramAccount with _$InstagramAccount {
     @Default(0) int followersCount,
     @Default(0) int followsCount,
     @Default(0) int mediaCount,
+    // Percentage, e.g. 8.2 for 8.2% — average (likes + comments) per post
+    // over the sample, divided by follower count. Null means it hasn't
+    // been computed yet (not synced since this feature shipped) or
+    // genuinely couldn't be (no posts, zero followers) — never shown as 0,
+    // which would misleadingly read as "verified zero engagement".
+    double? engagementRate,
+    @Default(0) int engagementSampleSize,
+    @NullableTimestampConverter() DateTime? engagementComputedAt,
     @NullableTimestampConverter() DateTime? connectedAt,
     @NullableTimestampConverter() DateTime? lastSyncedAt,
   }) = _InstagramAccount;

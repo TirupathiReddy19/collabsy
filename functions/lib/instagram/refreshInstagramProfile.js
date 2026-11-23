@@ -2,6 +2,7 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.refreshInstagramProfile = void 0;
 const https_1 = require("firebase-functions/v2/https");
+const engagementRate_1 = require("./engagementRate");
 const firestoreHelpers_1 = require("./firestoreHelpers");
 const instagramApiService_1 = require("./instagramApiService");
 const SEVEN_DAYS_MS = 7 * 24 * 60 * 60 * 1000;
@@ -39,6 +40,7 @@ exports.refreshInstagramProfile = (0, https_1.onCall)(async (request) => {
     try {
         const profile = await (0, instagramApiService_1.fetchProfile)(accessToken);
         await (0, firestoreHelpers_1.saveProfile)(uid, profile);
+        await (0, engagementRate_1.refreshEngagementRate)(uid, accessToken, profile.followers_count ?? 0);
         return { success: true };
     }
     catch (error) {
