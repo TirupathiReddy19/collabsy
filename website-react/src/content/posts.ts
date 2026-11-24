@@ -51,7 +51,7 @@ export const POSTS: BlogPostMeta[] = [
     title: 'Influencer Marketing Agency vs. Platform: What Should an Indian D2C Brand Actually Use for 10K–50K Creators?',
     seoTitle: 'Agency vs. Platform for Micro-Influencers (India)',
     description:
-      'Most agency-vs-platform guides are written for enterprise brands. Here is the real cost and decision framework for Indian D2C brands running campaigns with 10K–50K creators.',
+      "Most agency-vs-platform guides target enterprise brands. Here's the real cost and decision framework for Indian D2C brands with 10K–50K creators.",
     audience: 'Brand',
     publishedDate: '2026-11-20',
     readingTime: '7 min read',

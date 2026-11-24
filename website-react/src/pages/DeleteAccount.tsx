@@ -59,7 +59,7 @@ export function DeleteAccount() {
           {submitted ? (
             <div className="form-success">
               <div className="form-success-icon">
-                <svg width="30" height="30" viewBox="0 0 24 24" fill="none">
+                <svg width="30" height="30" viewBox="0 0 24 24" fill="none" aria-hidden="true">
                   <path d="M5 13l4 4L19 7" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
                 </svg>
               </div>

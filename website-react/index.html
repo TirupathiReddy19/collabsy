@@ -4,22 +4,27 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
-    <!-- No static <title>/<meta name="description"> here on purpose: every
-         route renders its own via <Seo> (src/components/Seo.tsx). React's
-         title/meta hoisting adds tags, it doesn't remove ones already in
-         this file, so a static fallback here would leave two <title> and
-         two description tags in the live DOM on every page, permanently,
-         not just during the brief pre-hydration moment. -->
+    <!-- No static <title>/<meta name="description">/og:type here on purpose:
+         every route renders its own via <Seo> (src/components/Seo.tsx),
+         defaulting to og:type "website" and overriding to "article" on blog
+         posts. React's title/meta hoisting adds tags, it doesn't remove ones
+         already in this file, so a static fallback here would leave two of
+         each in the live DOM on every page, permanently - which is exactly
+         what happened when og:type still had one here: crawlers read the
+         first og:type tag in the DOM, so blog posts kept reporting
+         "website". -->
     <meta
       name="keywords"
       content="influencer marketing, influencer marketing agency, D2C influencer marketing, creator marketing, UGC, influencer campaigns India, micro-influencers"
     />
 
-    <!-- Open Graph / Twitter fields that don't vary by page; title/description/url come from each page's <Seo> -->
-    <meta property="og:type" content="website" />
+    <!-- Open Graph / Twitter fields that don't vary by page; title/description/url/type come from each page's <Seo> -->
     <meta property="og:site_name" content="Collabsy" />
     <meta property="og:image" content="https://collabsy.online/collabsy-icon.png" />
-    <meta name="twitter:card" content="summary_large_image" />
+    <!-- collabsy-icon.png is a square 1024x1024 app icon, not the wide
+         (1.91:1) image summary_large_image expects - "summary" is the
+         correct card type for a square image. -->
+    <meta name="twitter:card" content="summary" />
     <meta name="twitter:image" content="https://collabsy.online/collabsy-icon.png" />
 
     <link rel="icon" type="image/png" href="/collabsy-icon.png" />
@@ -40,6 +45,10 @@
             "url": "https://collabsy.online/",
             "logo": "https://collabsy.online/collabsy-icon.png",
             "description": "Collabsy connects D2C brands with verified micro-influencers across India for campaigns that convert — discover, apply, chat, and collaborate, or let our team run it end to end.",
+            "sameAs": [
+              "https://apps.apple.com/in/app/collabsy/id6808197823",
+              "https://play.google.com/store/apps/details?id=online.collabsy.app"
+            ],
             "email": "hello@collabsy.online",
             "address": {
               "@type": "PostalAddress",

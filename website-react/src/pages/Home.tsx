@@ -91,7 +91,7 @@ export function Home() {
     <>
       <Seo
         title="Collabsy — Influencer Marketing Platform for D2C Brands in India"
-        description="Collabsy connects D2C brands with verified micro-influencers across India for campaigns that convert — discover, apply, chat, and collaborate, or let our team run it end to end."
+        description="Collabsy connects D2C brands with verified micro-influencers across India for campaigns that convert — discover, apply, chat, and collaborate."
         path="/"
       />
       <section className="home-hero section-dark" ref={heroRef}>
@@ -154,6 +154,7 @@ export function Home() {
 
       <section className="section" style={{ background: 'var(--color-primary-light)' }}>
         <div className="container home-audience" ref={audienceRef}>
+          <h2 className="sr-only">Which side of Collabsy are you on?</h2>
           <AudienceCard
             title="For Creators"
             accent="var(--color-creator)"

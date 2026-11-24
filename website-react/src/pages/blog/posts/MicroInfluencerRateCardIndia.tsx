@@ -106,10 +106,10 @@ export function MicroInfluencerRateCardIndia() {
       <h2>Let your rate card do the talking</h2>
       <p>
         A rate card only helps once a brand actually sees it — which still means
-        getting discovered in the first place.{' '}
-        <Link to="/creators">Collabsy</Link> connects Instagram creators in the
-        10K–50K range directly with D2C brands looking for exactly that tier, so
-        your rate card reaches a brand that's already looking for someone like you,
+        getting discovered in the first place. Collabsy{' '}
+        <Link to="/creators">connects Instagram creators in the 10K–50K range
+        directly with D2C brands</Link> looking for exactly that tier, so your
+        rate card reaches a brand that's already looking for someone like you,
         instead of sitting in your DMs waiting for the right person to ask.
       </p>
       <p>

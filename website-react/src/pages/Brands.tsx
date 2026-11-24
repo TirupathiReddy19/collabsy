@@ -1,4 +1,5 @@
 import { useRef } from 'react'
+import { Link } from 'react-router-dom'
 import { useScrollReveal } from '../lib/useScrollReveal'
 import { SectionHeading } from '../components/SectionHeading'
 import { Bullet } from '../components/Bullet'
@@ -7,7 +8,10 @@ import { CampaignRequestForm } from '../components/CampaignRequestForm'
 import { BreadcrumbSchema } from '../components/BreadcrumbSchema'
 import { Seo } from '../components/Seo'
 import { LazyCanvas } from '../three/LazyCanvas'
+import { POSTS } from '../content/posts'
 import './Brands.css'
+
+const BRAND_POSTS = POSTS.filter((p) => p.audience === 'Brand')
 
 const SERVICES = [
   {
@@ -188,6 +192,19 @@ export function Brands() {
         </div>
       </section>
 
+      <section className="section">
+        <div className="container">
+          <SectionHeading eyebrow="For brands" title="From the blog" />
+          <ul style={{ listStyle: 'none', padding: 0, margin: '0 auto', maxWidth: 640, display: 'flex', flexDirection: 'column', gap: 16 }}>
+            {BRAND_POSTS.map((post) => (
+              <li key={post.slug}>
+                <Link to={`/blog/${post.slug}`}>{post.title}</Link>
+              </li>
+            ))}
+          </ul>
+        </div>
+      </section>
+
       <section className="section" style={{ background: 'var(--color-primary-light)' }} ref={formRef}>
         <div className="container" style={{ display: 'flex', justifyContent: 'center' }}>
           <div style={{ maxWidth: 640, width: '100%' }}>
@@ -201,7 +218,7 @@ export function Brands() {
 
 function MegaphoneIcon() {
   return (
-    <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true">
       <path d="M3 10v4a1 1 0 0 0 1 1h2l7 4V5L6 9H4a1 1 0 0 0-1 1Z" stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round" />
       <path d="M17 9a4 4 0 0 1 0 6" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
     </svg>
@@ -209,7 +226,7 @@ function MegaphoneIcon() {
 }
 function FilmIcon() {
   return (
-    <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true">
       <rect x="3" y="5" width="18" height="14" rx="2" stroke="currentColor" strokeWidth="1.6" />
       <path d="M9 5v14M15 5v14M3 9h4M3 15h4M17 9h4M17 15h4" stroke="currentColor" strokeWidth="1.4" />
     </svg>
@@ -217,14 +234,14 @@ function FilmIcon() {
 }
 function HandshakeIcon() {
   return (
-    <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true">
       <path d="M2 12l4-4 4 3 3-3 4 4M6 8l3 3-2 2-3-3M18 8l-3 3M9 15l2 2 4-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   )
 }
 function MapIcon() {
   return (
-    <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true">
       <path d="M9 4 3 6v14l6-2 6 2 6-2V4l-6 2-6-2Z" stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round" />
       <path d="M9 4v14M15 6v14" stroke="currentColor" strokeWidth="1.4" />
     </svg>
@@ -232,7 +249,7 @@ function MapIcon() {
 }
 function InsightsIcon() {
   return (
-    <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true">
       <path d="M4 20V10M11 20V4M18 20v-7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
     </svg>
   )

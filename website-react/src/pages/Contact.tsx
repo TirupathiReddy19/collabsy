@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom'
 import { SectionHeading } from '../components/SectionHeading'
 import { BreadcrumbSchema } from '../components/BreadcrumbSchema'
 import { Seo } from '../components/Seo'
@@ -17,8 +18,14 @@ export function Contact() {
       <BreadcrumbSchema items={[{ name: 'Home', path: '/' }, { name: 'Contact', path: '/contact' }]} />
       <div className="container">
         <SectionHeading
+          as="h1"
           title="Get in touch"
-          subtitle="Have a question, or want a campaign plan for your brand? Reach us any of these ways — or use the Brands page's form for a full campaign brief."
+          subtitle={
+            <>
+              Have a question, or want a campaign plan for your brand? Reach us any of these ways — or use the{' '}
+              <Link to="/brands">Brands page's form</Link> for a full campaign brief.
+            </>
+          }
         />
         <div className="contact-row">
           <a className="contact-card" href="mailto:hello@collabsy.online">
@@ -55,21 +62,21 @@ export function Contact() {
 
 function MailIcon() {
   return (
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
       <path d="M3 6.5 12 13l9-6.5M4 5h16a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1Z" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   )
 }
 function ChatIcon() {
   return (
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
       <path d="M4 20l1.6-4.2A8 8 0 1 1 9 18.6L4 20Z" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   )
 }
 function PinIcon() {
   return (
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
       <path d="M12 21s-7-6.2-7-11.5A7 7 0 0 1 19 9.5C19 14.8 12 21 12 21Z" stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round" />
       <circle cx="12" cy="9.5" r="2.4" stroke="currentColor" strokeWidth="1.6" />
     </svg>

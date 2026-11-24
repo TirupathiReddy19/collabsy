@@ -8,7 +8,7 @@ export function BlogIndex() {
   return (
     <>
       <Seo
-        title="Blog | Collabsy"
+        title="Influencer Marketing Guides for Creators & D2C Brands | Collabsy Blog"
         description="Practical guides for Creators and Brands on influencer marketing — from landing your first brand deal to running a campaign that actually converts."
         path="/blog"
       />

@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom'
 import { useScrollReveal } from '../lib/useScrollReveal'
 import { SectionHeading } from '../components/SectionHeading'
 import { Bullet } from '../components/Bullet'
@@ -5,7 +6,10 @@ import { GetAppButton } from '../components/GetAppButton'
 import { BreadcrumbSchema } from '../components/BreadcrumbSchema'
 import { Seo } from '../components/Seo'
 import { LazyCanvas } from '../three/LazyCanvas'
+import { POSTS } from '../content/posts'
 import './Creators.css'
+
+const CREATOR_POSTS = POSTS.filter((p) => p.audience === 'Creator')
 
 const STEPS = [
   {
@@ -111,6 +115,19 @@ export function Creators() {
         </div>
       </section>
 
+      <section className="section">
+        <div className="container">
+          <SectionHeading eyebrow="For creators" title="From the blog" />
+          <ul style={{ listStyle: 'none', padding: 0, margin: '0 auto', maxWidth: 640, display: 'flex', flexDirection: 'column', gap: 16 }}>
+            {CREATOR_POSTS.map((post) => (
+              <li key={post.slug}>
+                <Link to={`/blog/${post.slug}`}>{post.title}</Link>
+              </li>
+            ))}
+          </ul>
+        </div>
+      </section>
+
       <section className="section section-dark" style={{ textAlign: 'center', position: 'relative', overflow: 'hidden' }}>
         <LazyCanvas loader={() => import('../three/ConvergenceCanvasSceneViolet')} />
         <div className="container" style={{ position: 'relative', zIndex: 1 }}>
@@ -129,7 +146,7 @@ export function Creators() {
 
 function InfoIcon() {
   return (
-    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" style={{ color: 'var(--color-creator)' }}>
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" style={{ color: 'var(--color-creator)' }} aria-hidden="true">
       <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="1.6" />
       <path d="M12 11v5M12 8v.01" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
     </svg>

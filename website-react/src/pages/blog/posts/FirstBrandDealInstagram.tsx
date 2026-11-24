@@ -148,8 +148,8 @@ export function FirstBrandDealInstagram() {
         the 10K–50K range directly with D2C brands looking for exactly that kind of
         partnership, without you needing to build a media kit from scratch or
         cold-DM strangers.{' '}
-        <Link to="/creators">Download the app</Link> to see what brands are currently
-        looking for creators like you.
+        <Link to="/creators">See what brands are currently looking for on Collabsy</Link>
+        {' '}— and how to download the app once you're ready.
       </p>
       <p>
         Once you land that first deal, you'll need a number to quote the next one —

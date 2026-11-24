@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom'
 import { useScrollReveal } from '../lib/useScrollReveal'
 import { SectionHeading } from '../components/SectionHeading'
 import { BreadcrumbSchema } from '../components/BreadcrumbSchema'
@@ -54,14 +55,16 @@ export function About() {
             sides of that at once.
           </p>
           <p className="body-lead" style={{ maxWidth: 'none', marginBottom: 16 }}>
-            We started with D2C brands who wanted campaigns judged on sales, not
-            screenshots — and built a platform where Creators and Brands can find
-            each other directly, verify who they're working with, and run a
-            campaign end to end without either side guessing.
+            We started with <Link to="/brands">D2C brands</Link> who wanted campaigns
+            judged on sales, not screenshots — and built a platform where{' '}
+            <Link to="/creators">creators</Link> and brands can find each other
+            directly, verify who they're working with, and run a campaign end to end
+            without either side guessing.
           </p>
           <p className="body-lead" style={{ maxWidth: 'none' }}>
             We're early. Rather than fill this page with client logos we haven't
-            earned yet, here's what we're actually optimizing for as we build.
+            earned yet, here's what we're actually optimizing for as we build —
+            or read how it plays out on the <Link to="/blog">blog</Link>.
           </p>
         </div>
       </section>
@@ -86,14 +89,14 @@ export function About() {
 
 function TrendingIcon() {
   return (
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
       <path d="M3 17l6-6 4 4 8-8M21 7h-6" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   )
 }
 function GroupsIcon() {
   return (
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
       <circle cx="9" cy="8" r="3" stroke="currentColor" strokeWidth="1.6" />
       <circle cx="17" cy="10" r="2.4" stroke="currentColor" strokeWidth="1.6" />
       <path d="M3 20c0-3 3-5 6-5s6 2 6 5M15 20c0-2 1.5-4 5-4" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
@@ -102,14 +105,14 @@ function GroupsIcon() {
 }
 function HandshakeIcon() {
   return (
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
       <path d="M2 12l4-4 4 3 3-3 4 4M6 8l3 3-2 2-3-3M18 8l-3 3M9 15l2 2 4-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   )
 }
 function VerifiedIcon() {
   return (
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
       <path d="m9 12 2 2 4-4" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
       <path d="M12 3l2.4 1.2 2.6-.3 1 2.4 2.4 1-.3 2.6L21 12l-1.2 2.4.3 2.6-2.4 1-1 2.4-2.6-.3L12 21l-2.4-1.2-2.6.3-1-2.4-2.4-1 .3-2.6L3 12l1.2-2.4-.3-2.6 2.4-1 1-2.4 2.6.3Z" stroke="currentColor" strokeWidth="1.4" strokeLinejoin="round" />
     </svg>

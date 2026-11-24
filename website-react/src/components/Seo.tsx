@@ -9,10 +9,14 @@ export function Seo({
   title,
   description,
   path,
+  type = 'website',
 }: {
   title: string
   description: string
   path: string
+  /** index.html's static og:type is "website", correct for every page
+   * except blog posts - those override it to "article" here. */
+  type?: 'website' | 'article'
 }) {
   const url = `${SITE_URL}${path}`
 
@@ -21,6 +25,7 @@ export function Seo({
       <title>{title}</title>
       <meta name="description" content={description} />
       <link rel="canonical" href={url} />
+      <meta property="og:type" content={type} />
       <meta property="og:title" content={title} />
       <meta property="og:description" content={description} />
       <meta property="og:url" content={url} />

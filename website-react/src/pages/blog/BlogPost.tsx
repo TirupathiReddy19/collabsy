@@ -1,27 +1,44 @@
 import { Suspense } from 'react'
-import { useParams, Navigate, Link } from 'react-router-dom'
+import { useParams, Link } from 'react-router-dom'
 import { Seo } from '../../components/Seo'
 import { BreadcrumbSchema } from '../../components/BreadcrumbSchema'
+import { BlogPostingSchema } from '../../components/BlogPostingSchema'
 import { POSTS } from '../../content/posts'
+import { NotFound } from '../NotFound'
 import './Blog.css'
 
 export function BlogPost() {
   const { slug } = useParams()
   const post = POSTS.find((p) => p.slug === slug)
 
-  if (!post) return <Navigate to="/blog" replace />
+  // Was a client-side <Navigate to="/blog"> - that still serves a 200 to
+  // crawlers (a soft-404), since the redirect only happens after React
+  // hydrates. Rendering NotFound directly gets its <meta robots noindex>
+  // into the actual response for an unknown slug instead.
+  if (!post) return <NotFound />
 
   const { Component } = post
 
   return (
     <>
-      <Seo title={`${post.seoTitle} | Collabsy`} description={post.description} path={`/blog/${post.slug}`} />
+      <Seo
+        title={`${post.seoTitle} | Collabsy`}
+        description={post.description}
+        path={`/blog/${post.slug}`}
+        type="article"
+      />
       <BreadcrumbSchema
         items={[
           { name: 'Home', path: '/' },
           { name: 'Blog', path: '/blog' },
           { name: post.title, path: `/blog/${post.slug}` },
         ]}
+      />
+      <BlogPostingSchema
+        title={post.title}
+        description={post.description}
+        path={`/blog/${post.slug}`}
+        publishedDate={post.publishedDate}
       />
 
       <section className="page-hero">
