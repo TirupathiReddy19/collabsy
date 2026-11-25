@@ -11,10 +11,14 @@ export function BlogPost() {
   const { slug } = useParams()
   const post = POSTS.find((p) => p.slug === slug)
 
-  // Was a client-side <Navigate to="/blog"> - that still serves a 200 to
-  // crawlers (a soft-404), since the redirect only happens after React
-  // hydrates. Rendering NotFound directly gets its <meta robots noindex>
-  // into the actual response for an unknown slug instead.
+  // Was a client-side <Navigate to="/blog"> - that sent crawlers to a
+  // *different* indexable page instead of ever showing a 404 for this one.
+  // Rendering NotFound directly at least puts <meta robots noindex> into
+  // the rendered page for this URL. The raw HTTP response is still a 200
+  // with no noindex in it at all (this is a client-rendered SPA, nothing
+  // is prerendered) - a crawler that doesn't execute JS still sees a plain
+  // 200. A real 404 status/head here needs prerendering or a hosting-level
+  // rewrite rule, not just this component.
   if (!post) return <NotFound />
 
   const { Component } = post

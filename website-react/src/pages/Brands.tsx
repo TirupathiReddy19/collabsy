@@ -83,7 +83,7 @@ export function Brands() {
     <>
       <Seo
         title="For Brands — Influencer Marketing That Converts | Collabsy"
-        description="Get sales, not just views. Run self-serve influencer campaigns with verified micro-influencers, or let Collabsy's team plan and execute it for you end to end."
+        description="Get sales, not just views. Run self-serve influencer campaigns with verified micro-influencers, or let Collabsy's team plan and execute it."
         path="/brands"
       />
       <BreadcrumbSchema items={[{ name: 'Home', path: '/' }, { name: 'Brands', path: '/brands' }]} />
