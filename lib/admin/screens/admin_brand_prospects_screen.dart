@@ -129,7 +129,6 @@ class _AdminBrandProspectsScreenState
             internEmail: result.intern.email,
             rangeStart: result.rangeStart,
             rangeEnd: result.rangeEnd,
-            includeAlreadyAssigned: result.includeAlreadyAssigned,
           );
       if (!mounted) return;
       AppSnackbar.showSuccess(
@@ -360,16 +359,9 @@ class _CategoryRow extends StatelessWidget {
   }
 }
 
-/// What `_AssignDialog` hands back: who to push to, the 1-indexed inclusive
-/// range within the pool to push (e.g. 201-400), and whether the source
-/// pool is just the still-unassigned remainder or the whole category
-/// (reassigning ones already pushed elsewhere).
-typedef _AssignResult = ({
-  StaffAccount intern,
-  int rangeStart,
-  int rangeEnd,
-  bool includeAlreadyAssigned,
-});
+/// What `_AssignDialog` hands back: who to push to, and the 1-indexed
+/// inclusive range within the still-unassigned pool to push (e.g. 201-400).
+typedef _AssignResult = ({StaffAccount intern, int rangeStart, int rangeEnd});
 
 class _AssignDialog extends StatefulWidget {
   const _AssignDialog({required this.row, required this.interns});
@@ -383,14 +375,11 @@ class _AssignDialog extends StatefulWidget {
 
 class _AssignDialogState extends State<_AssignDialog> {
   StaffAccount? _chosen;
-  bool _includeAlreadyAssigned = false;
   late final TextEditingController _fromController;
   late final TextEditingController _toController;
   String? _rangeError;
 
-  int get _maxCount => _includeAlreadyAssigned
-      ? widget.row.unassigned + widget.row.assigned
-      : widget.row.unassigned;
+  int get _maxCount => widget.row.unassigned;
 
   @override
   void initState() {
@@ -407,15 +396,6 @@ class _AssignDialogState extends State<_AssignDialog> {
     super.dispose();
   }
 
-  void _setMode(bool includeAlreadyAssigned) {
-    setState(() {
-      _includeAlreadyAssigned = includeAlreadyAssigned;
-      _fromController.text = _maxCount > 0 ? '1' : '0';
-      _toController.text = '$_maxCount';
-      _rangeError = null;
-    });
-  }
-
   /// `(from, to)` if both fields are a valid 1 <= from <= to <= _maxCount
   /// range, otherwise `null` - the single place that validates the two
   /// fields together, since either one alone can't be checked in isolation.
@@ -429,8 +409,6 @@ class _AssignDialogState extends State<_AssignDialog> {
 
   @override
   Widget build(BuildContext context) {
-    final hasAlreadyAssigned = widget.row.assigned > 0;
-
     return AlertDialog(
       title: Text('Push ${widget.row.category} to an intern'),
       content: SizedBox(
@@ -439,39 +417,6 @@ class _AssignDialogState extends State<_AssignDialog> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            if (hasAlreadyAssigned) ...[
-              Text(
-                '${widget.row.assigned} prospect'
-                '${widget.row.assigned == 1 ? '' : 's'} in this category '
-                'have already been pushed out to an intern.',
-                style: AppTextStyles.bodySmall.copyWith(
-                  color: AppColors.textSecondary,
-                ),
-              ),
-              const SizedBox(height: AppSpacing.sm),
-              RadioListTile<bool>(
-                contentPadding: EdgeInsets.zero,
-                dense: true,
-                value: false,
-                groupValue: _includeAlreadyAssigned,
-                onChanged: (_) => _setMode(false),
-                title: Text(
-                  'Only the ${widget.row.unassigned} remaining unassigned',
-                ),
-              ),
-              RadioListTile<bool>(
-                contentPadding: EdgeInsets.zero,
-                dense: true,
-                value: true,
-                groupValue: _includeAlreadyAssigned,
-                onChanged: (_) => _setMode(true),
-                title: Text(
-                  'All ${widget.row.unassigned + widget.row.assigned} '
-                  '(reassign the already-pushed ones too)',
-                ),
-              ),
-              const SizedBox(height: AppSpacing.sm),
-            ],
             DropdownButtonFormField<StaffAccount>(
               initialValue: _chosen,
               decoration: const InputDecoration(labelText: 'Intern'),
@@ -545,7 +490,6 @@ class _AssignDialogState extends State<_AssignDialog> {
               intern: _chosen!,
               rangeStart: range.$1,
               rangeEnd: range.$2,
-              includeAlreadyAssigned: _includeAlreadyAssigned,
             ));
           },
         ),

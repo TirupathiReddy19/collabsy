@@ -173,35 +173,30 @@ class AdminBrandProspectsRepository {
   }
 
   /// Pushes prospects [rangeStart]..[rangeEnd] (1-indexed, inclusive) of
-  /// [category]'s pool to one intern — the admin-controlled "push" the
-  /// brand-intern tool's My Prospects tab reads from. The pool is ordered by
-  /// document ID, the same stable order [listByCategory] pages through, so
-  /// a range like 201-400 lines up with what admin sees there. By default
-  /// only pulls from the still-unassigned pool (so a category can be split
-  /// across several interns over multiple pushes); [includeAlreadyAssigned]
-  /// widens the source pool to every prospect in the category regardless of
-  /// current assignment, for the "reassign everything, including what's
-  /// already out, to this intern" case. Not a live transaction: two admins
-  /// pushing the same category at once could double-assign a handful of
-  /// docs, which is an acceptable, self-correcting edge case for a manual,
-  /// occasional action like this.
+  /// [category]'s still-unassigned pool to one intern — the
+  /// admin-controlled "push" the brand-intern tool's My Prospects tab reads
+  /// from. The pool is ordered by document ID, the same stable order
+  /// [listByCategory] pages through, so a range like 201-400 lines up with
+  /// what admin sees there filtered to unassigned. Only ever pulls from the
+  /// unassigned pool, so a category can be split across several interns
+  /// over multiple pushes without re-pushing anyone's already-assigned
+  /// prospects. Not a live transaction: two admins pushing the same
+  /// category at once could double-assign a handful of docs, which is an
+  /// acceptable, self-correcting edge case for a manual, occasional action
+  /// like this.
   Future<int> assignCategoryToIntern({
     required String category,
     required String internUid,
     required String internEmail,
     required int rangeStart,
     required int rangeEnd,
-    bool includeAlreadyAssigned = false,
   }) async {
     assert(rangeStart >= 1 && rangeEnd >= rangeStart);
-    Query<Map<String, dynamic>> query = _col.where(
-      'category',
-      isEqualTo: category,
-    );
-    if (!includeAlreadyAssigned) {
-      query = query.where('status', isEqualTo: 'unassigned');
-    }
-    query = query.orderBy(FieldPath.documentId).limit(rangeEnd);
+    final query = _col
+        .where('category', isEqualTo: category)
+        .where('status', isEqualTo: 'unassigned')
+        .orderBy(FieldPath.documentId)
+        .limit(rangeEnd);
     final snapshot = await query.get();
     final docs = snapshot.docs.length >= rangeStart
         ? snapshot.docs.sublist(rangeStart - 1)
