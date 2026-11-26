@@ -127,7 +127,8 @@ class _AdminBrandProspectsScreenState
             category: row.category,
             internUid: result.intern.uid,
             internEmail: result.intern.email,
-            limit: result.limit,
+            rangeStart: result.rangeStart,
+            rangeEnd: result.rangeEnd,
             includeAlreadyAssigned: result.includeAlreadyAssigned,
           );
       if (!mounted) return;
@@ -359,12 +360,14 @@ class _CategoryRow extends StatelessWidget {
   }
 }
 
-/// What `_AssignDialog` hands back: who to push to, how many, and whether
-/// the source pool is just the still-unassigned remainder or the whole
-/// category (reassigning ones already pushed elsewhere).
+/// What `_AssignDialog` hands back: who to push to, the 1-indexed inclusive
+/// range within the pool to push (e.g. 201-400), and whether the source
+/// pool is just the still-unassigned remainder or the whole category
+/// (reassigning ones already pushed elsewhere).
 typedef _AssignResult = ({
   StaffAccount intern,
-  int limit,
+  int rangeStart,
+  int rangeEnd,
   bool includeAlreadyAssigned,
 });
 
@@ -381,8 +384,9 @@ class _AssignDialog extends StatefulWidget {
 class _AssignDialogState extends State<_AssignDialog> {
   StaffAccount? _chosen;
   bool _includeAlreadyAssigned = false;
-  late final TextEditingController _countController;
-  String? _countError;
+  late final TextEditingController _fromController;
+  late final TextEditingController _toController;
+  String? _rangeError;
 
   int get _maxCount => _includeAlreadyAssigned
       ? widget.row.unassigned + widget.row.assigned
@@ -392,27 +396,35 @@ class _AssignDialogState extends State<_AssignDialog> {
   void initState() {
     super.initState();
     _chosen = widget.interns.isEmpty ? null : widget.interns.first;
-    _countController = TextEditingController(text: '$_maxCount');
+    _fromController = TextEditingController(text: _maxCount > 0 ? '1' : '0');
+    _toController = TextEditingController(text: '$_maxCount');
   }
 
   @override
   void dispose() {
-    _countController.dispose();
+    _fromController.dispose();
+    _toController.dispose();
     super.dispose();
   }
 
   void _setMode(bool includeAlreadyAssigned) {
     setState(() {
       _includeAlreadyAssigned = includeAlreadyAssigned;
-      _countController.text = '$_maxCount';
-      _countError = null;
+      _fromController.text = _maxCount > 0 ? '1' : '0';
+      _toController.text = '$_maxCount';
+      _rangeError = null;
     });
   }
 
-  int? _validatedCount() {
-    final value = int.tryParse(_countController.text.trim());
-    if (value == null || value < 1 || value > _maxCount) return null;
-    return value;
+  /// `(from, to)` if both fields are a valid 1 <= from <= to <= _maxCount
+  /// range, otherwise `null` - the single place that validates the two
+  /// fields together, since either one alone can't be checked in isolation.
+  (int, int)? _validatedRange() {
+    final from = int.tryParse(_fromController.text.trim());
+    final to = int.tryParse(_toController.text.trim());
+    if (from == null || to == null) return null;
+    if (from < 1 || to < from || to > _maxCount) return null;
+    return (from, to);
   }
 
   @override
@@ -474,16 +486,41 @@ class _AssignDialogState extends State<_AssignDialog> {
               onChanged: (value) => setState(() => _chosen = value),
             ),
             const SizedBox(height: AppSpacing.sm),
-            TextField(
-              controller: _countController,
-              keyboardType: TextInputType.number,
-              inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-              decoration: InputDecoration(
-                labelText: 'How many to push',
-                helperText: 'Up to $_maxCount available',
-                errorText: _countError,
+            Text(
+              'Which ones to push, by position in the list '
+              '(e.g. 201 to 400) — same order as "View prospects".',
+              style: AppTextStyles.bodySmall.copyWith(
+                color: AppColors.textSecondary,
               ),
-              onChanged: (_) => setState(() => _countError = null),
+            ),
+            const SizedBox(height: AppSpacing.xs),
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(
+                  child: TextField(
+                    controller: _fromController,
+                    keyboardType: TextInputType.number,
+                    inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                    decoration: const InputDecoration(labelText: 'From'),
+                    onChanged: (_) => setState(() => _rangeError = null),
+                  ),
+                ),
+                const SizedBox(width: AppSpacing.sm),
+                Expanded(
+                  child: TextField(
+                    controller: _toController,
+                    keyboardType: TextInputType.number,
+                    inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                    decoration: InputDecoration(
+                      labelText: 'To',
+                      helperText: 'Up to $_maxCount available',
+                      errorText: _rangeError,
+                    ),
+                    onChanged: (_) => setState(() => _rangeError = null),
+                  ),
+                ),
+              ],
             ),
           ],
         ),
@@ -499,14 +536,15 @@ class _AssignDialogState extends State<_AssignDialog> {
           text: 'Push',
           isEnabled: _chosen != null && _maxCount > 0,
           onPressed: () {
-            final count = _validatedCount();
-            if (count == null) {
-              setState(() => _countError = 'Enter 1–$_maxCount');
+            final range = _validatedRange();
+            if (range == null) {
+              setState(() => _rangeError = 'Enter a range within 1–$_maxCount');
               return;
             }
             Navigator.pop(context, (
               intern: _chosen!,
-              limit: count,
+              rangeStart: range.$1,
+              rangeEnd: range.$2,
               includeAlreadyAssigned: _includeAlreadyAssigned,
             ));
           },
