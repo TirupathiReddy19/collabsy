@@ -1557,7 +1557,9 @@ class _ProspectRowState extends ConsumerState<_ProspectRow> {
                       borderRadius: BorderRadius.circular(AppRadius.full),
                     ),
                     child: Text(
-                      'Contacted',
+                      prospect.massEmailSentAt != null
+                          ? 'Contacted · Bulk email'
+                          : 'Contacted',
                       style: AppTextStyles.bodySmall.copyWith(
                         color: AppColors.success,
                         fontWeight: FontWeight.w600,
